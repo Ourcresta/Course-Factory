@@ -7,11 +7,11 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
+export async function apiRequest<T = unknown>(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<T> {
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -20,7 +20,12 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return res;
+  
+  if (res.status === 204) {
+    return undefined as T;
+  }
+  
+  return res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -29,7 +34,21 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    // Build URL from query key - first element is the base URL
+    // Additional elements can be path segments (strings/numbers) which get appended
+    const [baseUrl, ...rest] = queryKey;
+    
+    // Filter out objects and only join string/number segments
+    const pathSegments = rest.filter(
+      (segment): segment is string | number => 
+        typeof segment === "string" || typeof segment === "number"
+    );
+    
+    const url = pathSegments.length > 0 
+      ? `${baseUrl}/${pathSegments.join("/")}`
+      : String(baseUrl);
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 
