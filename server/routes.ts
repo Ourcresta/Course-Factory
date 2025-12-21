@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { storage } from "./storage";
-import { insertCourseSchema, insertModuleSchema, insertLessonSchema, insertSkillSchema, insertCertificateSchema, insertTestSchema, insertQuestionSchema } from "@shared/schema";
+import { insertCourseSchema, insertModuleSchema, insertLessonSchema, insertSkillSchema, insertCertificateSchema, insertTestSchema, insertQuestionSchema, insertProjectSchema } from "@shared/schema";
 import {
   generateCourseFromCommand,
   generateModulesForCourse,
@@ -1051,6 +1051,171 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting question:", error);
       res.status(500).json({ error: "Failed to delete question" });
+    }
+  });
+
+  // Projects - Course-scoped endpoints
+  app.get("/api/courses/:courseId/projects", async (req, res) => {
+    try {
+      const courseId = parseInt(req.params.courseId);
+      const projects = await storage.getProjectsByCourse(courseId);
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const project = await storage.getProjectWithSkills(id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Error fetching project:", error);
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const { courseId, skillIds, ...projectData } = req.body;
+      
+      const course = await storage.getCourse(courseId);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      if (course.status === "published") {
+        return res.status(403).json({ error: "Cannot create project for a published course. Unpublish first." });
+      }
+
+      const existingProjects = await storage.getProjectsByCourse(courseId);
+      const orderIndex = existingProjects.length;
+
+      const validatedData = insertProjectSchema.parse({ 
+        ...projectData, 
+        courseId,
+        orderIndex,
+        status: "draft"
+      });
+      const project = await storage.createProject(validatedData);
+      
+      if (skillIds && Array.isArray(skillIds) && skillIds.length > 0) {
+        await storage.setProjectSkills(project.id, skillIds);
+      }
+      
+      await storage.createAuditLog({
+        action: "PROJECT_CREATED",
+        entityType: "project",
+        entityId: project.id,
+        newValue: project,
+      });
+      
+      const projectWithSkills = await storage.getProjectWithSkills(project.id);
+      res.status(201).json(projectWithSkills);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error creating project:", error);
+      res.status(400).json({ error: "Failed to create project" });
+    }
+  });
+
+  app.patch("/api/projects/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { skillIds, ...projectData } = req.body;
+      const existing = await storage.getProject(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const course = await storage.getCourse(existing.courseId);
+      if (course?.status === "published") {
+        return res.status(403).json({ error: "Cannot update project for a published course. Unpublish first." });
+      }
+
+      if (existing.status === "locked") {
+        return res.status(403).json({ error: "Project is locked and cannot be edited." });
+      }
+
+      const project = await storage.updateProject(id, projectData);
+      
+      if (skillIds && Array.isArray(skillIds)) {
+        await storage.setProjectSkills(id, skillIds);
+      }
+      
+      await storage.createAuditLog({
+        action: "PROJECT_UPDATED",
+        entityType: "project",
+        entityId: id,
+        oldValue: existing,
+        newValue: project,
+      });
+      
+      const projectWithSkills = await storage.getProjectWithSkills(id);
+      res.json(projectWithSkills);
+    } catch (error) {
+      console.error("Error updating project:", error);
+      res.status(400).json({ error: "Failed to update project" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getProject(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const course = await storage.getCourse(existing.courseId);
+      if (course?.status === "published") {
+        return res.status(403).json({ error: "Cannot delete project for a published course. Unpublish first." });
+      }
+
+      if (existing.status === "locked") {
+        return res.status(403).json({ error: "Project is locked and cannot be deleted." });
+      }
+      
+      await storage.deleteProject(id);
+      
+      await storage.createAuditLog({
+        action: "PROJECT_DELETED",
+        entityType: "project",
+        entityId: id,
+        oldValue: existing,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+
+  // Lock a project (when course is published)
+  app.post("/api/projects/:id/lock", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getProject(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const project = await storage.updateProject(id, { status: "locked" });
+      res.json(project);
+    } catch (error) {
+      console.error("Error locking project:", error);
+      res.status(400).json({ error: "Failed to lock project" });
     }
   });
 

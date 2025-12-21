@@ -30,6 +30,7 @@ import {
   aiNotes,
   projects,
   projectSteps,
+  projectSkills,
   tests,
   questions,
   certificates,
@@ -88,10 +89,13 @@ export interface IStorage {
 
   // Projects
   getProject(id: number): Promise<Project | undefined>;
+  getProjectWithSkills(id: number): Promise<(Project & { skills: Skill[] }) | undefined>;
   getProjectsByModule(moduleId: number): Promise<Project[]>;
+  getProjectsByCourse(courseId: number): Promise<(Project & { skills: Skill[] })[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<void>;
+  setProjectSkills(projectId: number, skillIds: number[]): Promise<void>;
 
   // Project Steps
   getProjectSteps(projectId: number): Promise<ProjectStep[]>;
@@ -359,12 +363,69 @@ export class DatabaseStorage implements IStorage {
     return project;
   }
 
+  async getProjectWithSkills(id: number): Promise<(Project & { skills: Skill[] }) | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    if (!project) return undefined;
+    
+    const projectSkillRows = await db
+      .select()
+      .from(projectSkills)
+      .where(eq(projectSkills.projectId, id));
+    
+    const skillIds = projectSkillRows.map(ps => ps.skillId);
+    let projectSkillsList: Skill[] = [];
+    if (skillIds.length > 0) {
+      projectSkillsList = await Promise.all(
+        skillIds.map(async (skillId) => {
+          const [skill] = await db.select().from(skills).where(eq(skills.id, skillId));
+          return skill;
+        })
+      );
+      projectSkillsList = projectSkillsList.filter(Boolean);
+    }
+    
+    return { ...project, skills: projectSkillsList };
+  }
+
   async getProjectsByModule(moduleId: number): Promise<Project[]> {
     return db
       .select()
       .from(projects)
       .where(eq(projects.moduleId, moduleId))
       .orderBy(projects.orderIndex);
+  }
+
+  async getProjectsByCourse(courseId: number): Promise<(Project & { skills: Skill[] })[]> {
+    const courseProjects = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.courseId, courseId))
+      .orderBy(projects.orderIndex);
+    
+    const projectsWithSkills = await Promise.all(
+      courseProjects.map(async (project) => {
+        const projectSkillRows = await db
+          .select()
+          .from(projectSkills)
+          .where(eq(projectSkills.projectId, project.id));
+        
+        const skillIds = projectSkillRows.map(ps => ps.skillId);
+        let projectSkillsList: Skill[] = [];
+        if (skillIds.length > 0) {
+          projectSkillsList = await Promise.all(
+            skillIds.map(async (skillId) => {
+              const [skill] = await db.select().from(skills).where(eq(skills.id, skillId));
+              return skill;
+            })
+          );
+          projectSkillsList = projectSkillsList.filter(Boolean);
+        }
+        
+        return { ...project, skills: projectSkillsList };
+      })
+    );
+    
+    return projectsWithSkills;
   }
 
   async createProject(project: InsertProject): Promise<Project> {
@@ -382,7 +443,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: number): Promise<void> {
+    await db.delete(projectSkills).where(eq(projectSkills.projectId, id));
     await db.delete(projects).where(eq(projects.id, id));
+  }
+
+  async setProjectSkills(projectId: number, skillIds: number[]): Promise<void> {
+    await db.delete(projectSkills).where(eq(projectSkills.projectId, projectId));
+    if (skillIds.length > 0) {
+      await db.insert(projectSkills).values(
+        skillIds.map(skillId => ({ projectId, skillId }))
+      );
+    }
   }
 
   // Project Steps
