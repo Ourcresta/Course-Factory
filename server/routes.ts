@@ -179,10 +179,16 @@ export async function registerRoutes(
       const id = parseInt(req.params.id);
       const oldCourse = await storage.getCourse(id);
       
-      const course = await storage.updateCourse(id, req.body);
-      if (!course) {
+      if (!oldCourse) {
         return res.status(404).json({ error: "Course not found" });
       }
+
+      // Guard: Prevent editing published courses
+      if (oldCourse.status === "published") {
+        return res.status(403).json({ error: "This course is published and locked. Unpublish first to make changes." });
+      }
+
+      const course = await storage.updateCourse(id, req.body);
 
       await storage.createAuditLog({
         action: "update",
@@ -220,10 +226,37 @@ export async function registerRoutes(
   app.post("/api/courses/:id/publish", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const course = await storage.publishCourse(id);
+      const course = await storage.getCourseWithRelations(id);
+      
       if (!course) {
         return res.status(404).json({ error: "Course not found" });
       }
+
+      // Validation: Check if course is already published
+      if (course.status === "published") {
+        return res.status(400).json({ error: "Course is already published" });
+      }
+
+      // Validation: Check if course is generating
+      if (course.status === "generating") {
+        return res.status(400).json({ error: "Cannot publish a course while AI is generating content" });
+      }
+
+      // Validation: Check for at least 1 module
+      if (!course.modules || course.modules.length === 0) {
+        return res.status(400).json({ error: "Course must have at least 1 module before publishing" });
+      }
+
+      // Validation: Check each module has at least 1 lesson
+      for (const module of course.modules) {
+        if (!module.lessons || module.lessons.length === 0) {
+          return res.status(400).json({ 
+            error: `Module "${module.title}" must have at least 1 lesson before publishing` 
+          });
+        }
+      }
+
+      const publishedCourse = await storage.publishCourse(id);
 
       await storage.createAuditLog({
         action: "publish",
@@ -231,10 +264,42 @@ export async function registerRoutes(
         entityId: id,
       });
 
-      res.json(course);
+      res.json(publishedCourse);
     } catch (error) {
       console.error("Error publishing course:", error);
       res.status(500).json({ error: "Failed to publish course" });
+    }
+  });
+
+  // Unpublish course (move back to draft)
+  app.post("/api/courses/:id/unpublish", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const course = await storage.getCourse(id);
+      
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+
+      if (course.status !== "published") {
+        return res.status(400).json({ error: "Only published courses can be unpublished" });
+      }
+
+      const updatedCourse = await storage.updateCourse(id, { 
+        status: "draft",
+        publishedAt: null 
+      });
+
+      await storage.createAuditLog({
+        action: "unpublish",
+        entityType: "course",
+        entityId: id,
+      });
+
+      res.json(updatedCourse);
+    } catch (error) {
+      console.error("Error unpublishing course:", error);
+      res.status(500).json({ error: "Failed to unpublish course" });
     }
   });
 

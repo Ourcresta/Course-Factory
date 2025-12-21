@@ -1,0 +1,135 @@
+You are a Senior Full-Stack Engineer and LMS Product Architect.
+
+You are working INSIDE the EXISTING project:
+“AISiksha Admin Course Factory”.
+
+DO NOT create a new repo.
+DO NOT create Learn/Test/Profile portals.
+DO NOT change database schema unless absolutely required.
+USE existing fields such as:
+- courses.status
+- courses.publishedAt
+- publish_status table (if present)
+
+Your task is to implement a CLEAN, SAFE, ADMIN-ONLY
+Publishing Workflow for courses.
+
+----------------------------------------------------
+CORE CONCEPT (VERY IMPORTANT)
+----------------------------------------------------
+Publishing does NOT mean student visibility.
+Publishing means:
+- Course content is FINAL
+- Structure is LOCKED
+- Ready for future consumption by other portals
+
+Publishing is an INTERNAL ADMIN STATE.
+
+----------------------------------------------------
+PUBLISHING STATES
+----------------------------------------------------
+Courses must have clear states:
+- draft       → editable
+- generating  → locked (AI running)
+- published   → locked (final)
+
+Only draft courses can be edited.
+Published courses are READ-ONLY.
+
+----------------------------------------------------
+STEP 1: COURSE VALIDATION BEFORE PUBLISH
+----------------------------------------------------
+Before allowing publish, validate:
+
+1. Course has at least 1 module
+2. Each module has at least 1 lesson
+3. Course is NOT in "generating" state
+
+If validation fails:
+- Disable Publish button
+- Show clear reason (human-friendly message)
+
+----------------------------------------------------
+STEP 2: PUBLISH ACTION (UI)
+----------------------------------------------------
+On Course Detail page, add:
+
+Button:
+- “Publish Course”
+
+Behavior:
+- Show confirmation dialog:
+  “Once published, this course will be locked from editing.”
+
+On confirm:
+- Call backend publish endpoint
+- Update course status to "published"
+- Set publishedAt timestamp
+- Update publish_status table (if applicable)
+
+----------------------------------------------------
+STEP 3: POST-PUBLISH BEHAVIOR (CRITICAL)
+----------------------------------------------------
+Once course is published:
+
+- Disable ALL edit buttons:
+  - Course edit
+  - Module add/edit/delete
+  - Lesson add/edit/delete
+  - AI regenerate buttons
+
+- Show badge:
+  “Published on <date>”
+
+- UI becomes READ-ONLY
+
+----------------------------------------------------
+STEP 4: SAFE UX & ROUTE GUARDS
+----------------------------------------------------
+If user tries to:
+- Edit a published course via URL
+- Call edit APIs manually
+
+Then:
+- Block action
+- Show message:
+  “This course is published and locked.”
+
+Never allow silent failures.
+
+----------------------------------------------------
+STEP 5: BACKEND SAFETY (MINIMAL)
+----------------------------------------------------
+If not already present:
+- Add server-side guard to prevent updates
+  when course.status === "published"
+
+Do NOT refactor APIs.
+Add only minimal checks.
+
+----------------------------------------------------
+STEP 6: OPTIONAL (NICE TO HAVE, IF SIMPLE)
+----------------------------------------------------
+- Add “Unpublish” button (admin only)
+  → moves course back to draft
+  → clearly warn this is advanced action
+
+If complex, skip for now.
+
+----------------------------------------------------
+FINAL VALIDATION CHECKLIST
+----------------------------------------------------
+After implementation:
+
+✔ Draft courses are editable
+✔ Published courses are locked
+✔ Publish button enforces validation
+✔ No dependency on Learn/Test/Profile portals
+✔ Status & published date visible
+✔ Backend and frontend both enforce safety
+
+Do NOT add student visibility.
+Do NOT add payments.
+Do NOT add user roles beyond admin.
+
+Focus on correctness, clarity, and safety.
