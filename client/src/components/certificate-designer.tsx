@@ -121,11 +121,10 @@ export function CertificateDesigner({
 
   const createMutation = useMutation({
     mutationFn: async (data: CertificateFormData) => {
-      const response = await apiRequest("POST", `/api/courses/${courseId}/certificate`, {
+      return await apiRequest<Certificate>("POST", `/api/courses/${courseId}/certificate`, {
         ...data,
         skillTags: selectedSkills,
-      }) as Response;
-      return response.json();
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId, "certificate"] });
@@ -146,11 +145,10 @@ export function CertificateDesigner({
   const updateMutation = useMutation({
     mutationFn: async (data: CertificateFormData) => {
       if (!certificate) return;
-      const response = await apiRequest("PATCH", `/api/certificates/${certificate.id}`, {
+      return await apiRequest<Certificate>("PATCH", `/api/certificates/${certificate.id}`, {
         ...data,
         skillTags: selectedSkills,
-      }) as Response;
-      return response.json();
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId, "certificate"] });
