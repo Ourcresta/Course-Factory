@@ -1,0 +1,147 @@
+You are a Senior QA Engineer and Senior Full-Stack Debugger.
+
+Your task is to TEST the existing implementation of:
+Course → Module → Lesson Manager UI
+inside the SAME AISiksha Admin Course Factory project.
+
+DO NOT create new features.
+DO NOT redesign UI.
+DO NOT add sample/mock data.
+DO NOT touch Learn/Test/Profile portals.
+
+Your goal is to VERIFY correctness, find bugs, and FIX only what is broken.
+
+----------------------------------------------------
+TESTING SCOPE (STRICT)
+----------------------------------------------------
+Test ONLY:
+- Course creation (manual)
+- Module CRUD (manual)
+- Lesson CRUD (manual)
+- Routing correctness
+- Data persistence
+- Graceful handling when OpenAI key is missing
+
+----------------------------------------------------
+STEP 1: APPLICATION HEALTH CHECK
+----------------------------------------------------
+Verify:
+- App loads without errors
+- Sidebar contains ONLY:
+  Dashboard, Courses, Create Course, Skills, Certificates, Settings
+- No global routes like /modules or /lessons exist
+- Invalid routes redirect to /courses (no raw 404)
+
+Fix ONLY if broken.
+
+----------------------------------------------------
+STEP 2: COURSE FLOW TEST
+----------------------------------------------------
+1. Create a new course manually (no AI).
+2. Verify course appears in course list.
+3. Open course detail page.
+
+Check:
+- Correct courseId usage
+- Status defaults to "draft"
+- Course detail loads after refresh
+
+Fix ONLY if data does not persist or routing breaks.
+
+----------------------------------------------------
+STEP 3: MODULE MANAGER TEST
+----------------------------------------------------
+1. Navigate to /courses/:courseId/modules
+2. Add a module manually.
+3. Verify module appears in list.
+4. Refresh page → module must still exist.
+5. Edit module → verify update persists.
+6. Delete module → verify soft delete (not hard crash).
+
+Check:
+- Correct ordering
+- Correct courseId binding
+
+----------------------------------------------------
+STEP 4: MODULE DETAIL & LESSON LIST TEST
+----------------------------------------------------
+1. Open a module.
+2. Verify module header details.
+3. Add a lesson manually.
+4. Verify lesson appears in list.
+5. Refresh page → lesson must still exist.
+6. Edit lesson title → verify persistence.
+7. Delete lesson → verify clean removal.
+
+----------------------------------------------------
+STEP 5: LESSON EDITOR TEST
+----------------------------------------------------
+1. Open lesson editor route:
+   /courses/:courseId/modules/:moduleId/lessons/:lessonId
+
+2. Edit fields:
+   - Title
+   - Objectives
+   - Key Concepts
+   - Estimated Time
+   - Video URL
+   - External Links
+
+3. Save changes.
+4. Refresh page.
+
+Verify:
+- All edits persist
+- No console errors
+- No undefined/null crashes
+
+----------------------------------------------------
+STEP 6: ROUTE SAFETY TEST
+----------------------------------------------------
+Manually test invalid routes:
+- /modules
+- /lessons
+- /courses/invalid-id/modules
+
+Expected:
+- Redirect to /courses
+- No scary error screens
+
+----------------------------------------------------
+STEP 7: AI SAFE MODE TEST (NO OPENAI KEY)
+----------------------------------------------------
+If AI buttons exist:
+- Click AI generate actions
+
+Expected:
+- Friendly message like:
+  “AI generation is not configured yet”
+- App continues working
+- No crash or infinite loading
+
+----------------------------------------------------
+BUG FIX RULES (VERY IMPORTANT)
+----------------------------------------------------
+When a bug is found:
+- Fix ONLY the broken logic
+- Do NOT refactor unrelated code
+- Do NOT introduce new features
+- Preserve existing API contracts and schema
+
+For every fix:
+- Explain briefly what was broken
+- Explain how it was fixed
+
+----------------------------------------------------
+FINAL OUTPUT REQUIRED
+----------------------------------------------------
+At the end, produce:
+1. A short PASS / FAIL summary for each step
+2. A list of bugs fixed (if any)
+3. Confirmation that:
+   - Admin can manage Courses → Modules → Lessons
+   - No dependency on Learn/Test/Profile portals
+   - System works without OpenAI API key
+
+Think like a production QA engineer.
+Stability and correctness matter more than new features.
