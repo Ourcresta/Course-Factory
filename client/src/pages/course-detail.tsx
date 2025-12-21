@@ -20,6 +20,9 @@ import {
   Loader2,
   Target,
   Briefcase,
+  Check,
+  X,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +71,37 @@ const levelColors: Record<string, string> = {
   intermediate: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
   advanced: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 };
+
+function ChecklistItem({ label, checked, description }: { label: string; checked: boolean; description: string }) {
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${checked ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
+        {checked ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function PlatformItem({ name, description, enabled }: { name: string; description: string; enabled: boolean }) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg border">
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+        <Globe className="h-4 w-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium">{name}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Badge variant={enabled ? "default" : "secondary"} className="text-xs">
+        {enabled ? "Enabled" : "Disabled"}
+      </Badge>
+    </div>
+  );
+}
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -307,6 +341,7 @@ export default function CourseDetail() {
           <TabsTrigger value="projects" data-testid="tab-projects">Projects</TabsTrigger>
           <TabsTrigger value="tests" data-testid="tab-tests">Tests</TabsTrigger>
           <TabsTrigger value="certificate" data-testid="tab-certificate">Certificate</TabsTrigger>
+          <TabsTrigger value="publish" data-testid="tab-publish">Publish</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -617,6 +652,109 @@ export default function CourseDetail() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="publish" className="mt-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Send className="h-5 w-5" />
+                    Publication Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <StatusBadge status={course.status as "draft" | "published" | "generating" | "error"} />
+                      <div>
+                        <p className="font-medium">
+                          {course.status === "published" ? "Course is Live" : "Course is in Draft"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {course.publishedAt
+                            ? `Published on ${new Date(course.publishedAt).toLocaleDateString()}`
+                            : "Not published yet"}
+                        </p>
+                      </div>
+                    </div>
+                    {course.status === "draft" && (
+                      <Button onClick={() => setShowPublishDialog(true)} data-testid="button-publish-from-tab">
+                        <Send className="h-4 w-4 mr-2" />
+                        Publish Now
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Publication Checklist</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <ChecklistItem
+                      label="Course has modules"
+                      checked={moduleCount > 0}
+                      description={`${moduleCount} modules created`}
+                    />
+                    <ChecklistItem
+                      label="Lessons are added"
+                      checked={lessonCount > 0}
+                      description={`${lessonCount} lessons across all modules`}
+                    />
+                    <ChecklistItem
+                      label="Projects configured"
+                      checked={!course.includeProjects || projectCount > 0}
+                      description={course.includeProjects ? `${projectCount} projects created` : "Projects not required"}
+                    />
+                    <ChecklistItem
+                      label="Tests configured"
+                      checked={!course.includeTests || testCount > 0}
+                      description={course.includeTests ? `${testCount} tests created` : "Tests not required"}
+                    />
+                    <ChecklistItem
+                      label="Learning outcomes defined"
+                      checked={(course.learningOutcomes?.length || 0) > 0}
+                      description={`${course.learningOutcomes?.length || 0} outcomes defined`}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Target Platforms</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <PlatformItem
+                    name="learn.aisiksha.in"
+                    description="Course content & lessons"
+                    enabled
+                  />
+                  <PlatformItem
+                    name="test.aisiksha.in"
+                    description="Assessments & quizzes"
+                    enabled={course.includeTests || false}
+                  />
+                  <PlatformItem
+                    name="profile.aisiksha.in"
+                    description="Skill mapping & credentials"
+                    enabled
+                  />
+                  <PlatformItem
+                    name="udyog.aisiksha.in"
+                    description="Job role alignment"
+                    enabled={(course.jobRoles?.length || 0) > 0}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 

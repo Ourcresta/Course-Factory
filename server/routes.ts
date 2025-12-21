@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { storage } from "./storage";
-import { insertCourseSchema, insertModuleSchema, insertLessonSchema, insertSkillSchema } from "@shared/schema";
+import { insertCourseSchema, insertModuleSchema, insertLessonSchema, insertSkillSchema, insertCertificateSchema } from "@shared/schema";
 import {
   generateCourseFromCommand,
   generateModulesForCourse,
@@ -511,9 +511,13 @@ export async function registerRoutes(
 
   app.post("/api/certificates", async (req, res) => {
     try {
-      const certificate = await storage.createCertificate(req.body);
+      const validatedData = insertCertificateSchema.parse(req.body);
+      const certificate = await storage.createCertificate(validatedData);
       res.status(201).json(certificate);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
       console.error("Error creating certificate:", error);
       res.status(400).json({ error: "Failed to create certificate" });
     }
