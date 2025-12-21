@@ -54,6 +54,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { FormSkeleton, ModuleListSkeleton } from "@/components/loading-skeleton";
+import { CertificateDesigner } from "@/components/certificate-designer";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Course, Module, Lesson, Project, Test } from "@shared/schema";
@@ -683,42 +684,12 @@ export default function CourseDetail() {
         </TabsContent>
 
         <TabsContent value="certificate" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                Certificate Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium mb-1">Certificate Type</p>
-                    <p className="text-sm text-muted-foreground capitalize">
-                      {course.certificateType || "Completion"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-1">Requirements</p>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>Complete all modules</li>
-                      {course.includeTests && <li>Pass final assessment</li>}
-                      {course.includeProjects && <li>Complete at least one project</li>}
-                    </ul>
-                  </div>
-                </div>
-                <div className="flex items-center justify-center p-8 rounded-lg border-2 border-dashed">
-                  <div className="text-center">
-                    <Award className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">
-                      Certificate preview will appear here
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CertificateDesigner
+            courseId={courseId!}
+            courseName={course.name}
+            courseLevel={course.level}
+            isPublished={course.status === "published"}
+          />
         </TabsContent>
 
         <TabsContent value="publish" className="mt-6">
