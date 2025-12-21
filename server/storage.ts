@@ -56,6 +56,7 @@ export interface IStorage {
   updateCourse(id: number, course: Partial<InsertCourse>): Promise<Course | undefined>;
   deleteCourse(id: number): Promise<void>;
   publishCourse(id: number): Promise<Course | undefined>;
+  unpublishCourse(id: number): Promise<Course | undefined>;
   getDashboardStats(): Promise<{
     totalCourses: number;
     publishedCourses: number;
@@ -215,6 +216,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(courses)
       .set({ status: "published", publishedAt: new Date(), updatedAt: new Date() })
+      .where(eq(courses.id, id))
+      .returning();
+    return updated;
+  }
+
+  async unpublishCourse(id: number): Promise<Course | undefined> {
+    const [updated] = await db
+      .update(courses)
+      .set({ status: "draft", updatedAt: new Date() })
       .where(eq(courses.id, id))
       .returning();
     return updated;

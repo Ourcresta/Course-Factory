@@ -1,0 +1,128 @@
+You are a Senior LMS Architect and Senior Full-Stack Engineer.
+
+You are working INSIDE the EXISTING project:
+“AISiksha Admin Course Factory”.
+
+Publishing workflow is already implemented.
+Now extend it by adding a SAFE, ADMIN-ONLY Unpublish workflow.
+
+DO NOT create new repos.
+DO NOT touch Learn/Test/Profile portals.
+DO NOT break existing Publish logic.
+DO NOT change database schema unless absolutely required.
+
+----------------------------------------------------
+CORE CONCEPT (CRITICAL)
+----------------------------------------------------
+Unpublish does NOT delete content.
+Unpublish means:
+- Course is moved back to Draft
+- Editing is re-enabled
+- Course is NOT visible to learners (future portals)
+
+This is an ADMIN EMERGENCY / CORRECTION TOOL.
+
+----------------------------------------------------
+UNPUBLISH RULES (VERY IMPORTANT)
+----------------------------------------------------
+1. Only ADMIN can unpublish.
+2. Unpublish must be intentional (confirmation required).
+3. Unpublish does NOT erase:
+   - Modules
+   - Lessons
+   - Projects
+   - Tests
+4. Unpublish ONLY changes course.status back to "draft".
+5. publishedAt should remain stored (history).
+
+----------------------------------------------------
+STEP 1: UI – UNPUBLISH BUTTON
+----------------------------------------------------
+On Course Detail page:
+
+IF course.status === "published":
+- Show button: “Unpublish Course”
+- Place it inside Publish tab or overflow menu (⋮)
+
+On click:
+- Show STRONG confirmation dialog:
+
+  “Unpublishing will unlock this course for editing.
+   Learner access (future) will be disabled.
+   Are you sure?”
+
+Buttons:
+- Cancel
+- Yes, Unpublish
+
+----------------------------------------------------
+STEP 2: BACKEND ENDPOINT
+----------------------------------------------------
+Add a backend endpoint:
+
+POST /api/courses/:id/unpublish
+
+Behavior:
+- Verify course exists
+- Verify course.status === "published"
+- Update:
+   status = "draft"
+- Do NOT clear modules, lessons, tests
+- Do NOT delete publish_status history
+
+Return updated course.
+
+----------------------------------------------------
+STEP 3: POST-UNPUBLISH UI BEHAVIOR
+----------------------------------------------------
+After unpublish:
+
+- Status badge updates to “Draft”
+- All edit buttons are ENABLED again:
+  - Course edit
+  - Module add/edit/delete
+  - Lesson add/edit/delete
+  - AI regenerate buttons
+
+- Show info banner:
+  “Course is now in Draft mode and editable.”
+
+----------------------------------------------------
+STEP 4: SAFETY GUARDS
+----------------------------------------------------
+- Prevent unpublishing if course is already draft
+- Block accidental double clicks
+- Handle API errors gracefully
+
+----------------------------------------------------
+STEP 5: AUDIT & LOGGING (If Already Present)
+----------------------------------------------------
+If audit_logs table exists:
+- Log action:
+  action: "COURSE_UNPUBLISHED"
+  entityType: "course"
+  entityId: courseId
+
+----------------------------------------------------
+STEP 6: UX POLISH
+----------------------------------------------------
+- Hide Unpublish button when course is draft
+- Keep Publish and Unpublish mutually exclusive
+- Ensure clean visual distinction between states:
+  Draft / Published
+
+----------------------------------------------------
+FINAL VALIDATION CHECKLIST
+----------------------------------------------------
+After implementation:
+
+✔ Published course can be unpublished
+✔ Draft course cannot be unpublished
+✔ No data loss
+✔ Editing is re-enabled after unpublish
+✔ Publish workflow still works
+✔ No dependency on Learn/Test/Profile portals
+✔ Admin remains in full control
+
+Focus on safety, clarity, and correctness.
+This is an admin-only control.

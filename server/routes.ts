@@ -23,6 +23,18 @@ function handleValidationError(error: unknown, res: any) {
   throw error;
 }
 
+// Helper to check if a course is published and block modifications
+async function checkCourseNotPublished(courseId: number): Promise<{ blocked: boolean; message: string }> {
+  const course = await storage.getCourse(courseId);
+  if (!course) {
+    return { blocked: true, message: "Course not found" };
+  }
+  if (course.status === "published") {
+    return { blocked: true, message: "This course is published and locked. Unpublish first to make changes." };
+  }
+  return { blocked: false, message: "" };
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -285,10 +297,7 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Only published courses can be unpublished" });
       }
 
-      const updatedCourse = await storage.updateCourse(id, { 
-        status: "draft",
-        publishedAt: null 
-      });
+      const updatedCourse = await storage.unpublishCourse(id);
 
       await storage.createAuditLog({
         action: "unpublish",
@@ -446,6 +455,13 @@ export async function registerRoutes(
   app.post("/api/modules", async (req, res) => {
     try {
       const validatedData = insertModuleSchema.parse(req.body);
+      
+      // Guard: Check if course is published
+      const guard = await checkCourseNotPublished(validatedData.courseId);
+      if (guard.blocked) {
+        return res.status(403).json({ error: guard.message });
+      }
+      
       const module = await storage.createModule(validatedData);
       res.status(201).json(module);
     } catch (error) {
@@ -457,10 +473,18 @@ export async function registerRoutes(
   app.patch("/api/modules/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const module = await storage.updateModule(id, req.body);
-      if (!module) {
+      const existingModule = await storage.getModule(id);
+      if (!existingModule) {
         return res.status(404).json({ error: "Module not found" });
       }
+      
+      // Guard: Check if course is published
+      const guard = await checkCourseNotPublished(existingModule.courseId);
+      if (guard.blocked) {
+        return res.status(403).json({ error: guard.message });
+      }
+      
+      const module = await storage.updateModule(id, req.body);
       res.json(module);
     } catch (error) {
       console.error("Error updating module:", error);
@@ -471,6 +495,17 @@ export async function registerRoutes(
   app.delete("/api/modules/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const existingModule = await storage.getModule(id);
+      if (!existingModule) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+      
+      // Guard: Check if course is published
+      const guard = await checkCourseNotPublished(existingModule.courseId);
+      if (guard.blocked) {
+        return res.status(403).json({ error: guard.message });
+      }
+      
       await storage.deleteModule(id);
       res.status(204).send();
     } catch (error) {
@@ -497,6 +532,17 @@ export async function registerRoutes(
   app.post("/api/lessons", async (req, res) => {
     try {
       const validatedData = insertLessonSchema.parse(req.body);
+      
+      // Guard: Get module to find courseId, then check if course is published
+      const module = await storage.getModule(validatedData.moduleId);
+      if (!module) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+      const guard = await checkCourseNotPublished(module.courseId);
+      if (guard.blocked) {
+        return res.status(403).json({ error: guard.message });
+      }
+      
       const lesson = await storage.createLesson(validatedData);
       res.status(201).json(lesson);
     } catch (error) {
@@ -508,10 +554,21 @@ export async function registerRoutes(
   app.patch("/api/lessons/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const lesson = await storage.updateLesson(id, req.body);
-      if (!lesson) {
+      const existingLesson = await storage.getLesson(id);
+      if (!existingLesson) {
         return res.status(404).json({ error: "Lesson not found" });
       }
+      
+      // Guard: Get module to find courseId, then check if course is published
+      const module = await storage.getModule(existingLesson.moduleId);
+      if (module) {
+        const guard = await checkCourseNotPublished(module.courseId);
+        if (guard.blocked) {
+          return res.status(403).json({ error: guard.message });
+        }
+      }
+      
+      const lesson = await storage.updateLesson(id, req.body);
       res.json(lesson);
     } catch (error) {
       console.error("Error updating lesson:", error);
@@ -522,6 +579,20 @@ export async function registerRoutes(
   app.delete("/api/lessons/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const existingLesson = await storage.getLesson(id);
+      if (!existingLesson) {
+        return res.status(404).json({ error: "Lesson not found" });
+      }
+      
+      // Guard: Get module to find courseId, then check if course is published
+      const module = await storage.getModule(existingLesson.moduleId);
+      if (module) {
+        const guard = await checkCourseNotPublished(module.courseId);
+        if (guard.blocked) {
+          return res.status(403).json({ error: guard.message });
+        }
+      }
+      
       await storage.deleteLesson(id);
       res.status(204).send();
     } catch (error) {
