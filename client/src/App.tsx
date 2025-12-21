@@ -14,6 +14,7 @@ import CourseDetail from "@/pages/course-detail";
 import CourseModules from "@/pages/course-modules";
 import ModuleDetail from "@/pages/module-detail";
 import LessonEditor from "@/pages/lesson-editor";
+import TestEditor from "@/pages/test-editor";
 import Skills from "@/pages/skills";
 import Certificates from "@/pages/certificates";
 import Settings from "@/pages/settings";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/courses/:courseId/modules" component={CourseModules} />
       <Route path="/courses/:courseId/modules/:moduleId" component={ModuleDetail} />
       <Route path="/courses/:courseId/modules/:moduleId/lessons/:lessonId" component={LessonEditor} />
+      <Route path="/courses/:courseId/tests/:testId" component={TestEditor} />
 
       {/* Redirect invalid routes to courses */}
       <Route path="/modules">

@@ -55,6 +55,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { FormSkeleton, ModuleListSkeleton } from "@/components/loading-skeleton";
 import { CertificateDesigner } from "@/components/certificate-designer";
+import { TestManager } from "@/components/test-manager";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Course, Module, Lesson, Project, Test } from "@shared/schema";
@@ -115,6 +116,11 @@ export default function CourseDetail() {
 
   const { data: course, isLoading } = useQuery<CourseWithRelations>({
     queryKey: ["/api/courses", courseId],
+    enabled: !!courseId && !isNaN(courseId),
+  });
+
+  const { data: certificate } = useQuery({
+    queryKey: ["/api/courses", courseId, "certificate"],
     enabled: !!courseId && !isNaN(courseId),
   });
 
@@ -639,48 +645,12 @@ export default function CourseDetail() {
         </TabsContent>
 
         <TabsContent value="tests" className="mt-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-4">
-              <CardTitle className="text-lg">Assessments & Tests</CardTitle>
-              <Button size="sm" data-testid="button-add-test">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Test
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {testCount > 0 ? (
-                <div className="space-y-3">
-                  {course.modules?.flatMap((module) =>
-                    module.tests?.map((test) => (
-                      <div key={test.id} className="flex items-center gap-4 p-4 rounded-lg border">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                          <FileCheck className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium">{test.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Pass: {test.passingPercentage}%
-                            {test.timeLimit && ` • ${test.timeLimit} min`}
-                          </p>
-                        </div>
-                        {test.isLocked && (
-                          <Badge variant="secondary">Locked</Badge>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={FileCheck}
-                  title="No tests yet"
-                  description="Add assessments to evaluate student learning and grant certificates."
-                  actionLabel="Generate with AI"
-                  onAction={() => generateContentMutation.mutate("tests")}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <TestManager
+            courseId={courseId!}
+            modules={course.modules || []}
+            isPublished={course.status === "published"}
+            certificate={certificate || null}
+          />
         </TabsContent>
 
         <TabsContent value="certificate" className="mt-6">
