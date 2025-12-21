@@ -415,6 +415,20 @@ export async function registerRoutes(
   });
 
   // Lessons
+  app.get("/api/lessons/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lesson = await storage.getLessonWithNotes(id);
+      if (!lesson) {
+        return res.status(404).json({ error: "Lesson not found" });
+      }
+      res.json(lesson);
+    } catch (error) {
+      console.error("Error fetching lesson:", error);
+      res.status(500).json({ error: "Failed to fetch lesson" });
+    }
+  });
+
   app.post("/api/lessons", async (req, res) => {
     try {
       const validatedData = insertLessonSchema.parse(req.body);
@@ -448,6 +462,58 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting lesson:", error);
       res.status(500).json({ error: "Failed to delete lesson" });
+    }
+  });
+
+  app.post("/api/lessons/:id/generate-notes", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lesson = await storage.getLesson(id);
+      if (!lesson) {
+        return res.status(404).json({ error: "Lesson not found" });
+      }
+
+      // Start async generation
+      (async () => {
+        try {
+          const notes = await generateNotesForLesson(
+            lesson.title,
+            lesson.objectives || [],
+            lesson.keyConceptS || []
+          );
+          
+          // Check if notes already exist for this lesson
+          const existingNotes = await storage.getAiNoteByLessonId(lesson.id);
+          
+          if (existingNotes) {
+            await storage.updateAiNote(existingNotes.id, {
+              content: notes.content,
+              simplifiedExplanation: notes.simplifiedExplanation,
+              bulletNotes: notes.bulletNotes,
+              keyTakeaways: notes.keyTakeaways,
+              interviewQuestions: notes.interviewQuestions,
+              version: existingNotes.version + 1,
+            });
+          } else {
+            await storage.createAiNote({
+              lessonId: lesson.id,
+              content: notes.content,
+              simplifiedExplanation: notes.simplifiedExplanation,
+              bulletNotes: notes.bulletNotes,
+              keyTakeaways: notes.keyTakeaways,
+              interviewQuestions: notes.interviewQuestions,
+              version: 1,
+            });
+          }
+        } catch (error) {
+          console.error("Error generating notes:", error);
+        }
+      })();
+
+      res.json({ message: "Started generating notes" });
+    } catch (error) {
+      console.error("Error starting note generation:", error);
+      res.status(500).json({ error: "Failed to start note generation" });
     }
   });
 

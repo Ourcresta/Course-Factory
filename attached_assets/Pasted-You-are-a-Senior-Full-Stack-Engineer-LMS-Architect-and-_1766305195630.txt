@@ -1,0 +1,185 @@
+You are a Senior Full-Stack Engineer, LMS Architect, and SaaS UI Designer.
+
+You are working INSIDE an existing project called:
+“AISiksha Admin Course Factory”.
+
+DO NOT create a new project.
+DO NOT modify database schema unless required.
+USE existing backend APIs, tables, and patterns.
+
+Your task is to BUILD the ADMIN UI that allows a human admin
+to manage Courses → Modules → Lessons cleanly and intuitively.
+
+This UI is the HEART of the Admin system.
+
+----------------------------------------------------
+DOMAIN RULES (CRITICAL – DO NOT VIOLATE)
+----------------------------------------------------
+1. Courses are top-level entities.
+2. Modules ALWAYS belong to a Course.
+3. Lessons ALWAYS belong to a Module.
+4. There are NO global modules or lessons.
+5. All pages must require proper IDs (courseId, moduleId).
+
+----------------------------------------------------
+ROUTING REQUIREMENTS
+----------------------------------------------------
+Implement or enhance the following routes:
+
+- /courses/:courseId              → Course Overview
+- /courses/:courseId/modules      → Module Manager
+- /courses/:courseId/modules/:moduleId
+                                  → Module Detail + Lessons
+- /courses/:courseId/modules/:moduleId/lessons/:lessonId
+                                  → Lesson Editor
+
+If required params are missing:
+→ Redirect safely (never show raw 404).
+
+----------------------------------------------------
+PAGE 1: COURSE DETAIL / OVERVIEW
+File: client/src/pages/course-detail.tsx
+
+Enhance this page to act as the COURSE HUB.
+
+Show:
+- Course name, status (draft / generating / published)
+- Description, level, duration
+- AI command used
+- Tabs or internal navigation:
+  - Overview
+  - Modules
+  - Publish
+
+Buttons:
+- “Go to Modules”
+- “Publish Course” (disabled if no modules)
+
+----------------------------------------------------
+PAGE 2: MODULE MANAGER
+File: client/src/pages/course-modules.tsx (NEW)
+
+Purpose:
+Manage ALL modules under a course.
+
+UI:
+- List all modules (ordered)
+- Each module card shows:
+  - Title
+  - Description
+  - Estimated time
+  - Lesson count
+- Buttons per module:
+  - Edit
+  - Open
+  - Delete (soft delete)
+
+Actions:
+- Add new module (manual)
+- Generate modules via AI (reuse existing API)
+- Reorder modules (up/down buttons)
+
+Empty State:
+“If no modules exist, guide admin to create or generate modules.”
+
+----------------------------------------------------
+PAGE 3: MODULE DETAIL + LESSON LIST
+File: client/src/pages/module-detail.tsx (NEW)
+
+Purpose:
+Manage lessons inside ONE module.
+
+Show at top:
+- Module title & description
+- Estimated time
+- Back link to course modules
+
+Lessons Section:
+- List lessons in order
+- Each lesson card shows:
+  - Title
+  - Objectives (count)
+  - Estimated time
+
+Lesson Actions:
+- Open lesson
+- Edit title
+- Delete lesson
+- Generate AI notes
+
+Buttons:
+- Add Lesson (manual)
+- Generate Lessons via AI (if supported)
+
+----------------------------------------------------
+PAGE 4: LESSON EDITOR
+File: client/src/pages/lesson-editor.tsx (NEW)
+
+Purpose:
+Human-editable lesson content.
+
+Editable Fields:
+- Title
+- Objectives (array editor)
+- Key concepts (array editor)
+- Estimated time
+- Video URL
+- External links
+
+AI Notes Section:
+- View AI notes
+- Regenerate AI notes
+- Version display (if exists)
+
+UX:
+- Autosave or Save button
+- Clear loading & error states
+
+----------------------------------------------------
+API USAGE (USE EXISTING ENDPOINTS)
+----------------------------------------------------
+Use existing APIs such as:
+- GET /api/courses/:id
+- GET /api/courses/:courseId/modules
+- POST /api/modules
+- GET /api/modules/:moduleId/lessons
+- POST /api/lessons
+- PATCH endpoints for updates
+- AI generation endpoints (already implemented)
+
+DO NOT duplicate APIs.
+
+----------------------------------------------------
+STATE & UX RULES
+----------------------------------------------------
+- Use existing React Query setup
+- Show loading skeletons
+- Show meaningful empty states
+- Disable actions during AI generation
+- No raw JSON or debug output in UI
+
+----------------------------------------------------
+DESIGN RULES
+----------------------------------------------------
+- Follow existing Shadcn + Tailwind style
+- Reuse components (cards, buttons, badges)
+- Dark/Light mode compatible
+- Clean SaaS admin look
+- Mobile-safe but desktop-first
+
+----------------------------------------------------
+FINAL VALIDATION CHECKLIST
+----------------------------------------------------
+After implementation:
+
+✔ Admin can create a course
+✔ Admin can add/generate modules
+✔ Admin can open a module
+✔ Admin can add/edit lessons
+✔ Admin can edit lesson content
+✔ Admin never sees /modules or /lessons globally
+✔ No 404 confusion
+✔ No dependency on Learn/Test/Profile portals
+
+This UI must feel stable, logical, and production-ready.
+Follow existing project conventions.

@@ -72,6 +72,7 @@ export interface IStorage {
 
   // Lessons
   getLesson(id: number): Promise<Lesson | undefined>;
+  getLessonWithNotes(id: number): Promise<(Lesson & { aiNotes?: AiNote[] }) | undefined>;
   getLessonsByModule(moduleId: number): Promise<Lesson[]>;
   createLesson(lesson: InsertLesson): Promise<Lesson>;
   updateLesson(id: number, lesson: Partial<InsertLesson>): Promise<Lesson | undefined>;
@@ -79,6 +80,7 @@ export interface IStorage {
 
   // AI Notes
   getAiNote(id: number): Promise<AiNote | undefined>;
+  getAiNoteByLessonId(lessonId: number): Promise<AiNote | undefined>;
   getAiNotesByLesson(lessonId: number): Promise<AiNote[]>;
   createAiNote(note: InsertAiNote): Promise<AiNote>;
   updateAiNote(id: number, note: Partial<InsertAiNote>): Promise<AiNote | undefined>;
@@ -296,9 +298,27 @@ export class DatabaseStorage implements IStorage {
     await db.delete(lessons).where(eq(lessons.id, id));
   }
 
+  async getLessonWithNotes(id: number): Promise<(Lesson & { aiNotes?: AiNote[] }) | undefined> {
+    const [lesson] = await db.select().from(lessons).where(eq(lessons.id, id));
+    if (!lesson) return undefined;
+    
+    const notes = await db.select().from(aiNotes).where(eq(aiNotes.lessonId, id)).orderBy(desc(aiNotes.version));
+    return { ...lesson, aiNotes: notes };
+  }
+
   // AI Notes
   async getAiNote(id: number): Promise<AiNote | undefined> {
     const [note] = await db.select().from(aiNotes).where(eq(aiNotes.id, id));
+    return note;
+  }
+
+  async getAiNoteByLessonId(lessonId: number): Promise<AiNote | undefined> {
+    const [note] = await db
+      .select()
+      .from(aiNotes)
+      .where(eq(aiNotes.lessonId, lessonId))
+      .orderBy(desc(aiNotes.version))
+      .limit(1);
     return note;
   }
 

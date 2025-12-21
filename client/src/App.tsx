@@ -11,6 +11,9 @@ import Dashboard from "@/pages/dashboard";
 import Courses from "@/pages/courses";
 import CreateCourse from "@/pages/create-course";
 import CourseDetail from "@/pages/course-detail";
+import CourseModules from "@/pages/course-modules";
+import ModuleDetail from "@/pages/module-detail";
+import LessonEditor from "@/pages/lesson-editor";
 import Skills from "@/pages/skills";
 import Certificates from "@/pages/certificates";
 import Settings from "@/pages/settings";
@@ -28,9 +31,9 @@ function Router() {
 
       {/* Course-scoped routes */}
       <Route path="/courses/:id" component={CourseDetail} />
-      <Route path="/courses/:id/modules" component={CourseDetail} />
-      <Route path="/courses/:id/modules/:moduleId" component={CourseDetail} />
-      <Route path="/courses/:id/publish" component={CourseDetail} />
+      <Route path="/courses/:courseId/modules" component={CourseModules} />
+      <Route path="/courses/:courseId/modules/:moduleId" component={ModuleDetail} />
+      <Route path="/courses/:courseId/modules/:moduleId/lessons/:lessonId" component={LessonEditor} />
 
       {/* Redirect invalid routes to courses */}
       <Route path="/modules">
