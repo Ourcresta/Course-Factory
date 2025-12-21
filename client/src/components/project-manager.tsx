@@ -37,6 +37,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Project, Skill, Certificate } from "@shared/schema";
@@ -61,7 +68,7 @@ export function ProjectManager({ courseId, isPublished, certificate }: ProjectMa
     description: "",
     objectives: "",
     deliverables: "",
-    estimatedTime: 60,
+    difficulty: "intermediate",
   });
 
   const { data: projects = [], isLoading } = useQuery<ProjectWithSkills[]>({
@@ -73,15 +80,15 @@ export function ProjectManager({ courseId, isPublished, certificate }: ProjectMa
       return await apiRequest<ProjectWithSkills>("POST", "/api/projects", {
         ...data,
         courseId,
-        objectives: data.objectives.split("\n").filter(Boolean),
-        deliverables: data.deliverables.split("\n").filter(Boolean),
+        objectives: data.objectives,
+        deliverables: data.deliverables,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId, "projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
       setShowCreateDialog(false);
-      setNewProject({ title: "", description: "", objectives: "", deliverables: "", estimatedTime: 60 });
+      setNewProject({ title: "", description: "", objectives: "", deliverables: "", difficulty: "intermediate" });
       toast({
         title: "Project Created",
         description: "The project has been created successfully.",
@@ -142,7 +149,7 @@ export function ProjectManager({ courseId, isPublished, certificate }: ProjectMa
     }
   };
 
-  const requiresProjectSubmission = certificate?.requiresProjectSubmission;
+  const requiresProjectCompletion = certificate?.requiresProjectCompletion;
   const hasProjects = projects.length > 0;
 
   if (isLoading) {
@@ -171,7 +178,7 @@ export function ProjectManager({ courseId, isPublished, certificate }: ProjectMa
         </div>
       )}
 
-      {requiresProjectSubmission && (
+      {requiresProjectCompletion && (
         <div className={`flex items-center gap-3 p-4 rounded-lg border ${
           hasProjects 
             ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800" 
@@ -188,7 +195,7 @@ export function ProjectManager({ courseId, isPublished, certificate }: ProjectMa
                 ? "text-emerald-800 dark:text-emerald-200" 
                 : "text-amber-800 dark:text-amber-200"
             }`}>
-              This course certificate requires project submission
+              This course certificate requires project completion
             </p>
             <p className={`text-xs ${
               hasProjects 
@@ -236,11 +243,21 @@ export function ProjectManager({ courseId, isPublished, certificate }: ProjectMa
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium">{project.title}</h4>
                     <p className="text-sm text-muted-foreground line-clamp-1">
-                      {project.estimatedTime && `${project.estimatedTime} min`}
-                      {project.objectives && project.objectives.length > 0 && 
-                        ` • ${project.objectives.length} objective${project.objectives.length !== 1 ? "s" : ""}`}
-                      {project.deliverables && project.deliverables.length > 0 && 
-                        ` • ${project.deliverables.length} deliverable${project.deliverables.length !== 1 ? "s" : ""}`}
+                      {project.difficulty && (
+                        <span className="capitalize">{project.difficulty}</span>
+                      )}
+                      {project.objectives && (
+                        <>
+                          {project.difficulty && " • "}
+                          {typeof project.objectives === "string" ? "Has objectives" : ""}
+                        </>
+                      )}
+                      {project.deliverables && (
+                        <>
+                          {(project.difficulty || project.objectives) && " • "}
+                          {typeof project.deliverables === "string" ? "Has deliverables" : ""}
+                        </>
+                      )}
                     </p>
                     {project.skills && project.skills.length > 0 && (
                       <div className="flex items-center gap-1 mt-1 flex-wrap">
@@ -365,16 +382,20 @@ export function ProjectManager({ courseId, isPublished, certificate }: ProjectMa
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="estimatedTime">Estimated Time (minutes)</Label>
-              <Input
-                id="estimatedTime"
-                type="number"
-                min={5}
-                value={newProject.estimatedTime}
-                onChange={(e) => setNewProject({ ...newProject, estimatedTime: parseInt(e.target.value) || 60 })}
-                className="w-32"
-                data-testid="input-project-time"
-              />
+              <Label htmlFor="difficulty">Difficulty Level</Label>
+              <Select
+                value={newProject.difficulty}
+                onValueChange={(value) => setNewProject({ ...newProject, difficulty: value })}
+              >
+                <SelectTrigger data-testid="select-project-difficulty">
+                  <SelectValue placeholder="Select difficulty" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="beginner">Beginner</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

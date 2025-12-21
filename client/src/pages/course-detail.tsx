@@ -56,6 +56,7 @@ import { EmptyState } from "@/components/empty-state";
 import { FormSkeleton, ModuleListSkeleton } from "@/components/loading-skeleton";
 import { CertificateDesigner } from "@/components/certificate-designer";
 import { TestManager } from "@/components/test-manager";
+import { ProjectManager } from "@/components/project-manager";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Course, Module, Lesson, Project, Test } from "@shared/schema";
@@ -119,7 +120,7 @@ export default function CourseDetail() {
     enabled: !!courseId && !isNaN(courseId),
   });
 
-  const { data: certificate } = useQuery({
+  const { data: certificate } = useQuery<import("@shared/schema").Certificate | null>({
     queryKey: ["/api/courses", courseId, "certificate"],
     enabled: !!courseId && !isNaN(courseId),
   });
@@ -591,57 +592,11 @@ export default function CourseDetail() {
         </TabsContent>
 
         <TabsContent value="projects" className="mt-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-4">
-              <CardTitle className="text-lg">Course Projects</CardTitle>
-              <Button size="sm" data-testid="button-add-project">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Project
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {projectCount > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {course.modules?.flatMap((module) =>
-                    module.projects?.map((project) => (
-                      <Card key={project.id} className="overflow-visible">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <h4 className="font-medium">{project.title}</h4>
-                            <Badge variant="secondary" className="capitalize text-xs">
-                              {project.difficulty}
-                            </Badge>
-                          </div>
-                          {project.problemStatement && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                              {project.problemStatement}
-                            </p>
-                          )}
-                          {project.techStack && project.techStack.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {project.techStack.map((tech, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">
-                                  {tech}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <EmptyState
-                  icon={FolderKanban}
-                  title="No projects yet"
-                  description="Add real-world projects to give students hands-on experience."
-                  actionLabel="Generate with AI"
-                  onAction={() => generateContentMutation.mutate("projects")}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <ProjectManager
+            courseId={courseId!}
+            isPublished={course.status === "published"}
+            certificate={certificate || null}
+          />
         </TabsContent>
 
         <TabsContent value="tests" className="mt-6">
