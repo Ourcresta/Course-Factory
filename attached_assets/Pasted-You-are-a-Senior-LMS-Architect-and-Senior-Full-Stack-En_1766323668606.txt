@@ -1,0 +1,206 @@
+You are a Senior LMS Architect and Senior Full-Stack Engineer.
+
+You are working INSIDE the EXISTING project:
+“AISiksha Admin Course Factory”.
+
+DO NOT create a new repo.
+DO NOT build Learn/Test/Profile portals.
+DO NOT add payments or users.
+DO NOT change database schema unless absolutely required.
+
+Your task is to build a CLEAN, ADMIN-ONLY
+Test Manager UI that allows admins to DEFINE tests and questions
+used later to validate certificate rules.
+
+----------------------------------------------------
+CORE CONCEPT (VERY IMPORTANT)
+----------------------------------------------------
+Tests are CONFIGURATION, not execution.
+
+This UI is for:
+- Designing assessments
+- Defining passing rules
+- Managing questions
+
+NOT for:
+- Students
+- Timers
+- Attempts
+- Proctoring
+
+----------------------------------------------------
+SCOPE & OWNERSHIP
+----------------------------------------------------
+- Tests are COURSE-SCOPED (optionally module-scoped).
+- One course can have:
+  - 0 or more tests
+- Certificate rules may depend on tests.
+
+----------------------------------------------------
+ROUTING
+----------------------------------------------------
+All test management must be under course context:
+
+/courses/:courseId/tests
+
+DO NOT add global /tests routes.
+
+----------------------------------------------------
+UI LOCATION
+----------------------------------------------------
+Inside Course Detail page:
+- Use existing tab: “Tests”
+
+----------------------------------------------------
+PAGE 1: TEST LIST / MANAGER
+----------------------------------------------------
+Show a list of tests for the course.
+
+Each test card shows:
+- Test title
+- Description
+- Passing percentage
+- Number of questions
+- Status badge:
+  - Draft
+  - Locked (if course is published)
+
+Actions per test:
+- Open
+- Edit
+- Delete (soft delete)
+
+Top-level actions:
+- “Add Test”
+
+Empty state:
+“No tests configured yet.”
+
+----------------------------------------------------
+PAGE 2: CREATE / EDIT TEST
+----------------------------------------------------
+Form fields:
+1. Test Title
+2. Description
+3. Passing Percentage (default 70)
+4. Optional settings (simple):
+   - Is Locked (auto-true when course published)
+
+Rules:
+- Tests editable ONLY when course is DRAFT
+- When course is PUBLISHED → tests are READ-ONLY
+
+----------------------------------------------------
+PAGE 3: QUESTION MANAGER (INSIDE TEST)
+----------------------------------------------------
+Each test contains multiple questions.
+
+Support question types:
+- MCQ
+- Scenario-based
+
+For each question:
+- Question text
+- Type (MCQ / Scenario)
+- Difficulty (Easy / Medium / Hard)
+- Order index
+
+MCQ fields:
+- Options (array)
+- Correct answer
+- Explanation (optional)
+
+Scenario fields:
+- Scenario text
+- Expected answer
+- Explanation
+
+Actions:
+- Add question
+- Edit question
+- Delete question
+- Reorder questions (up/down)
+
+----------------------------------------------------
+VALIDATION RULES
+----------------------------------------------------
+- Test must have at least 1 question to be valid
+- Passing % must be between 1–100
+- MCQ must have ≥2 options and 1 correct answer
+
+Show human-friendly errors.
+
+----------------------------------------------------
+CERTIFICATE INTEGRATION (IMPORTANT)
+----------------------------------------------------
+If Certificate requires Test Pass:
+- Warn admin if:
+  - No tests exist
+  - Test has zero questions
+
+Show banner in Tests tab:
+“This course certificate requires a test pass.”
+
+----------------------------------------------------
+PUBLISHING INTERACTION
+----------------------------------------------------
+Before allowing Course Publish:
+- If certificate requires test:
+  - At least one valid test must exist
+  - Test must have questions
+
+After publish:
+- Lock all test editing
+- Show info banner:
+  “Tests are locked because the course is published.”
+
+----------------------------------------------------
+BACKEND INTEGRATION
+----------------------------------------------------
+Use existing APIs / tables:
+- Tests
+- Questions
+
+If APIs are missing:
+- Add minimal CRUD endpoints:
+  - GET /api/courses/:courseId/tests
+  - POST /api/tests
+  - PATCH /api/tests/:id
+  - POST /api/questions
+  - PATCH /api/questions/:id
+
+DO NOT refactor unrelated code.
+
+----------------------------------------------------
+UX & DESIGN RULES
+----------------------------------------------------
+- Follow existing Shadcn + Tailwind patterns
+- Clean admin SaaS UI
+- Dark/Light mode compatible
+- No raw JSON
+- No mock data
+
+----------------------------------------------------
+AUDIT & SAFETY
+----------------------------------------------------
+If audit logging exists:
+- Log:
+  TEST_CREATED
+  TEST_UPDATED
+  QUESTION_CREATED
+  QUESTION_UPDATED
+
+----------------------------------------------------
+FINAL VALIDATION CHECKLIST
+----------------------------------------------------
+After implementation:
+
+✔ Admin can create/edit tests
+✔ Admin can add/edit questions
+✔ Certificate test rules are enforceable
+✔ Tests lock after publish
+✔ No dependency on learner portals
+✔ No data loss
+✔ Ready for future exam engine
+
+Focus on correctness, clarity, and future compatibility.

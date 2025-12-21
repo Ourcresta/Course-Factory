@@ -99,12 +99,15 @@ export interface IStorage {
 
   // Tests
   getTest(id: number): Promise<Test | undefined>;
+  getTestWithQuestions(id: number): Promise<(Test & { questions: Question[] }) | undefined>;
   getTestsByModule(moduleId: number): Promise<Test[]>;
+  getTestsByCourse(courseId: number): Promise<(Test & { questions: Question[]; moduleName?: string })[]>;
   createTest(test: InsertTest): Promise<Test>;
   updateTest(id: number, test: Partial<InsertTest>): Promise<Test | undefined>;
   deleteTest(id: number): Promise<void>;
 
   // Questions
+  getQuestion(id: number): Promise<Question | undefined>;
   getQuestionsByTest(testId: number): Promise<Question[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
   updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
@@ -402,8 +405,30 @@ export class DatabaseStorage implements IStorage {
     return test;
   }
 
+  async getTestWithQuestions(id: number): Promise<(Test & { questions: Question[] }) | undefined> {
+    const [test] = await db.select().from(tests).where(eq(tests.id, id));
+    if (!test) return undefined;
+    const testQuestions = await this.getQuestionsByTest(id);
+    return { ...test, questions: testQuestions };
+  }
+
   async getTestsByModule(moduleId: number): Promise<Test[]> {
     return db.select().from(tests).where(eq(tests.moduleId, moduleId));
+  }
+
+  async getTestsByCourse(courseId: number): Promise<(Test & { questions: Question[]; moduleName?: string })[]> {
+    const courseModules = await db.select().from(modules).where(eq(modules.courseId, courseId));
+    const allTests: (Test & { questions: Question[]; moduleName?: string })[] = [];
+    
+    for (const module of courseModules) {
+      const moduleTests = await db.select().from(tests).where(eq(tests.moduleId, module.id));
+      for (const test of moduleTests) {
+        const testQuestions = await this.getQuestionsByTest(test.id);
+        allTests.push({ ...test, questions: testQuestions, moduleName: module.title });
+      }
+    }
+    
+    return allTests;
   }
 
   async createTest(test: InsertTest): Promise<Test> {
@@ -425,6 +450,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Questions
+  async getQuestion(id: number): Promise<Question | undefined> {
+    const [question] = await db.select().from(questions).where(eq(questions.id, id));
+    return question;
+  }
+
   async getQuestionsByTest(testId: number): Promise<Question[]> {
     return db
       .select()

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { storage } from "./storage";
-import { insertCourseSchema, insertModuleSchema, insertLessonSchema, insertSkillSchema, insertCertificateSchema } from "@shared/schema";
+import { insertCourseSchema, insertModuleSchema, insertLessonSchema, insertSkillSchema, insertCertificateSchema, insertTestSchema, insertQuestionSchema } from "@shared/schema";
 import {
   generateCourseFromCommand,
   generateModulesForCourse,
@@ -808,6 +808,249 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching certificates:", error);
       res.status(500).json({ error: "Failed to fetch certificates" });
+    }
+  });
+
+  // Tests - Course-scoped endpoints
+  app.get("/api/courses/:courseId/tests", async (req, res) => {
+    try {
+      const courseId = parseInt(req.params.courseId);
+      const tests = await storage.getTestsByCourse(courseId);
+      res.json(tests);
+    } catch (error) {
+      console.error("Error fetching tests:", error);
+      res.status(500).json({ error: "Failed to fetch tests" });
+    }
+  });
+
+  app.get("/api/tests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const test = await storage.getTestWithQuestions(id);
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      res.json(test);
+    } catch (error) {
+      console.error("Error fetching test:", error);
+      res.status(500).json({ error: "Failed to fetch test" });
+    }
+  });
+
+  app.post("/api/tests", async (req, res) => {
+    try {
+      const { moduleId } = req.body;
+      
+      const module = await storage.getModule(moduleId);
+      if (!module) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+      
+      const course = await storage.getCourse(module.courseId);
+      if (course?.status === "published") {
+        return res.status(403).json({ error: "Cannot create test for a published course. Unpublish first." });
+      }
+
+      const validatedData = insertTestSchema.parse(req.body);
+      const test = await storage.createTest(validatedData);
+      
+      await storage.createAuditLog({
+        action: "TEST_CREATED",
+        entityType: "test",
+        entityId: test.id,
+        newValue: test,
+      });
+      
+      res.status(201).json(test);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error creating test:", error);
+      res.status(400).json({ error: "Failed to create test" });
+    }
+  });
+
+  app.patch("/api/tests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getTest(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+
+      const module = await storage.getModule(existing.moduleId);
+      if (module) {
+        const course = await storage.getCourse(module.courseId);
+        if (course?.status === "published") {
+          return res.status(403).json({ error: "Cannot update test for a published course. Unpublish first." });
+        }
+      }
+
+      const test = await storage.updateTest(id, req.body);
+      
+      await storage.createAuditLog({
+        action: "TEST_UPDATED",
+        entityType: "test",
+        entityId: id,
+        oldValue: existing,
+        newValue: test,
+      });
+      
+      res.json(test);
+    } catch (error) {
+      console.error("Error updating test:", error);
+      res.status(400).json({ error: "Failed to update test" });
+    }
+  });
+
+  app.delete("/api/tests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getTest(id);
+      
+      if (existing) {
+        const module = await storage.getModule(existing.moduleId);
+        if (module) {
+          const course = await storage.getCourse(module.courseId);
+          if (course?.status === "published") {
+            return res.status(403).json({ error: "Cannot delete test for a published course. Unpublish first." });
+          }
+        }
+      }
+      
+      await storage.deleteTest(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting test:", error);
+      res.status(500).json({ error: "Failed to delete test" });
+    }
+  });
+
+  // Questions
+  app.get("/api/tests/:testId/questions", async (req, res) => {
+    try {
+      const testId = parseInt(req.params.testId);
+      const questions = await storage.getQuestionsByTest(testId);
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      res.status(500).json({ error: "Failed to fetch questions" });
+    }
+  });
+
+  app.get("/api/questions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const question = await storage.getQuestion(id);
+      if (!question) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      res.json(question);
+    } catch (error) {
+      console.error("Error fetching question:", error);
+      res.status(500).json({ error: "Failed to fetch question" });
+    }
+  });
+
+  app.post("/api/questions", async (req, res) => {
+    try {
+      const { testId } = req.body;
+      
+      const test = await storage.getTest(testId);
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      
+      const module = await storage.getModule(test.moduleId);
+      if (module) {
+        const course = await storage.getCourse(module.courseId);
+        if (course?.status === "published") {
+          return res.status(403).json({ error: "Cannot add questions to a published course's test. Unpublish first." });
+        }
+      }
+
+      const validatedData = insertQuestionSchema.parse(req.body);
+      const question = await storage.createQuestion(validatedData);
+      
+      await storage.createAuditLog({
+        action: "QUESTION_CREATED",
+        entityType: "question",
+        entityId: question.id,
+        newValue: question,
+      });
+      
+      res.status(201).json(question);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error creating question:", error);
+      res.status(400).json({ error: "Failed to create question" });
+    }
+  });
+
+  app.patch("/api/questions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getQuestion(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+
+      const test = await storage.getTest(existing.testId);
+      if (test) {
+        const module = await storage.getModule(test.moduleId);
+        if (module) {
+          const course = await storage.getCourse(module.courseId);
+          if (course?.status === "published") {
+            return res.status(403).json({ error: "Cannot update questions for a published course. Unpublish first." });
+          }
+        }
+      }
+
+      const question = await storage.updateQuestion(id, req.body);
+      
+      await storage.createAuditLog({
+        action: "QUESTION_UPDATED",
+        entityType: "question",
+        entityId: id,
+        oldValue: existing,
+        newValue: question,
+      });
+      
+      res.json(question);
+    } catch (error) {
+      console.error("Error updating question:", error);
+      res.status(400).json({ error: "Failed to update question" });
+    }
+  });
+
+  app.delete("/api/questions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getQuestion(id);
+      
+      if (existing) {
+        const test = await storage.getTest(existing.testId);
+        if (test) {
+          const module = await storage.getModule(test.moduleId);
+          if (module) {
+            const course = await storage.getCourse(module.courseId);
+            if (course?.status === "published") {
+              return res.status(403).json({ error: "Cannot delete questions for a published course. Unpublish first." });
+            }
+          }
+        }
+      }
+      
+      await storage.deleteQuestion(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      res.status(500).json({ error: "Failed to delete question" });
     }
   });
 
