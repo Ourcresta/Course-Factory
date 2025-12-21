@@ -43,9 +43,11 @@ Core entities include:
 - **Modules**: Course sections with estimated time
 - **Lessons**: Individual learning units with objectives and key concepts
 - **Projects**: Hands-on assignments with step-by-step guidance
-- **Tests**: Assessments with questions and passing criteria
+- **Tests**: Module-scoped assessments with passing criteria and optional time limits
+- **Questions**: Test questions supporting MCQ (multiple choice) and scenario-based types with difficulty levels
+- **Certificates**: Course completion/achievement certificates with skill tags and test requirements
 - **Skills**: Tagging system for course categorization
-- **Audit Logs**: Activity tracking for admin actions
+- **Audit Logs**: Activity tracking for admin actions (course publish/unpublish, test/question CRUD)
 
 ### Build and Development
 - **Development**: `npm run dev` runs Vite dev server with HMR
