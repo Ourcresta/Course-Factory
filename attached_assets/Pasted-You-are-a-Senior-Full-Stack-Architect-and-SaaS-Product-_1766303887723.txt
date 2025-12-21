@@ -1,0 +1,116 @@
+You are a Senior Full-Stack Architect and SaaS Product Engineer.
+
+Your task is to FIX the navigation, sidebar, and routing architecture of the
+“AISiksha Admin Course Factory” so that it correctly matches the database schema,
+LMS domain logic, and production SaaS best practices.
+
+DO NOT change database schema or backend APIs unless absolutely required.
+This task is FRONTEND-ARCHITECTURE focused.
+
+----------------------------------------------------
+CORE DOMAIN RULES (VERY IMPORTANT)
+----------------------------------------------------
+1. Courses are the ONLY top-level content entity.
+2. Modules, Lessons, Projects, and Tests are ALWAYS scoped to a Course.
+3. There must NEVER be global routes like:
+   - /modules
+   - /projects
+   - /tests
+4. All module/project/test views MUST require a courseId.
+
+----------------------------------------------------
+STEP 1: FIX SIDEBAR (client/src/components/app-sidebar.tsx)
+----------------------------------------------------
+Redesign the sidebar to show ONLY global admin sections.
+
+Final Sidebar MUST be:
+
+MAIN
+- Dashboard        → /dashboard
+- Courses          → /courses
+- Create Course AI → /courses/new
+
+CONFIGURATION
+- Skills           → /skills
+- Certificates     → /certificates
+- Settings         → /settings
+
+REMOVE any existing sidebar items for:
+- Modules
+- Projects
+- Tests
+
+Ensure active route highlighting still works.
+
+----------------------------------------------------
+STEP 2: FIX ROUTING (client/src/App.tsx or router file)
+----------------------------------------------------
+Remove or block invalid routes:
+- /modules
+- /projects
+- /tests
+
+Define ONLY the following valid routes:
+
+GLOBAL ROUTES
+- /dashboard
+- /courses
+- /courses/new
+- /skills
+- /certificates
+- /settings
+
+COURSE-SCOPED ROUTES
+- /courses/:courseId
+- /courses/:courseId/modules
+- /courses/:courseId/modules/:moduleId
+- /courses/:courseId/modules/:moduleId/lessons/:lessonId
+- /courses/:courseId/publish
+
+If a user navigates to an invalid route, redirect to /courses
+instead of showing a confusing 404.
+
+----------------------------------------------------
+STEP 3: COURSE DETAIL PAGE (client/src/pages/course-detail.tsx)
+----------------------------------------------------
+Enhance the Course Detail page to act as the MAIN navigation hub
+for course content.
+
+Add internal navigation tabs or sections:
+- Overview
+- Modules
+- Projects
+- Tests
+- Certificates
+- Publish
+
+These are NOT sidebar items.
+
+Each tab loads content scoped to the current courseId.
+
+----------------------------------------------------
+STEP 4: ROUTE GUARDS
+----------------------------------------------------
+- If courseId is missing → redirect to /courses
+- If moduleId is missing → redirect to /courses/:courseId/modules
+- Prevent rendering empty module/project/test pages without context
+
+----------------------------------------------------
+STEP 5: UX POLISH
+----------------------------------------------------
+- Hide or disable Projects / Tests tabs if no modules exist
+- Show helpful empty states instead of errors
+- Ensure zero 404s during normal admin usage
+
+----------------------------------------------------
+FINAL CHECK
+----------------------------------------------------
+After changes:
+✔ Sidebar shows only valid global entities
+✔ No route like /modules exists
+✔ All module/project/test screens require a courseId
+✔ Backend APIs remain untouched
+✔ Admin flow feels clean, logical, and LMS-correct
+
+Implement clean, readable, production-ready code.
+Do not over-engineer. Follow existing project patterns.

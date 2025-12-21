@@ -498,5 +498,37 @@ export async function registerRoutes(
     }
   });
 
+  // Certificates
+  app.get("/api/certificates", async (req, res) => {
+    try {
+      const certificates = await storage.getAllCertificates();
+      res.json(certificates);
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+      res.status(500).json({ error: "Failed to fetch certificates" });
+    }
+  });
+
+  app.post("/api/certificates", async (req, res) => {
+    try {
+      const certificate = await storage.createCertificate(req.body);
+      res.status(201).json(certificate);
+    } catch (error) {
+      console.error("Error creating certificate:", error);
+      res.status(400).json({ error: "Failed to create certificate" });
+    }
+  });
+
+  app.delete("/api/certificates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCertificate(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting certificate:", error);
+      res.status(500).json({ error: "Failed to delete certificate" });
+    }
+  });
+
   return httpServer;
 }

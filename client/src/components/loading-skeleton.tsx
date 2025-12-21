@@ -99,6 +99,30 @@ export function ModuleListSkeleton() {
   );
 }
 
+export function CardGridSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <Card key={i}>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export function AIGeneratingSkeleton() {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">

@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,25 +7,46 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Courses from "@/pages/courses";
 import CreateCourse from "@/pages/create-course";
 import CourseDetail from "@/pages/course-detail";
 import Skills from "@/pages/skills";
+import Certificates from "@/pages/certificates";
 import Settings from "@/pages/settings";
 
 function Router() {
   return (
     <Switch>
+      {/* Global routes */}
       <Route path="/" component={Dashboard} />
       <Route path="/courses" component={Courses} />
       <Route path="/courses/new" component={CreateCourse} />
-      <Route path="/courses/:id" component={CourseDetail} />
-      <Route path="/courses/:id/edit" component={CourseDetail} />
       <Route path="/skills" component={Skills} />
+      <Route path="/certificates" component={Certificates} />
       <Route path="/settings" component={Settings} />
-      <Route component={NotFound} />
+
+      {/* Course-scoped routes */}
+      <Route path="/courses/:id" component={CourseDetail} />
+      <Route path="/courses/:id/modules" component={CourseDetail} />
+      <Route path="/courses/:id/modules/:moduleId" component={CourseDetail} />
+      <Route path="/courses/:id/publish" component={CourseDetail} />
+
+      {/* Redirect invalid routes to courses */}
+      <Route path="/modules">
+        <Redirect to="/courses" />
+      </Route>
+      <Route path="/projects">
+        <Redirect to="/courses" />
+      </Route>
+      <Route path="/tests">
+        <Redirect to="/courses" />
+      </Route>
+
+      {/* Fallback - redirect to courses */}
+      <Route>
+        <Redirect to="/courses" />
+      </Route>
     </Switch>
   );
 }

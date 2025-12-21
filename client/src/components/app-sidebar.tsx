@@ -2,9 +2,6 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
   GraduationCap,
-  BookOpen,
-  FolderKanban,
-  FileCheck,
   Award,
   Settings,
   Sparkles,
@@ -36,41 +33,23 @@ const mainNavItems = [
     icon: GraduationCap,
   },
   {
-    title: "Create Course",
+    title: "Create Course AI",
     url: "/courses/new",
     icon: Sparkles,
     highlight: true,
   },
 ];
 
-const contentItems = [
-  {
-    title: "Modules",
-    url: "/modules",
-    icon: BookOpen,
-  },
-  {
-    title: "Projects",
-    url: "/projects",
-    icon: FolderKanban,
-  },
-  {
-    title: "Tests",
-    url: "/tests",
-    icon: FileCheck,
-  },
-];
-
 const configItems = [
-  {
-    title: "Certificates",
-    url: "/certificates",
-    icon: Award,
-  },
   {
     title: "Skills",
     url: "/skills",
     icon: Tags,
+  },
+  {
+    title: "Certificates",
+    url: "/certificates",
+    icon: Award,
   },
   {
     title: "Settings",
@@ -81,6 +60,19 @@ const configItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+
+  const isActive = (url: string) => {
+    if (url === "/") {
+      return location === "/";
+    }
+    if (url === "/courses") {
+      return location === "/courses";
+    }
+    if (url === "/courses/new") {
+      return location === "/courses/new";
+    }
+    return location.startsWith(url);
+  };
 
   return (
     <Sidebar>
@@ -105,7 +97,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={location === item.url || (item.url !== "/" && location.startsWith(item.url))}
+                    isActive={isActive(item.url)}
                   >
                     <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="h-4 w-4" />
@@ -124,27 +116,6 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Content</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {contentItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url || location.startsWith(item.url)}
-                  >
-                    <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase()}`}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
           <SidebarGroupLabel>Configuration</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -152,7 +123,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={location === item.url || location.startsWith(item.url)}
+                    isActive={isActive(item.url)}
                   >
                     <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase()}`}>
                       <item.icon className="h-4 w-4" />

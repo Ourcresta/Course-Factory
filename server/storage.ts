@@ -109,9 +109,11 @@ export interface IStorage {
 
   // Certificates
   getCertificate(id: number): Promise<Certificate | undefined>;
+  getAllCertificates(): Promise<Certificate[]>;
   getCertificatesByCourse(courseId: number): Promise<Certificate[]>;
   createCertificate(certificate: InsertCertificate): Promise<Certificate>;
   updateCertificate(id: number, certificate: Partial<InsertCertificate>): Promise<Certificate | undefined>;
+  deleteCertificate(id: number): Promise<void>;
 
   // Skills
   getSkill(id: number): Promise<Skill | undefined>;
@@ -425,6 +427,10 @@ export class DatabaseStorage implements IStorage {
     return certificate;
   }
 
+  async getAllCertificates(): Promise<Certificate[]> {
+    return db.select().from(certificates).orderBy(desc(certificates.createdAt));
+  }
+
   async getCertificatesByCourse(courseId: number): Promise<Certificate[]> {
     return db.select().from(certificates).where(eq(certificates.courseId, courseId));
   }
@@ -441,6 +447,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(certificates.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteCertificate(id: number): Promise<void> {
+    await db.delete(certificates).where(eq(certificates.id, id));
   }
 
   // Skills
