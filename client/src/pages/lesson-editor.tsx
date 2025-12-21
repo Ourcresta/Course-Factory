@@ -16,6 +16,7 @@ import {
   RefreshCw,
   FileText,
   Lightbulb,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -212,48 +213,62 @@ export default function LessonEditor() {
     return null;
   }
 
+  const isPublished = course.status === "published";
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
         title={formData.title || "Lesson Editor"}
-        description="Edit lesson content and view AI-generated notes"
+        description={isPublished ? "View lesson content (read-only)" : "Edit lesson content and view AI-generated notes"}
         backLink={`/courses/${courseId}/modules/${moduleId}`}
         backLabel="Back to Module"
         actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            {hasChanges && (
-              <Badge variant="secondary" className="text-xs">
-                Unsaved changes
-              </Badge>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => generateNotesMutation.mutate()}
-              disabled={generateNotesMutation.isPending}
-              data-testid="button-generate-notes"
-            >
-              {generateNotesMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 mr-2" />
+          !isPublished ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              {hasChanges && (
+                <Badge variant="secondary" className="text-xs">
+                  Unsaved changes
+                </Badge>
               )}
-              {aiNotes ? "Regenerate Notes" : "Generate Notes"}
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={updateLessonMutation.isPending || !hasChanges}
-              data-testid="button-save-lesson"
-            >
-              {updateLessonMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Save Changes
-            </Button>
-          </div>
+              <Button
+                variant="outline"
+                onClick={() => generateNotesMutation.mutate()}
+                disabled={generateNotesMutation.isPending}
+                data-testid="button-generate-notes"
+              >
+                {generateNotesMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                {aiNotes ? "Regenerate Notes" : "Generate Notes"}
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={updateLessonMutation.isPending || !hasChanges}
+                data-testid="button-save-lesson"
+              >
+                {updateLessonMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Save Changes
+              </Button>
+            </div>
+          ) : undefined
         }
       />
+
+      {isPublished && (
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
+          <Globe className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-800 dark:text-green-200">This course is published and locked</p>
+            <p className="text-xs text-green-600 dark:text-green-400">Unpublish from the course detail page to make changes.</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
         <Link href="/courses" className="hover:text-foreground">
@@ -304,6 +319,7 @@ export default function LessonEditor() {
                   id="title"
                   value={formData.title}
                   onChange={(e) => handleFieldChange("title", e.target.value)}
+                  disabled={isPublished}
                   data-testid="input-lesson-title"
                 />
               </div>
@@ -315,6 +331,7 @@ export default function LessonEditor() {
                     placeholder="e.g., 30 minutes"
                     value={formData.estimatedTime}
                     onChange={(e) => handleFieldChange("estimatedTime", e.target.value)}
+                    disabled={isPublished}
                     data-testid="input-estimated-time"
                   />
                 </div>
@@ -325,6 +342,7 @@ export default function LessonEditor() {
                     placeholder="https://..."
                     value={formData.videoUrl}
                     onChange={(e) => handleFieldChange("videoUrl", e.target.value)}
+                    disabled={isPublished}
                     data-testid="input-video-url"
                   />
                 </div>
@@ -346,28 +364,32 @@ export default function LessonEditor() {
                   <Badge variant="outline" className="flex-1 justify-start py-2 font-normal">
                     {objective}
                   </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeObjective(index)}
-                    data-testid={`button-remove-objective-${index}`}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {!isPublished && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeObjective(index)}
+                      data-testid={`button-remove-objective-${index}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Add a learning objective..."
-                  value={newObjective}
-                  onChange={(e) => setNewObjective(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addObjective()}
-                  data-testid="input-new-objective"
-                />
-                <Button variant="outline" onClick={addObjective} data-testid="button-add-objective">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+              {!isPublished && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Add a learning objective..."
+                    value={newObjective}
+                    onChange={(e) => setNewObjective(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addObjective()}
+                    data-testid="input-new-objective"
+                  />
+                  <Button variant="outline" onClick={addObjective} data-testid="button-add-objective">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -385,28 +407,32 @@ export default function LessonEditor() {
                   <Badge variant="secondary" className="flex-1 justify-start py-2 font-normal">
                     {concept}
                   </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeConcept(index)}
-                    data-testid={`button-remove-concept-${index}`}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {!isPublished && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeConcept(index)}
+                      data-testid={`button-remove-concept-${index}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Add a key concept..."
-                  value={newConcept}
-                  onChange={(e) => setNewConcept(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addConcept()}
-                  data-testid="input-new-concept"
-                />
-                <Button variant="outline" onClick={addConcept} data-testid="button-add-concept">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+              {!isPublished && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Add a key concept..."
+                    value={newConcept}
+                    onChange={(e) => setNewConcept(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addConcept()}
+                    data-testid="input-new-concept"
+                  />
+                  <Button variant="outline" onClick={addConcept} data-testid="button-add-concept">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -429,28 +455,32 @@ export default function LessonEditor() {
                   >
                     {link}
                   </a>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeLink(index)}
-                    data-testid={`button-remove-link-${index}`}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {!isPublished && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeLink(index)}
+                      data-testid={`button-remove-link-${index}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Add external link (https://...)"
-                  value={newLink}
-                  onChange={(e) => setNewLink(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addLink()}
-                  data-testid="input-new-link"
-                />
-                <Button variant="outline" onClick={addLink} data-testid="button-add-link">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+              {!isPublished && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Add external link (https://...)"
+                    value={newLink}
+                    onChange={(e) => setNewLink(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addLink()}
+                    data-testid="input-new-link"
+                  />
+                  <Button variant="outline" onClick={addLink} data-testid="button-add-link">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -466,20 +496,22 @@ export default function LessonEditor() {
                       Version {aiNotes.version} - Generated based on lesson objectives and concepts
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => generateNotesMutation.mutate()}
-                    disabled={generateNotesMutation.isPending}
-                    data-testid="button-regenerate-notes"
-                  >
-                    {generateNotesMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    Regenerate
-                  </Button>
+                  {!isPublished && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateNotesMutation.mutate()}
+                      disabled={generateNotesMutation.isPending}
+                      data-testid="button-regenerate-notes"
+                    >
+                      {generateNotesMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Regenerate
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {aiNotes.content && (

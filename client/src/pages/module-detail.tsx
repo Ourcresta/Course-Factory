@@ -15,6 +15,7 @@ import {
   FileText,
   Loader2,
   GripVertical,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -222,6 +223,7 @@ export default function ModuleDetail() {
   }
 
   const sortedLessons = [...lessons].sort((a, b) => a.orderIndex - b.orderIndex);
+  const isPublished = course.status === "published";
 
   return (
     <div className="p-6 space-y-6">
@@ -231,12 +233,24 @@ export default function ModuleDetail() {
         backLink={`/courses/${courseId}/modules`}
         backLabel="Back to Modules"
         actions={
-          <Button onClick={handleOpenAddDialog} data-testid="button-add-lesson">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Lesson
-          </Button>
+          !isPublished ? (
+            <Button onClick={handleOpenAddDialog} data-testid="button-add-lesson">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Lesson
+            </Button>
+          ) : undefined
         }
       />
+
+      {isPublished && (
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
+          <Globe className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-800 dark:text-green-200">This course is published and locked</p>
+            <p className="text-xs text-green-600 dark:text-green-400">Unpublish from the course detail page to make changes.</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/courses" className="hover:text-foreground">
@@ -274,13 +288,15 @@ export default function ModuleDetail() {
       {sortedLessons.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No lessons yet"
-          description="Add lessons to this module to start building your course content."
+          title={isPublished ? "No lessons in this module" : "No lessons yet"}
+          description={isPublished ? "This module was published without lessons." : "Add lessons to this module to start building your course content."}
           action={
-            <Button onClick={handleOpenAddDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add First Lesson
-            </Button>
+            !isPublished ? (
+              <Button onClick={handleOpenAddDialog}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Lesson
+              </Button>
+            ) : undefined
           }
         />
       ) : (
@@ -289,29 +305,31 @@ export default function ModuleDetail() {
             <Card key={lesson.id} className="group" data-testid={`card-lesson-${lesson.id}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex flex-col items-center gap-1 pt-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      disabled={index === 0}
-                      onClick={() => handleMoveLesson(lesson.id, "up")}
-                      data-testid={`button-move-up-${lesson.id}`}
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      disabled={index === sortedLessons.length - 1}
-                      onClick={() => handleMoveLesson(lesson.id, "down")}
-                      data-testid={`button-move-down-${lesson.id}`}
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {!isPublished && (
+                    <div className="flex flex-col items-center gap-1 pt-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        disabled={index === 0}
+                        onClick={() => handleMoveLesson(lesson.id, "up")}
+                        data-testid={`button-move-up-${lesson.id}`}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        disabled={index === sortedLessons.length - 1}
+                        onClick={() => handleMoveLesson(lesson.id, "down")}
+                        data-testid={`button-move-down-${lesson.id}`}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
@@ -342,42 +360,46 @@ export default function ModuleDetail() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="flex items-center gap-2 justify-end flex-wrap">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => generateNotesMutation.mutate(lesson.id)}
-                    disabled={generateNotesMutation.isPending}
-                    data-testid={`button-generate-notes-${lesson.id}`}
-                  >
-                    {generateNotesMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-4 w-4 mr-1" />
-                    )}
-                    AI Notes
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleOpenEditDialog(lesson)}
-                    data-testid={`button-edit-lesson-${lesson.id}`}
-                  >
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(lesson.id)}
-                    data-testid={`button-delete-lesson-${lesson.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
+                  {!isPublished && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateNotesMutation.mutate(lesson.id)}
+                        disabled={generateNotesMutation.isPending}
+                        data-testid={`button-generate-notes-${lesson.id}`}
+                      >
+                        {generateNotesMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-1" />
+                        )}
+                        AI Notes
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenEditDialog(lesson)}
+                        data-testid={`button-edit-lesson-${lesson.id}`}
+                      >
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(lesson.id)}
+                        data-testid={`button-delete-lesson-${lesson.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </>
+                  )}
                   <Link href={`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}`}>
                     <Button size="sm" data-testid={`button-open-lesson-${lesson.id}`}>
                       <FileText className="h-4 w-4 mr-1" />
-                      Open
+                      {isPublished ? "View" : "Open"}
                     </Button>
                   </Link>
                 </div>

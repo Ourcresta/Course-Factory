@@ -14,6 +14,7 @@ import {
   FolderOpen,
   Loader2,
   GripVertical,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -231,6 +232,7 @@ export default function CourseModules() {
   }
 
   const sortedModules = [...(course.modules || [])].sort((a, b) => a.orderIndex - b.orderIndex);
+  const isPublished = course.status === "published";
 
   return (
     <div className="p-6 space-y-6">
@@ -240,27 +242,39 @@ export default function CourseModules() {
         backLink={`/courses/${courseId}`}
         backLabel="Back to Course"
         actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              onClick={() => generateModulesMutation.mutate()}
-              disabled={isGenerating || generateModulesMutation.isPending}
-              data-testid="button-generate-modules"
-            >
-              {isGenerating ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 mr-2" />
-              )}
-              Generate with AI
-            </Button>
-            <Button onClick={handleOpenAddDialog} data-testid="button-add-module">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Module
-            </Button>
-          </div>
+          !isPublished ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                onClick={() => generateModulesMutation.mutate()}
+                disabled={isGenerating || generateModulesMutation.isPending}
+                data-testid="button-generate-modules"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                Generate with AI
+              </Button>
+              <Button onClick={handleOpenAddDialog} data-testid="button-add-module">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Module
+              </Button>
+            </div>
+          ) : undefined
         }
       />
+
+      {isPublished && (
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
+          <Globe className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-800 dark:text-green-200">This course is published and locked</p>
+            <p className="text-xs text-green-600 dark:text-green-400">Unpublish from the course detail page to make changes.</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/courses" className="hover:text-foreground">
@@ -277,23 +291,25 @@ export default function CourseModules() {
       {sortedModules.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title="No modules yet"
-          description="Create modules manually or use AI to generate a complete module structure with lessons."
+          title={isPublished ? "No modules in this published course" : "No modules yet"}
+          description={isPublished ? "This course was published without modules." : "Create modules manually or use AI to generate a complete module structure with lessons."}
           action={
-            <div className="flex flex-col sm:flex-row items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => generateModulesMutation.mutate()}
-                disabled={isGenerating || generateModulesMutation.isPending}
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate with AI
-              </Button>
-              <Button onClick={handleOpenAddDialog}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Module Manually
-              </Button>
-            </div>
+            !isPublished ? (
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => generateModulesMutation.mutate()}
+                  disabled={isGenerating || generateModulesMutation.isPending}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate with AI
+                </Button>
+                <Button onClick={handleOpenAddDialog}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Module Manually
+                </Button>
+              </div>
+            ) : undefined
           }
         />
       ) : (
@@ -302,29 +318,31 @@ export default function CourseModules() {
             <Card key={module.id} className="group" data-testid={`card-module-${module.id}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex flex-col items-center gap-1 pt-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      disabled={index === 0}
-                      onClick={() => handleMoveModule(module.id, "up")}
-                      data-testid={`button-move-up-${module.id}`}
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      disabled={index === sortedModules.length - 1}
-                      onClick={() => handleMoveModule(module.id, "down")}
-                      data-testid={`button-move-down-${module.id}`}
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {!isPublished && (
+                    <div className="flex flex-col items-center gap-1 pt-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        disabled={index === 0}
+                        onClick={() => handleMoveModule(module.id, "up")}
+                        data-testid={`button-move-up-${module.id}`}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        disabled={index === sortedModules.length - 1}
+                        onClick={() => handleMoveModule(module.id, "down")}
+                        data-testid={`button-move-down-${module.id}`}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
@@ -358,28 +376,32 @@ export default function CourseModules() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="flex items-center gap-2 justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleOpenEditDialog(module)}
-                    data-testid={`button-edit-module-${module.id}`}
-                  >
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(module.id)}
-                    data-testid={`button-delete-module-${module.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
+                  {!isPublished && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenEditDialog(module)}
+                        data-testid={`button-edit-module-${module.id}`}
+                      >
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(module.id)}
+                        data-testid={`button-delete-module-${module.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </>
+                  )}
                   <Link href={`/courses/${courseId}/modules/${module.id}`}>
                     <Button size="sm" data-testid={`button-open-module-${module.id}`}>
                       <FolderOpen className="h-4 w-4 mr-1" />
-                      Open
+                      {isPublished ? "View" : "Open"}
                     </Button>
                   </Link>
                 </div>
