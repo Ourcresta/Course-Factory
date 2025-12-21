@@ -1,0 +1,230 @@
+
+
+
+You are acting as:
+
+* Senior Full-Stack Engineer
+* Senior LMS Platform Architect
+* Senior Product Designer
+
+You are working inside an existing **AISiksha – Course Factory (Admin Portal)**.
+
+The system already has:
+
+* Courses
+* Modules & Lessons
+* Tests Manager
+* Certificate Designer
+* Global Skills Library
+* Course Publishing workflow
+
+Your task is to **design and implement a COMPLETE Project Manager module**, **Admin-only**, **course-scoped**, and **future-proof**, without touching learner-side features.
+
+---
+
+## 🧩 HIGH-LEVEL GOAL
+
+Build **Projects Manager** so admins can add **real-world projects** to a course and optionally require project completion for certification.
+
+This must fully support the existing certificate rule:
+
+> “Requires Project Completion”
+
+---
+
+## 📍 ROUTING & SCOPE (VERY IMPORTANT)
+
+Projects must be **course-scoped**, NOT global.
+
+### Required routes:
+
+```
+/courses/:courseId/projects
+/courses/:courseId/projects/:projectId
+```
+
+DO NOT create:
+
+* Global `/projects`
+* Skill creation inside projects
+
+---
+
+## 🧱 DATA MODEL (CONCEPTUAL – IMPLEMENT ACCORDING TO STACK)
+
+Each **Project** must contain:
+
+* `id`
+* `courseId`
+* `title` (required)
+* `description`
+* `objectives` (text / bullet)
+* `deliverables` (text / checklist)
+* `submissionInstructions`
+* `evaluationNotes` (optional, admin-only)
+* `skills` → array of skill IDs (from Skills Library)
+* `status` → `draft | locked`
+* `createdAt`
+* `updatedAt`
+
+---
+
+## 🖥️ UI REQUIREMENTS
+
+### 1️⃣ Projects List Page
+
+(`/courses/:courseId/projects`)
+
+* Header: **Course Projects**
+* CTA: `+ Add Project`
+* Empty state:
+
+  * Icon
+  * Text: *“No projects yet”*
+  * Subtitle: *“Add real-world projects to give students hands-on experience”*
+  * Button: **Generate with AI** (UI only placeholder for now)
+
+Each project card should show:
+
+* Project title
+* Short description
+* Skill tags
+* Status badge: Draft / Locked
+* Actions:
+
+  * Edit
+  * Delete (only if draft)
+
+---
+
+### 2️⃣ Add / Edit Project Page
+
+(`/courses/:courseId/projects/:projectId`)
+
+Form sections (clear separation):
+
+#### 🔹 Project Details
+
+* Title (required)
+* Description (textarea)
+
+#### 🔹 Objectives
+
+* Textarea or bullet-style input
+
+#### 🔹 Deliverables
+
+* Textarea (what learner must submit)
+
+#### 🔹 Submission Instructions
+
+* Textarea (GitHub link, PDF upload, demo, etc.)
+
+#### 🔹 Skill Mapping
+
+* Multi-select dropdown
+* Pull from **global Skills Library**
+* DO NOT create skills here
+
+#### 🔹 Evaluation Notes (Admin Only)
+
+* Optional
+* Not visible to learners
+
+#### 🔹 Actions
+
+* Save (Draft)
+* Save & Lock (if course is published → disable editing)
+
+---
+
+## 🔐 RULES & GUARDS (CRITICAL)
+
+### Publishing behavior:
+
+* If **course is published**:
+
+  * Projects become **read-only**
+  * Show info banner:
+
+    > “This project is locked because the course is published”
+
+### Certificate dependency:
+
+* If certificate has **Requires Project Completion = ON**
+
+  * Validate that **at least one project exists**
+  * Show warning in:
+
+    * Publish tab
+    * Projects tab banner
+
+---
+
+## 🔄 INTEGRATIONS
+
+### Certificate tab:
+
+* If project requirement is enabled:
+
+  * Show status:
+
+    * ✅ Project configured
+    * ❌ No project added
+
+### Course overview:
+
+* Project count card updates dynamically
+
+---
+
+## 🧪 TESTING CHECKLIST (REPLIT MUST SELF-TEST)
+
+* Add project → appears in list
+* Edit project → updates correctly
+* Skill mapping works (no duplicates)
+* Delete allowed only in draft
+* Lock enforced after publish
+* Certificate rule reacts correctly
+* No global project leakage across courses
+
+---
+
+## ❌ DO NOT BUILD (IMPORTANT)
+
+* ❌ Learner project submission UI
+* ❌ File uploads
+* ❌ Grading workflow
+* ❌ AI evaluation
+* ❌ Notifications
+
+These come later in **Learn Portal phase**.
+
+---
+
+## 🎨 UI / UX GUIDELINES
+
+* Follow existing AISiksha Admin design
+* Use same cards, spacing, buttons, badges
+* Clean, enterprise-grade look
+* Clear empty states and helper text
+
+---
+
+## 🏁 DEFINITION OF DONE
+
+Projects Manager is considered DONE when:
+
+* Admin can add/edit/delete course projects
+* Skills can be mapped per project
+* Certificate “Requires Project Completion” is enforceable
+* Everything locks correctly after publish
+* No impact on existing Tests / Certificates / Skills
+
+---
+
+### ✅ FINAL INSTRUCTION TO REPLIT AI
+
+Build this **cleanly**, **incrementally**, and **without refactoring existing modules unless required**.
+If any assumption is unclear, **pause and ask before implementing**.
+

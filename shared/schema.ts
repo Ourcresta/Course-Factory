@@ -66,6 +66,7 @@ export const coursesRelations = relations(courses, ({ many }) => ({
   modules: many(modules),
   courseSkills: many(courseSkills),
   certificates: many(certificates),
+  projects: many(projects),
 }));
 
 export const insertCourseSchema = createInsertSchema(courses).omit({
@@ -185,21 +186,30 @@ export type AiNote = typeof aiNotes.$inferSelect;
 // ==================== PROJECTS ====================
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
-  moduleId: integer("module_id").notNull().references(() => modules.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  moduleId: integer("module_id").references(() => modules.id, { onDelete: "set null" }),
   title: text("title").notNull(),
+  description: text("description"),
+  objectives: text("objectives"),
+  deliverables: text("deliverables"),
+  submissionInstructions: text("submission_instructions"),
+  evaluationNotes: text("evaluation_notes"),
   problemStatement: text("problem_statement"),
   techStack: jsonb("tech_stack").$type<string[]>(),
   folderStructure: text("folder_structure"),
   evaluationChecklist: jsonb("evaluation_checklist").$type<string[]>(),
   difficulty: text("difficulty").default("intermediate"),
+  status: text("status").notNull().default("draft"),
   orderIndex: integer("order_index").notNull().default(0),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
+  course: one(courses, { fields: [projects.courseId], references: [courses.id] }),
   module: one(modules, { fields: [projects.moduleId], references: [modules.id] }),
   projectSteps: many(projectSteps),
+  projectSkills: many(projectSkills),
 }));
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
@@ -210,6 +220,25 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
+
+// ==================== PROJECT SKILLS ====================
+export const projectSkills = pgTable("project_skills", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  skillId: integer("skill_id").notNull().references(() => skills.id, { onDelete: "cascade" }),
+});
+
+export const projectSkillsRelations = relations(projectSkills, ({ one }) => ({
+  project: one(projects, { fields: [projectSkills.projectId], references: [projects.id] }),
+  skill: one(skills, { fields: [projectSkills.skillId], references: [skills.id] }),
+}));
+
+export const insertProjectSkillSchema = createInsertSchema(projectSkills).omit({
+  id: true,
+});
+
+export type InsertProjectSkill = z.infer<typeof insertProjectSkillSchema>;
+export type ProjectSkill = typeof projectSkills.$inferSelect;
 
 // ==================== PROJECT STEPS ====================
 export const projectSteps = pgTable("project_steps", {
