@@ -1,0 +1,166 @@
+You are a Senior LMS Architect and Senior Full-Stack Engineer.
+
+You are working INSIDE the EXISTING project:
+“AISiksha Admin Course Factory”.
+
+DO NOT create a new repo.
+DO NOT build Learn/Test/Profile portals.
+DO NOT add payments or users.
+DO NOT change database schema unless absolutely required.
+
+Your task is to build a CLEAN, ADMIN-ONLY
+Certificate Designer that is COURSE-SCOPED.
+
+----------------------------------------------------
+CORE CONCEPT (VERY IMPORTANT)
+----------------------------------------------------
+Certificates define the VALUE of a course.
+
+A certificate is:
+- Designed by admin
+- Attached to ONE course
+- Governed by clear rules
+- Issued later by Profile portal (future)
+
+This task is ONLY about ADMIN configuration.
+
+----------------------------------------------------
+CERTIFICATE TYPES
+----------------------------------------------------
+Support at least these types:
+- Completion Certificate
+- Achievement Certificate
+
+Each course can have:
+- 0 or 1 active certificate (for now)
+
+----------------------------------------------------
+ROUTING
+----------------------------------------------------
+Certificate Designer must live under Course context:
+
+/courses/:courseId/certificate
+
+DO NOT add certificates as a global sidebar item.
+
+----------------------------------------------------
+UI LOCATION
+----------------------------------------------------
+Inside Course Detail page:
+Add a tab:
+- Certificate
+
+This tab opens the Certificate Designer.
+
+----------------------------------------------------
+CERTIFICATE DESIGNER UI (ADMIN)
+----------------------------------------------------
+Show form with following fields:
+
+1. Certificate Name
+   - Example: “Certificate of Completion – Full Stack Developer”
+
+2. Certificate Type
+   - Completion
+   - Achievement
+
+3. Skill Tags
+   - Multi-select
+   - Use existing Skills table
+
+4. Certificate Level
+   - Beginner / Intermediate / Advanced
+   - Default = Course level
+
+5. Requirements (RULES)
+   - Requires Test Pass? (toggle)
+     - If ON → passing percentage field (default 70)
+   - Requires Project Completion? (toggle)
+
+6. Verification
+   - QR Verification (toggle, default OFF)
+
+----------------------------------------------------
+BEHAVIOR RULES (CRITICAL)
+----------------------------------------------------
+- Certificate can be created ONLY if course exists
+- Certificate can be EDITED only when course is DRAFT
+- If course is PUBLISHED:
+  - Certificate becomes READ-ONLY
+  - Show info banner:
+    “Certificate rules are locked after publishing.”
+
+----------------------------------------------------
+PREVIEW (ADMIN-ONLY, SIMPLE)
+----------------------------------------------------
+Provide a simple preview section:
+- Certificate Name
+- Course Name
+- Level
+- Skill tags
+- Requirements summary
+
+(NO PDF generation yet)
+
+----------------------------------------------------
+BACKEND INTEGRATION
+----------------------------------------------------
+Use existing Certificates table and APIs if present.
+If endpoint is missing:
+- Add minimal CRUD endpoints:
+  - GET /api/courses/:courseId/certificate
+  - POST /api/courses/:courseId/certificate
+  - PATCH /api/certificates/:id
+
+DO NOT refactor other APIs.
+
+----------------------------------------------------
+VALIDATION
+----------------------------------------------------
+Before saving:
+- Certificate name required
+- If test required → passing % required
+- Skill tags optional but recommended
+
+Show human-friendly errors.
+
+----------------------------------------------------
+PUBLISHING INTERACTION
+----------------------------------------------------
+Before allowing Course Publish:
+- If certificate exists:
+  - Validate rules are complete
+- If no certificate:
+  - Allow publish, but show warning:
+    “This course has no certificate configured.”
+
+----------------------------------------------------
+AUDIT & SAFETY
+----------------------------------------------------
+If audit logging exists:
+- Log create/update actions:
+  CERTIFICATE_CREATED
+  CERTIFICATE_UPDATED
+
+----------------------------------------------------
+FINAL UX RULES
+----------------------------------------------------
+- Clean SaaS admin UI
+- Follow existing Shadcn + Tailwind patterns
+- Dark/Light mode compatible
+- No raw JSON
+- No mock data
+
+----------------------------------------------------
+FINAL VALIDATION CHECKLIST
+----------------------------------------------------
+After implementation:
+
+✔ Admin can design certificate per course
+✔ Rules are clearly defined
+✔ Certificate locks after publish
+✔ No dependency on Learn/Test/Profile portals
+✔ No data loss
+✔ Ready for future certificate issuing
+
+Focus on correctness, clarity, and future compatibility.

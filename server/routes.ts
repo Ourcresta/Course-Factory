@@ -700,21 +700,46 @@ export async function registerRoutes(
     }
   });
 
-  // Certificates
-  app.get("/api/certificates", async (req, res) => {
+  // Certificates - Course-scoped endpoints
+  app.get("/api/courses/:courseId/certificate", async (req, res) => {
     try {
-      const certificates = await storage.getAllCertificates();
-      res.json(certificates);
+      const courseId = parseInt(req.params.courseId);
+      const certificates = await storage.getCertificatesByCourse(courseId);
+      res.json(certificates[0] || null);
     } catch (error) {
-      console.error("Error fetching certificates:", error);
-      res.status(500).json({ error: "Failed to fetch certificates" });
+      console.error("Error fetching certificate:", error);
+      res.status(500).json({ error: "Failed to fetch certificate" });
     }
   });
 
-  app.post("/api/certificates", async (req, res) => {
+  app.post("/api/courses/:courseId/certificate", async (req, res) => {
     try {
-      const validatedData = insertCertificateSchema.parse(req.body);
+      const courseId = parseInt(req.params.courseId);
+      
+      const course = await storage.getCourse(courseId);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      
+      if (course.status === "published") {
+        return res.status(403).json({ error: "Cannot create certificate for a published course. Unpublish first." });
+      }
+
+      const existing = await storage.getCertificatesByCourse(courseId);
+      if (existing.length > 0) {
+        return res.status(400).json({ error: "Certificate already exists for this course. Use PATCH to update." });
+      }
+
+      const validatedData = insertCertificateSchema.parse({ ...req.body, courseId });
       const certificate = await storage.createCertificate(validatedData);
+      
+      await storage.createAuditLog({
+        action: "CERTIFICATE_CREATED",
+        entityType: "certificate",
+        entityId: certificate.id,
+        newValue: certificate,
+      });
+      
       res.status(201).json(certificate);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -725,14 +750,64 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/certificates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getCertificate(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Certificate not found" });
+      }
+
+      const course = await storage.getCourse(existing.courseId);
+      if (course?.status === "published") {
+        return res.status(403).json({ error: "Cannot update certificate for a published course. Unpublish first." });
+      }
+
+      const certificate = await storage.updateCertificate(id, req.body);
+      
+      await storage.createAuditLog({
+        action: "CERTIFICATE_UPDATED",
+        entityType: "certificate",
+        entityId: id,
+        oldValue: existing,
+        newValue: certificate,
+      });
+      
+      res.json(certificate);
+    } catch (error) {
+      console.error("Error updating certificate:", error);
+      res.status(400).json({ error: "Failed to update certificate" });
+    }
+  });
+
   app.delete("/api/certificates/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const existing = await storage.getCertificate(id);
+      
+      if (existing) {
+        const course = await storage.getCourse(existing.courseId);
+        if (course?.status === "published") {
+          return res.status(403).json({ error: "Cannot delete certificate for a published course. Unpublish first." });
+        }
+      }
+      
       await storage.deleteCertificate(id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting certificate:", error);
       res.status(500).json({ error: "Failed to delete certificate" });
+    }
+  });
+
+  app.get("/api/certificates", async (req, res) => {
+    try {
+      const certificates = await storage.getAllCertificates();
+      res.json(certificates);
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+      res.status(500).json({ error: "Failed to fetch certificates" });
     }
   });
 
