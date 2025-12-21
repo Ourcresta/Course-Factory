@@ -108,6 +108,7 @@ export default function CourseDetail() {
   const { toast } = useToast();
   const [expandedModules, setExpandedModules] = useState<Set<number>>(new Set());
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [showUnpublishDialog, setShowUnpublishDialog] = useState(false);
 
   const courseId = id ? parseInt(id) : undefined;
 
@@ -134,6 +135,29 @@ export default function CourseDetail() {
       toast({
         title: "Error",
         description: "Failed to publish the course. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unpublishMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/courses/${id}/unpublish`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Course unpublished",
+        description: "The course is now in draft mode and editable.",
+      });
+      setShowUnpublishDialog(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to unpublish the course. Please try again.",
         variant: "destructive",
       });
     },
@@ -243,49 +267,69 @@ export default function CourseDetail() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/courses/${id}/edit`}>
-            <Button variant="outline" data-testid="button-edit-course">
-              <Pencil className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          </Link>
+          {course.status !== "published" && (
+            <Link href={`/courses/${id}/edit`}>
+              <Button variant="outline" data-testid="button-edit-course">
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            </Link>
+          )}
           {course.status === "draft" && (
             <Button onClick={() => setShowPublishDialog(true)} data-testid="button-publish-course">
               <Send className="h-4 w-4 mr-2" />
               Publish
             </Button>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" data-testid="button-course-actions">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => generateContentMutation.mutate("modules")}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate Modules with AI
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => generateContentMutation.mutate("notes")}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate Notes with AI
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => generateContentMutation.mutate("projects")}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate Projects with AI
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => generateContentMutation.mutate("tests")}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate Tests with AI
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                Delete Course
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {course.status === "published" && (
+            <Button variant="outline" onClick={() => setShowUnpublishDialog(true)} data-testid="button-unpublish-course">
+              <X className="h-4 w-4 mr-2" />
+              Unpublish
+            </Button>
+          )}
+          {course.status !== "published" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" data-testid="button-course-actions">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => generateContentMutation.mutate("modules")}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Modules with AI
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => generateContentMutation.mutate("notes")}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Notes with AI
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => generateContentMutation.mutate("projects")}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Projects with AI
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => generateContentMutation.mutate("tests")}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Tests with AI
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive">
+                  Delete Course
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
+
+      {course.status === "published" && (
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
+          <Globe className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-800 dark:text-green-200">This course is published and live</p>
+            <p className="text-xs text-green-600 dark:text-green-400">Unpublish to make changes to the course content.</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -809,6 +853,34 @@ export default function CourseDetail() {
                 </>
               ) : (
                 "Publish Course"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showUnpublishDialog} onOpenChange={setShowUnpublishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unpublish Course</AlertDialogTitle>
+            <AlertDialogDescription>
+              Unpublishing will remove this course from all Siksha platforms and return it to draft mode. The course will become editable again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-unpublish">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => unpublishMutation.mutate()}
+              disabled={unpublishMutation.isPending}
+              data-testid="button-confirm-unpublish"
+            >
+              {unpublishMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Unpublishing...
+                </>
+              ) : (
+                "Unpublish Course"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
