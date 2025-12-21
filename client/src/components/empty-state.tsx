@@ -1,8 +1,8 @@
-import { type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface EmptyStateProps {
-  icon: LucideIcon | React.ReactNode;
+  icon: LucideIcon;
   title: string;
   description: string;
   actionLabel?: string;
@@ -11,23 +11,17 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({
-  icon: IconOrElement,
+  icon: Icon,
   title,
   description,
   actionLabel,
   onAction,
   action,
 }: EmptyStateProps) {
-  const isLucideIcon = typeof IconOrElement === "function";
-
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-6">
-        {isLucideIcon ? (
-          <IconOrElement className="h-8 w-8 text-muted-foreground" />
-        ) : (
-          <div className="text-muted-foreground">{IconOrElement}</div>
-        )}
+        <Icon className="h-8 w-8 text-muted-foreground" />
       </div>
       <h3 className="text-lg font-semibold mb-2" data-testid="text-empty-title">
         {title}

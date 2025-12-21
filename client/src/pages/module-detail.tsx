@@ -273,7 +273,7 @@ export default function ModuleDetail() {
 
       {sortedLessons.length === 0 ? (
         <EmptyState
-          icon={<FileText className="h-12 w-12" />}
+          icon={FileText}
           title="No lessons yet"
           description="Add lessons to this module to start building your course content."
           action={

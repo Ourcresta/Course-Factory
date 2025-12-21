@@ -276,7 +276,7 @@ export default function CourseModules() {
 
       {sortedModules.length === 0 ? (
         <EmptyState
-          icon={<BookOpen className="h-12 w-12" />}
+          icon={BookOpen}
           title="No modules yet"
           description="Create modules manually or use AI to generate a complete module structure with lessons."
           action={

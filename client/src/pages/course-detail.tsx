@@ -443,10 +443,14 @@ export default function CourseDetail() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4">
               <CardTitle className="text-lg">Course Modules</CardTitle>
-              <Button size="sm" data-testid="button-add-module">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Module
-              </Button>
+              <div className="flex items-center gap-2">
+                <Link href={`/courses/${id}/modules`}>
+                  <Button variant="outline" size="sm" data-testid="button-manage-modules">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Manage Modules
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent>
               {course.modules && course.modules.length > 0 ? (
@@ -458,17 +462,16 @@ export default function CourseDetail() {
                       onOpenChange={() => toggleModule(module.id)}
                     >
                       <div className="flex items-center gap-3 p-4 rounded-lg border hover-elevate" data-testid={`module-${module.id}`}>
-                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-medium text-primary">
                           {index + 1}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium truncate">{module.title}</h4>
+                        <Link href={`/courses/${id}/modules/${module.id}`} className="flex-1 min-w-0">
+                          <h4 className="font-medium truncate hover:text-primary">{module.title}</h4>
                           <p className="text-sm text-muted-foreground">
                             {module.lessons?.length || 0} lessons
                             {module.estimatedTime && ` • ${module.estimatedTime}`}
                           </p>
-                        </div>
+                        </Link>
                         <CollapsibleTrigger asChild>
                           <Button variant="ghost" size="icon">
                             {expandedModules.has(module.id) ? (
@@ -508,8 +511,28 @@ export default function CourseDetail() {
                   icon={BookOpen}
                   title="No modules yet"
                   description="Add modules to structure your course content, or let AI generate them for you."
-                  actionLabel="Generate with AI"
-                  onAction={() => generateContentMutation.mutate("modules")}
+                  action={
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => generateContentMutation.mutate("modules")}
+                        disabled={generateContentMutation.isPending}
+                      >
+                        {generateContentMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-2" />
+                        )}
+                        Generate with AI
+                      </Button>
+                      <Link href={`/courses/${id}/modules`}>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Manually
+                        </Button>
+                      </Link>
+                    </div>
+                  }
                 />
               )}
             </CardContent>
