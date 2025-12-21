@@ -19,7 +19,16 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: React Hook Form with Zod validation
 - **Build Tool**: Vite with custom plugins for Replit integration
 
-The frontend follows a page-based structure with reusable components. Key pages include Dashboard, Courses listing, Course creation, Course detail/edit, Skills management, and Settings.
+The frontend follows a page-based structure with reusable components. Key pages include:
+- **Dashboard**: Overview with stats and quick actions
+- **Courses**: Listing with filters and status badges
+- **Course Detail**: Tabbed interface (Overview, Modules, Projects, Tests, Certificate, Publish)
+- **Module Editor**: Lessons management with AI generation
+- **Project Editor**: Comprehensive project configuration with skill mapping
+- **Test Editor**: Question management with MCQ and scenario types
+- **Certificate Designer**: Certificate configuration with requirements
+- **Skills Library**: Global skill management for tagging
+- **Settings**: Application configuration
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express
@@ -42,12 +51,18 @@ Core entities include:
 - **Courses**: Main content container with metadata (level, audience, duration, learning outcomes)
 - **Modules**: Course sections with estimated time
 - **Lessons**: Individual learning units with objectives and key concepts
-- **Projects**: Hands-on assignments with step-by-step guidance
+- **Projects**: Course-scoped hands-on assignments with objectives, deliverables, submission instructions, evaluation notes, and skill mapping via `projectSkills` join table
 - **Tests**: Module-scoped assessments with passing criteria and optional time limits
 - **Questions**: Test questions supporting MCQ (multiple choice) and scenario-based types with difficulty levels
-- **Certificates**: Course completion/achievement certificates with skill tags and test requirements
-- **Skills**: Tagging system for course categorization
-- **Audit Logs**: Activity tracking for admin actions (course publish/unpublish, test/question CRUD)
+- **Certificates**: Course completion/achievement certificates with skill tags, test requirements, and project completion requirements
+- **Skills**: Global tagging system for courses and projects
+- **Audit Logs**: Activity tracking for admin actions (course publish/unpublish, test/question/project CRUD)
+
+### Publish Workflow
+- **Draft vs Published**: Courses start as drafts and can be published when ready
+- **Content Locking**: Published courses have read-only content (modules, lessons, projects, tests)
+- **Unpublish to Edit**: Admins must unpublish to make changes
+- **Validation**: Publishing requires minimum content (modules, lessons, etc.)
 
 ### Build and Development
 - **Development**: `npm run dev` runs Vite dev server with HMR

@@ -174,8 +174,23 @@ Data Tables: text-sm
 **Course Editor Layout:**
 1. Breadcrumb navigation
 2. Course header (name + status badge + actions)
-3. Tabbed content: Overview | Modules | Projects | Tests | Settings
+3. Tabbed content: Overview | Modules | Projects | Tests | Certificate | Publish
 4. Content area with save/publish footer
+
+**Project Editor Layout:**
+1. Back navigation to course
+2. Project header with status badge
+3. Read-only warning banner (when course is published or project is locked)
+4. Two-column layout: Main form (left 2/3) + Sidebar (right 1/3)
+5. Main form sections: Details, Problem Statement, Objectives, Deliverables, Submission Instructions, Evaluation Notes, Folder Structure
+6. Sidebar: Skills selector (from global Skills Library), Project status badge
+
+**Test Editor Layout:**
+1. Back navigation to course
+2. Test header with settings form (title, description, passing %, time limit)
+3. Read-only warning banner (when course is published)
+4. Questions list with add/edit/delete actions
+5. Question dialog for MCQ and scenario-based questions
 
 ---
 
