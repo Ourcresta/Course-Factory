@@ -25,6 +25,8 @@ import {
   type InsertAuditLog,
   type PracticeLab,
   type InsertPracticeLab,
+  type ApiKey,
+  type InsertApiKey,
   users,
   courses,
   modules,
@@ -42,6 +44,7 @@ import {
   aiGenerationLogs,
   publishStatus,
   practiceLabs,
+  apiKeys,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNull, sql } from "drizzle-orm";
@@ -146,6 +149,23 @@ export interface IStorage {
   createPracticeLab(lab: InsertPracticeLab): Promise<PracticeLab>;
   updatePracticeLab(id: number, lab: Partial<InsertPracticeLab>): Promise<PracticeLab | undefined>;
   deletePracticeLab(id: number): Promise<void>;
+
+  // API Keys
+  getApiKey(id: number): Promise<ApiKey | undefined>;
+  getApiKeyByKey(key: string): Promise<ApiKey | undefined>;
+  getAllApiKeys(): Promise<ApiKey[]>;
+  createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
+  updateApiKey(id: number, apiKey: Partial<InsertApiKey>): Promise<ApiKey | undefined>;
+  deleteApiKey(id: number): Promise<void>;
+  updateApiKeyLastUsed(id: number): Promise<void>;
+
+  // Public API methods for Shishya integration
+  getPublishedCourses(): Promise<Course[]>;
+  getPublishedCourseById(id: number): Promise<any>;
+  getPublishedCourseTests(courseId: number): Promise<any[]>;
+  getPublishedCourseProjects(courseId: number): Promise<any[]>;
+  getPublishedCourseLabs(courseId: number): Promise<PracticeLab[]>;
+  getPublishedCourseCertificate(courseId: number): Promise<Certificate | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -678,6 +698,196 @@ export class DatabaseStorage implements IStorage {
 
   async deletePracticeLab(id: number): Promise<void> {
     await db.delete(practiceLabs).where(eq(practiceLabs.id, id));
+  }
+
+  // API Keys
+  async getApiKey(id: number): Promise<ApiKey | undefined> {
+    const [key] = await db.select().from(apiKeys).where(eq(apiKeys.id, id));
+    return key;
+  }
+
+  async getApiKeyByKey(key: string): Promise<ApiKey | undefined> {
+    const [apiKey] = await db.select().from(apiKeys).where(eq(apiKeys.key, key));
+    return apiKey;
+  }
+
+  async getAllApiKeys(): Promise<ApiKey[]> {
+    return db.select().from(apiKeys).orderBy(desc(apiKeys.createdAt));
+  }
+
+  async createApiKey(apiKey: InsertApiKey): Promise<ApiKey> {
+    const [newKey] = await db.insert(apiKeys).values(apiKey).returning();
+    return newKey;
+  }
+
+  async updateApiKey(id: number, apiKey: Partial<InsertApiKey>): Promise<ApiKey | undefined> {
+    const [updated] = await db
+      .update(apiKeys)
+      .set(apiKey)
+      .where(eq(apiKeys.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteApiKey(id: number): Promise<void> {
+    await db.delete(apiKeys).where(eq(apiKeys.id, id));
+  }
+
+  async updateApiKeyLastUsed(id: number): Promise<void> {
+    await db
+      .update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeys.id, id));
+  }
+
+  // Public API methods for Shishya integration
+  async getPublishedCourses(): Promise<Course[]> {
+    return db
+      .select()
+      .from(courses)
+      .where(and(eq(courses.status, "published"), isNull(courses.deletedAt)))
+      .orderBy(desc(courses.publishedAt));
+  }
+
+  async getPublishedCourseById(id: number): Promise<any> {
+    const [course] = await db
+      .select()
+      .from(courses)
+      .where(and(eq(courses.id, id), eq(courses.status, "published"), isNull(courses.deletedAt)));
+    
+    if (!course) return undefined;
+
+    const courseModules = await this.getModulesByCourse(id);
+    const courseSkillsData = await db
+      .select({ skillId: courseSkills.skillId })
+      .from(courseSkills)
+      .where(eq(courseSkills.courseId, id));
+    
+    const skillIds = courseSkillsData.map(cs => cs.skillId);
+    const courseSkillsList = skillIds.length > 0 
+      ? await db.select().from(skills).where(sql`${skills.id} IN (${sql.join(skillIds, sql`, `)})`)
+      : [];
+
+    const modulesWithLessons = await Promise.all(
+      courseModules.map(async (module) => {
+        const moduleLessons = await this.getLessonsByModule(module.id);
+        const lessonsWithNotes = await Promise.all(
+          moduleLessons.map(async (lesson) => {
+            const notes = await this.getAiNotesByLesson(lesson.id);
+            return { ...lesson, aiNotes: notes };
+          })
+        );
+        return { ...module, lessons: lessonsWithNotes };
+      })
+    );
+
+    return {
+      ...course,
+      skills: courseSkillsList,
+      modules: modulesWithLessons,
+    };
+  }
+
+  async getPublishedCourseTests(courseId: number): Promise<any[]> {
+    const [course] = await db
+      .select()
+      .from(courses)
+      .where(and(eq(courses.id, courseId), eq(courses.status, "published")));
+    
+    if (!course) return [];
+
+    const courseModules = await this.getModulesByCourse(courseId);
+    const allTests: any[] = [];
+
+    for (const module of courseModules) {
+      const moduleTests = await db
+        .select()
+        .from(tests)
+        .where(eq(tests.moduleId, module.id));
+
+      for (const test of moduleTests) {
+        const testQuestions = await db
+          .select()
+          .from(questions)
+          .where(eq(questions.testId, test.id))
+          .orderBy(questions.orderIndex);
+        
+        allTests.push({
+          ...test,
+          moduleName: module.title,
+          moduleId: module.id,
+          questions: testQuestions,
+        });
+      }
+    }
+
+    return allTests;
+  }
+
+  async getPublishedCourseProjects(courseId: number): Promise<any[]> {
+    const [course] = await db
+      .select()
+      .from(courses)
+      .where(and(eq(courses.id, courseId), eq(courses.status, "published")));
+    
+    if (!course) return [];
+
+    const courseProjects = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.courseId, courseId))
+      .orderBy(projects.orderIndex);
+
+    const projectsWithSkills = await Promise.all(
+      courseProjects.map(async (project) => {
+        const projectSkillsData = await db
+          .select({ skillId: projectSkills.skillId })
+          .from(projectSkills)
+          .where(eq(projectSkills.projectId, project.id));
+        
+        const skillIds = projectSkillsData.map(ps => ps.skillId);
+        const projectSkillsList = skillIds.length > 0
+          ? await db.select().from(skills).where(sql`${skills.id} IN (${sql.join(skillIds, sql`, `)})`)
+          : [];
+
+        const steps = await this.getProjectSteps(project.id);
+
+        return { ...project, skills: projectSkillsList, steps };
+      })
+    );
+
+    return projectsWithSkills;
+  }
+
+  async getPublishedCourseLabs(courseId: number): Promise<PracticeLab[]> {
+    const [course] = await db
+      .select()
+      .from(courses)
+      .where(and(eq(courses.id, courseId), eq(courses.status, "published")));
+    
+    if (!course) return [];
+
+    return db
+      .select()
+      .from(practiceLabs)
+      .where(eq(practiceLabs.courseId, courseId))
+      .orderBy(practiceLabs.orderIndex);
+  }
+
+  async getPublishedCourseCertificate(courseId: number): Promise<Certificate | undefined> {
+    const [course] = await db
+      .select()
+      .from(courses)
+      .where(and(eq(courses.id, courseId), eq(courses.status, "published")));
+    
+    if (!course) return undefined;
+
+    const [certificate] = await db
+      .select()
+      .from(certificates)
+      .where(eq(certificates.courseId, courseId));
+
+    return certificate;
   }
 }
 

@@ -11,6 +11,7 @@ import {
   generateTestForModule,
   generateNotesForLesson,
 } from "./ai-service";
+import { registerPublicRoutes } from "./public-routes";
 
 function handleValidationError(error: unknown, res: any) {
   if (error instanceof z.ZodError) {
@@ -1514,6 +1515,9 @@ export async function registerRoutes(
       res.status(400).json({ error: "Failed to lock lab" });
     }
   });
+
+  // Register public API routes for Shishya integration
+  registerPublicRoutes(app);
 
   return httpServer;
 }

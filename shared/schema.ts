@@ -470,3 +470,24 @@ export const insertPracticeLabSchema = createInsertSchema(practiceLabs).omit({
 
 export type InsertPracticeLab = z.infer<typeof insertPracticeLabSchema>;
 export type PracticeLab = typeof practiceLabs.$inferSelect;
+
+// ==================== API KEYS ====================
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  key: text("key").notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = typeof apiKeys.$inferSelect;
