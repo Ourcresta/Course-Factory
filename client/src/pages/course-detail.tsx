@@ -59,6 +59,7 @@ import { CertificateDesigner } from "@/components/certificate-designer";
 import { TestManager } from "@/components/test-manager";
 import { ProjectManager } from "@/components/project-manager";
 import { LabManager } from "@/components/lab-manager";
+import { PricingTab } from "@/components/pricing-tab";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Course, Module, Lesson, Project, Test } from "@shared/schema";
@@ -379,6 +380,7 @@ export default function CourseDetail() {
           <TabsTrigger value="tests" data-testid="tab-tests">Tests</TabsTrigger>
           <TabsTrigger value="labs" data-testid="tab-labs">Labs</TabsTrigger>
           <TabsTrigger value="certificate" data-testid="tab-certificate">Certificate</TabsTrigger>
+          <TabsTrigger value="pricing" data-testid="tab-pricing">Pricing</TabsTrigger>
           <TabsTrigger value="publish" data-testid="tab-publish">Publish</TabsTrigger>
         </TabsList>
 
@@ -607,6 +609,14 @@ export default function CourseDetail() {
             courseId={courseId!}
             courseName={course.name}
             courseLevel={course.level}
+            isPublished={course.status === "published"}
+          />
+        </TabsContent>
+
+        <TabsContent value="pricing" className="mt-6">
+          <PricingTab
+            courseId={courseId!}
+            courseName={course.name}
             isPublished={course.status === "published"}
           />
         </TabsContent>
