@@ -57,6 +57,11 @@ export const courses = pgTable("courses", {
   status: text("status").notNull().default("draft"),
   aiCommand: text("ai_command"),
   thumbnailUrl: text("thumbnail_url"),
+  // Pricing fields
+  creditCost: integer("credit_cost").default(0).notNull(),
+  isFree: boolean("is_free").default(true).notNull(),
+  originalCreditCost: integer("original_credit_cost"),
+  pricingUpdatedAt: timestamp("pricing_updated_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   publishedAt: timestamp("published_at"),
