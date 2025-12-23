@@ -120,8 +120,10 @@ export async function registerRoutes(
 
       // Generate course content with AI (async)
       (async () => {
+        console.log(`[AI] Starting course generation for course ${course.id}: "${command}"`);
         try {
           const mode = req.body.mode || "publish";
+          console.log(`[AI] Calling OpenAI API for course ${course.id}...`);
           const generated = await generateCourseFromCommand(command, {
             level,
             includeProjects,
@@ -289,9 +291,10 @@ export async function registerRoutes(
               certificate: !!generated.certificateRules,
             },
           });
+          console.log(`[AI] Course ${course.id} generation completed successfully`);
         } catch (error: any) {
-          console.error("AI generation error:", error?.message || error);
-          console.error("Full error details:", JSON.stringify(error, null, 2));
+          console.error(`[AI] Course ${course.id} generation failed:`, error?.message || error);
+          console.error("[AI] Full error details:", JSON.stringify(error, null, 2));
           await storage.updateCourse(course.id, {
             name: "Generation Failed",
             status: "error",
@@ -304,6 +307,31 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error generating course:", error);
       res.status(500).json({ error: "Failed to generate course" });
+    }
+  });
+
+  // Reset stuck "generating" courses to "error" status (for recovery)
+  app.post("/api/courses/reset-stuck", async (_req, res) => {
+    try {
+      const allCourses = await storage.getAllCourses();
+      const stuckCourses = allCourses.filter(c => c.status === "generating");
+      
+      for (const course of stuckCourses) {
+        await storage.updateCourse(course.id, {
+          name: course.aiCommand ? `Failed: ${course.aiCommand.substring(0, 50)}` : "Generation Failed",
+          status: "error",
+          description: "Generation was interrupted. Please delete and try again.",
+        });
+        console.log(`[AI] Reset stuck course ${course.id} to error status`);
+      }
+      
+      res.json({ 
+        message: `Reset ${stuckCourses.length} stuck course(s)`,
+        courseIds: stuckCourses.map(c => c.id)
+      });
+    } catch (error) {
+      console.error("Error resetting stuck courses:", error);
+      res.status(500).json({ error: "Failed to reset stuck courses" });
     }
   });
 
