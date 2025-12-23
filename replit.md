@@ -82,8 +82,8 @@ Core entities include:
 
 ### AI Services
 - **OpenAI API**: Used for all AI content generation
-- **Environment Variables**: `AI_INTEGRATIONS_OPENAI_API_KEY` and `AI_INTEGRATIONS_OPENAI_BASE_URL`
-- **Models**: GPT for text generation, gpt-image-1 for image generation
+- **Environment Variables**: `OPENAI_API_KEY` (user's own API key)
+- **Models**: GPT-4.1 for text generation
 
 ### Key NPM Packages
 - Radix UI primitives for accessible components
