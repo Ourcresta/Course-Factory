@@ -1,0 +1,176 @@
+You are a Senior Product Engineer, FinTech Architect, and Admin UX Designer.
+
+Your task is to implement a COMPLETE COURSE CREDIT PRICING PANEL
+inside the Guru (Admin Portal) of the OurShiksha platform.
+
+This panel allows admins to define how many Learning Credits
+are required for a student (Shishya) to enroll in each course.
+
+────────────────────────────────────────
+CORE PURPOSE
+────────────────────────────────────────
+• Guru controls course monetization
+• Shishya can ONLY view prices, never edit
+• Credit-based system (no direct ₹ handling here)
+• All pricing logic must be enforced server-side
+
+────────────────────────────────────────
+WHERE THIS LIVES (IMPORTANT)
+────────────────────────────────────────
+Admin Portal: Guru
+Route:
+  /guru/courses/:courseId/pricing
+
+This must appear as a **TAB** inside Course Details:
+• Overview
+• Modules
+• Lessons
+• Tests
+• Projects
+• Certificates
+• 💳 Pricing  ← (THIS FEATURE)
+
+────────────────────────────────────────
+DATA MODEL (REQUIRED)
+────────────────────────────────────────
+Each course must store:
+
+course_pricing {
+  credit_cost: number        // e.g. 120
+  is_free: boolean           // true = overrides cost
+  original_credit_cost?: number (optional for discounts later)
+  last_updated_by: admin_id
+  last_updated_at: timestamp
+}
+
+────────────────────────────────────────
+PRICING PANEL UI (ADMIN ONLY)
+────────────────────────────────────────
+
+1️⃣ PRICING STATUS CARD
+Display:
+• Course Name
+• Current Status:
+  - FREE COURSE
+  - PAID COURSE (XXX Credits)
+• Last updated date
+• Warning text:
+  “Pricing changes affect new enrollments only”
+
+2️⃣ CREDIT COST INPUT
+• Numeric input (min: 0, max: 100000)
+• Label: “Course Credit Cost”
+• Helper text:
+  “1 Credit ≈ ₹1 (internal mapping)”
+
+Rules:
+• credit_cost = 0 → auto-mark as FREE
+• credit_cost > 0 → PAID
+
+3️⃣ FREE COURSE TOGGLE
+• Toggle switch: “Make this course FREE”
+• When enabled:
+  - Disable credit input
+  - Set credit_cost = 0
+• When disabled:
+  - Restore previous credit_cost
+
+4️⃣ SAVE & VALIDATION
+Save button:
+• Disabled if no changes
+• On click:
+  - Validate input
+  - Confirm modal:
+    “Are you sure you want to update pricing?”
+
+5️⃣ CONFIRMATION MODAL
+Show:
+• Old price → New price
+• FREE → PAID or PAID → FREE
+Buttons:
+• Confirm
+• Cancel
+
+6️⃣ READ-ONLY MODE (PUBLISHED + ACTIVE USERS)
+If course already has:
+• Active enrollments
+
+Show warning banner:
+⚠ “Changing pricing will NOT affect existing enrollments”
+
+────────────────────────────────────────
+API ENDPOINTS (MANDATORY)
+────────────────────────────────────────
+
+GET    /api/admin/courses/:id/pricing
+PUT    /api/admin/courses/:id/pricing
+
+Payload:
+{
+  credit_cost: number,
+  is_free: boolean
+}
+
+Server must:
+• Validate admin role
+• Prevent negative values
+• Log pricing change events
+• Return updated pricing
+
+────────────────────────────────────────
+SECURITY RULES (STRICT)
+────────────────────────────────────────
+• Only ADMIN (Guru) can access this panel
+• Reject requests from Shishya
+• Never trust frontend pricing
+• Log every pricing update
+• Do NOT allow silent updates
+
+────────────────────────────────────────
+UI / UX DESIGN RULES
+────────────────────────────────────────
+• Clean admin layout
+• Clear warnings
+• No clutter
+• Explicit confirmations
+• Use badges:
+  FREE | PAID | UPDATED
+
+────────────────────────────────────────
+TECH STACK (MATCH EXISTING)
+────────────────────────────────────────
+Frontend:
+• React + TypeScript
+• Tailwind CSS
+• Shadcn UI
+• React Hook Form + Zod
+• TanStack Query
+
+Backend:
+• Express.js
+• Role-based middleware
+• Central course pricing service
+
+────────────────────────────────────────
+DELIVERABLES
+────────────────────────────────────────
+• PricingTab component
+• PricingForm component
+• ConfirmationModal
+• Pricing API handlers
+• Audit log entry
+• Mock fallback for dev
+
+────────────────────────────────────────
+SUCCESS CRITERIA
+────────────────────────────────────────
+✔ Admin can set course price in credits
+✔ Free / Paid toggle works correctly
+✔ Pricing saved securely
+✔ Students see updated pricing
+✔ Existing enrollments unaffected
+✔ No unauthorized access
+
+Build this as PRODUCTION-GRADE admin tooling.
+Think like an EdTech + Wallet system.
+Do NOT simplify.
