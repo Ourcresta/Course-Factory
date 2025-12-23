@@ -41,11 +41,17 @@ The frontend follows a page-based structure with reusable components. Key pages 
 The server handles course CRUD operations, AI-powered content generation, and serves the static frontend in production.
 
 ### AI Integration
-- **Provider**: OpenAI API (via Replit AI Integrations)
-- **Course Factory Engine**: Comprehensive AI system prompt that acts as Senior Instructional Designer, Subject Matter Expert, Skill Assessment Architect, and Practice Platform Designer
+- **Provider**: OpenAI API (user's own OPENAI_API_KEY)
+- **Model**: GPT-4o for all course/chat generation
+- **Course Factory Engine**: Comprehensive AI system prompt that acts as Senior Instructional Designer, Subject Matter Expert, Learning Experience Architect, Skill Assessment Designer, and Product Engineer
+- **Generation Modes**:
+  - **Preview Mode**: Generates full course structure with concise content for quick admin review (faster generation, status: draft)
+  - **Publish Mode**: Generates complete, detailed content ready for students (full validation-ready content, status: published)
 - **Features**: Full course generation from commands including modules, lessons, practice labs, projects, tests, and certificate rules in a single AI call
 - **Generation Options**: includeLabs, includeProjects, includeTests toggles for customizing course content
 - **Practice-First Design**: Labs are generated for coding-related lessons with starter code, hints (no direct answers), and automatic validation
+- **Thinking Process**: PLAN → STRUCTURE → GENERATE → VALIDATE methodology
+- **Self-Validation**: AI checks progression logic, lab coverage, content weight, job relevance before output
 - **Batch Processing**: Custom utilities with rate limiting and retry logic for bulk AI operations
 - **Chat Interface**: Built-in conversation management for interactive AI features
 
@@ -83,7 +89,7 @@ Core entities include:
 ### AI Services
 - **OpenAI API**: Used for all AI content generation
 - **Environment Variables**: `OPENAI_API_KEY` (user's own API key)
-- **Models**: GPT-4.1 for text generation
+- **Models**: GPT-4o for text generation (course, modules, lessons, labs, projects, tests)
 
 ### Key NPM Packages
 - Radix UI primitives for accessible components
