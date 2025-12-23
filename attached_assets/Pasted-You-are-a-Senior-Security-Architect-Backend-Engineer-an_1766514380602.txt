@@ -1,0 +1,199 @@
+You are a Senior Security Architect, Backend Engineer,
+and Compliance-focused Platform Owner.
+
+Your task is to IMPLEMENT COMPLETE ADMIN SECURITY
+for the **Guru (Admin Portal)** of the OurShiksha platform.
+
+This work is NON-NEGOTIABLE.
+No feature work is allowed until this is complete.
+
+--------------------------------------------------
+🎯 SECURITY OBJECTIVE
+--------------------------------------------------
+Make Guru a PROTECTED ADMIN-ONLY SYSTEM such that:
+
+• No unauthenticated user can access admin APIs
+• No unauthorized role can modify academic data
+• All admin actions are traceable
+• Email-based OTP verification is enforced
+• JWT tokens are required for every admin request
+
+--------------------------------------------------
+🏛️ SECURITY MODEL (LOCK THIS)
+--------------------------------------------------
+
+• Authentication: Email + Password + OTP
+• OTP Delivery: Resend Email API
+• Session: JWT (access token)
+• Authorization: Role-based (ADMIN only)
+• Audit: Mandatory for destructive actions
+
+--------------------------------------------------
+👤 ADMIN ACCOUNT RULES
+--------------------------------------------------
+
+• Admins are NOT self-registered
+• Admin accounts are created manually (seed or DB)
+• Admin must verify email via OTP before login is allowed
+• Passwords MUST be hashed (bcrypt)
+
+--------------------------------------------------
+🔐 AUTHENTICATION FLOW
+--------------------------------------------------
+
+STEP 1: Admin Login (Email + Password)
+→ Validate credentials
+→ If valid, send OTP to admin email via Resend
+
+STEP 2: OTP Verification
+→ Admin submits OTP
+→ If OTP valid:
+   - Issue JWT access token
+   - Mark admin as verified for session
+
+STEP 3: Authenticated Session
+→ JWT required on ALL admin routes
+→ Token expires (e.g., 12h)
+→ Refresh or re-login required after expiry
+
+--------------------------------------------------
+📨 RESEND OTP IMPLEMENTATION
+--------------------------------------------------
+
+Use Resend API for sending OTP emails.
+
+Environment Variables:
+RESEND_API_KEY=xxxxx
+RESEND_FROM_EMAIL=admin@ourshiksha.ai
+
+OTP Rules:
+• 6-digit numeric OTP
+• Valid for 5 minutes
+• One-time use
+• Max 3 attempts
+
+OTP Email Content (Simple & Formal):
+Subject: OurShiksha Admin Verification Code
+
+Body:
+Your One-Time Verification Code is: <OTP>
+This code is valid for 5 minutes.
+Do not share this code with anyone.
+
+--------------------------------------------------
+🧱 REQUIRED API ENDPOINTS
+--------------------------------------------------
+
+AUTH:
+POST /api/admin/auth/login
+POST /api/admin/auth/verify-otp
+POST /api/admin/auth/logout
+
+SECURED ADMIN ROUTES (ALL MUST BE PROTECTED):
+POST   /api/admin/course
+PUT    /api/admin/course/:id
+DELETE /api/admin/course/:id
+POST   /api/admin/course/pricing
+POST   /api/admin/certificate/rules
+POST   /api/admin/project
+POST   /api/admin/test
+
+--------------------------------------------------
+🛡️ MIDDLEWARE (MANDATORY)
+--------------------------------------------------
+
+Implement:
+
+1. requireAuth
+   - Validate JWT
+   - Reject missing/expired tokens
+
+2. requireAdmin
+   - role === "ADMIN"
+   - Reject all others
+
+3. rateLimiter
+   - Protect auth routes
+   - Prevent OTP brute force
+
+4. auditLogger
+   - Log ALL create/update/delete actions
+
+--------------------------------------------------
+🧾 AUDIT LOGGING (NON-OPTIONAL)
+--------------------------------------------------
+
+Create table: admin_audit_logs
+
+Fields:
+• id
+• admin_id
+• action_type (CREATE / UPDATE / DELETE)
+• entity_type (COURSE / CERTIFICATE / PRICING)
+• entity_id
+• timestamp
+• ip_address
+
+Audit logs must be written automatically
+on every destructive admin action.
+
+--------------------------------------------------
+🚫 ABSOLUTE SECURITY RULES
+--------------------------------------------------
+
+DO NOT:
+✗ Allow admin routes without JWT
+✗ Allow wildcard CORS
+✗ Trust frontend role claims
+✗ Store OTP in plaintext
+✗ Log sensitive secrets
+✗ Allow student access to admin APIs
+
+--------------------------------------------------
+🌐 CORS & ORIGIN CONTROL
+--------------------------------------------------
+
+Allow ONLY:
+• https://guru.ourshiksha.ai (Admin UI)
+• https://shishya.ourshiksha.ai (Read-only APIs)
+
+Reject all other origins.
+
+--------------------------------------------------
+🧪 SECURITY TEST CASES (MUST PASS)
+--------------------------------------------------
+
+✔ Admin cannot access without login
+✔ OTP required on first login
+✔ Wrong OTP fails
+✔ Expired OTP fails
+✔ JWT required on every admin route
+✔ Student token rejected
+✔ API rejects unauthenticated requests
+✔ Audit log created on data changes
+
+--------------------------------------------------
+📦 FINAL DELIVERABLES
+--------------------------------------------------
+
+1. Secure admin login flow
+2. OTP via Resend
+3. JWT auth middleware
+4. Role-based route protection
+5. Audit logging system
+6. Security documentation
+
+--------------------------------------------------
+🚨 FINAL DECLARATION RULE
+--------------------------------------------------
+
+ONLY after ALL above are implemented
+may the verdict change from:
+
+NO-GO → GO
+
+This security layer is the FOUNDATION
+of academic trust for OurShiksha.
+
+Proceed step-by-step.
+Do NOT skip validation.
