@@ -22,10 +22,11 @@ Preferred communication style: Simple, everyday language.
 The frontend follows a page-based structure with reusable components. Key pages include:
 - **Dashboard**: Overview with stats and quick actions
 - **Courses**: Listing with filters and status badges
-- **Course Detail**: Tabbed interface (Overview, Modules, Projects, Tests, Certificate, Publish)
+- **Course Detail**: Tabbed interface (Overview, Modules, Projects, Tests, Labs, Certificate, Publish)
 - **Module Editor**: Lessons management with AI generation
 - **Project Editor**: Comprehensive project configuration with skill mapping
 - **Test Editor**: Question management with MCQ and scenario types
+- **Lab Editor**: Practice lab configuration with code validation and hints
 - **Certificate Designer**: Certificate configuration with requirements
 - **Skills Library**: Global skill management for tagging
 - **Settings**: Application configuration
@@ -54,13 +55,14 @@ Core entities include:
 - **Projects**: Course-scoped hands-on assignments with objectives, deliverables, submission instructions, evaluation notes, and skill mapping via `projectSkills` join table
 - **Tests**: Module-scoped assessments with passing criteria and optional time limits
 - **Questions**: Test questions supporting MCQ (multiple choice) and scenario-based types with difficulty levels
-- **Certificates**: Course completion/achievement certificates with skill tags, test requirements, and project completion requirements
+- **Practice Labs**: Course-scoped coding exercises with validation types (output/console/api/regex/function), progressive hints, AI context for Mithra tutor, unlock mechanisms (always/lesson_complete/test_pass/lab_complete), and certificate weight contribution
+- **Certificates**: Course completion/achievement certificates with skill tags, test requirements, project completion requirements, and lab completion requirements
 - **Skills**: Global tagging system for courses and projects
 - **Audit Logs**: Activity tracking for admin actions (course publish/unpublish, test/question/project CRUD)
 
 ### Publish Workflow
 - **Draft vs Published**: Courses start as drafts and can be published when ready
-- **Content Locking**: Published courses have read-only content (modules, lessons, projects, tests)
+- **Content Locking**: Published courses have read-only content (modules, lessons, projects, tests, labs)
 - **Unpublish to Edit**: Admins must unpublish to make changes
 - **Validation**: Publishing requires minimum content (modules, lessons, etc.)
 
