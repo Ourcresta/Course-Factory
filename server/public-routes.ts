@@ -44,6 +44,9 @@ export function registerPublicRoutes(app: Express) {
         jobRoles: course.jobRoles,
         thumbnailUrl: course.thumbnailUrl,
         publishedAt: course.publishedAt,
+        creditCost: course.creditCost,
+        isFree: course.isFree,
+        pricingUpdatedAt: course.pricingUpdatedAt,
       }));
 
       res.json({
