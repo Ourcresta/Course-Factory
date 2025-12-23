@@ -12,7 +12,6 @@ import {
   FolderKanban,
   FileCheck,
   FlaskConical,
-  Award,
   Loader2,
   Eye,
   Rocket,
@@ -41,7 +40,7 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/page-header";
-import { AIGeneratingSkeleton } from "@/components/loading-skeleton";
+import { AIGenerationProgress } from "@/components/ai-generation-progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
@@ -72,6 +71,7 @@ export default function CreateCourse() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingCourseId, setGeneratingCourseId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("ai");
   const [generationMode, setGenerationMode] = useState<"preview" | "publish">("preview");
 
@@ -92,11 +92,11 @@ export default function CreateCourse() {
   });
 
   const createCourseMutation = useMutation({
-    mutationFn: async (data: CourseFormValues) => {
+    mutationFn: async (data: CourseFormValues): Promise<{ id: number }> => {
       const response = await apiRequest("POST", "/api/courses", data);
-      return response;
+      return response as { id: number };
     },
-    onSuccess: (data: { id: number }) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
@@ -111,13 +111,11 @@ export default function CreateCourse() {
         description: "Failed to create course. Please try again.",
         variant: "destructive",
       });
-      setIsGenerating(false);
     },
   });
 
   const generateWithAI = useMutation({
-    mutationFn: async (command: string) => {
-      setIsGenerating(true);
+    mutationFn: async (command: string): Promise<{ id: number }> => {
       const { level, includeProjects, includeTests, includeLabs, certificateType } = form.getValues();
       const response = await apiRequest("POST", "/api/courses/generate", { 
         command,
@@ -128,25 +126,18 @@ export default function CreateCourse() {
         certificateType,
         mode: generationMode,
       });
-      return response;
+      return response as { id: number };
     },
-    onSuccess: (data: { id: number }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({
-        title: "Course generated",
-        description: "AI has created your course. Review and publish when ready.",
-      });
-      setIsGenerating(false);
-      navigate(`/courses/${data.id}`);
+    onSuccess: (data) => {
+      setGeneratingCourseId(data.id);
+      setIsGenerating(true);
     },
     onError: () => {
       toast({
         title: "Generation failed",
-        description: "Failed to generate course with AI. Please try again.",
+        description: "Failed to start AI generation. Please try again.",
         variant: "destructive",
       });
-      setIsGenerating(false);
     },
   });
 
@@ -162,16 +153,45 @@ export default function CreateCourse() {
     form.setValue("aiCommand", example);
   };
 
-  if (isGenerating) {
+  const handleGenerationComplete = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+    toast({
+      title: "Course generated",
+      description: "AI has created your course. Review and publish when ready.",
+    });
+    if (generatingCourseId) {
+      navigate(`/courses/${generatingCourseId}`);
+    }
+  };
+
+  const handleGenerationError = (error: string) => {
+    toast({
+      title: "Generation failed",
+      description: error,
+      variant: "destructive",
+    });
+  };
+
+  const handleRetry = () => {
+    setIsGenerating(false);
+    setGeneratingCourseId(null);
+  };
+
+  if (isGenerating && generatingCourseId) {
     return (
       <div className="flex flex-col gap-8 p-8 max-w-4xl mx-auto">
         <PageHeader
           title="Generating Course"
           description="AI is creating your complete course with modules, lessons, and content."
         />
-        <Card>
-          <AIGeneratingSkeleton />
-        </Card>
+        <AIGenerationProgress
+          courseId={generatingCourseId}
+          mode={generationMode}
+          onComplete={handleGenerationComplete}
+          onError={handleGenerationError}
+          onRetry={handleRetry}
+        />
       </div>
     );
   }
