@@ -45,7 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 const courseFormSchema = z.object({
-  name: z.string().min(3, "Course name must be at least 3 characters"),
+  name: z.string().optional(),
   description: z.string().optional(),
   level: z.enum(["beginner", "intermediate", "advanced"]),
   targetAudience: z.string().optional(),
@@ -55,6 +55,14 @@ const courseFormSchema = z.object({
   includeLabs: z.boolean(),
   certificateType: z.enum(["completion", "achievement", "professional"]),
   aiCommand: z.string().optional(),
+});
+
+const manualCourseSchema = courseFormSchema.extend({
+  name: z.string().min(3, "Course name must be at least 3 characters"),
+});
+
+const aiCourseSchema = courseFormSchema.extend({
+  aiCommand: z.string().min(5, "Please describe the course you want to create"),
 });
 
 type CourseFormValues = z.infer<typeof courseFormSchema>;
@@ -142,9 +150,25 @@ export default function CreateCourse() {
   });
 
   const onSubmit = (data: CourseFormValues) => {
-    if (activeTab === "ai" && data.aiCommand) {
+    if (activeTab === "ai") {
+      if (!data.aiCommand || data.aiCommand.trim().length < 5) {
+        toast({
+          title: "Command required",
+          description: "Please describe the course you want to create.",
+          variant: "destructive",
+        });
+        return;
+      }
       generateWithAI.mutate(data.aiCommand);
     } else {
+      if (!data.name || data.name.trim().length < 3) {
+        toast({
+          title: "Name required",
+          description: "Course name must be at least 3 characters.",
+          variant: "destructive",
+        });
+        return;
+      }
       createCourseMutation.mutate(data);
     }
   };
