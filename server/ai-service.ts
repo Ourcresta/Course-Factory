@@ -206,36 +206,45 @@ For each lesson, include:
 • Key concepts
 • Estimated time
 
-${options.includeLabs ? `STEP 4 — PRACTICE LABS:
-For EVERY coding-related lesson, generate a PRACTICE LAB.
+${options.includeLabs ? `STEP 4 — PRACTICE LABS (IMPORTANT - Generate at least 1 lab per coding lesson):
+For EVERY coding-related lesson, generate a PRACTICE LAB. Aim for 5-10 labs total.
 Each lab MUST include:
-• Lab title
-• Problem statement
-• Starter code (functional, with TODO comments)
-• Expected output
-• Validation type (output/console/regex/function)
-• 2-4 HINTS ONLY (no direct answers)
-• Language (javascript/python/typescript/java/cpp/rust/go)
+• Lab title (format: "Lab: [Topic Name]")
+• Problem statement (clear, actionable task)
+• Starter code (functional, with clear TODO comments showing where to implement)
+• Expected output (exact string the solution should produce)
+• Validation type: "output" (compare printed output)
+• 2-4 HINTS ONLY (guide thinking, NEVER give the answer)
+• Language: match the course language (python/javascript/typescript/java/cpp/rust/go)
+• Estimated time: realistic time in minutes (15-30 mins typical)
+• Difficulty: beginner/intermediate/advanced
 Labs must be suitable for browser-based execution with automatic validation.` : ''}
 
-${options.includeProjects ? `STEP 5 — PROJECTS:
-Generate 1-2 REAL-WORLD PROJECTS per module.
+${options.includeProjects ? `STEP 5 — PROJECTS (Generate 2-4 comprehensive projects for the course):
+Generate 2-4 REAL-WORLD PROJECTS total (assign to different modules).
 Each project must include:
-• Project title
-• Difficulty level
-• Problem statement
-• Tech stack
-• Step-by-step milestones
-• Deliverables checklist
-• Evaluation method (manual/auto)
-Projects must simulate real industry work.` : ''}
+• Project title (professional, descriptive)
+• Difficulty level: beginner/intermediate/advanced
+• Problem statement (detailed, real-world scenario)
+• Tech stack (specific technologies)
+• Milestones: 4-6 step-by-step milestones
+• Deliverables: specific items to submit
+• Evaluation method: manual or auto
+Projects must simulate real industry work and be portfolio-worthy.` : ''}
 
-${options.includeTests ? `STEP 6 — ASSESSMENTS:
-Generate assessments per module including:
-• 10-15 MCQs (mix of easy/medium/hard)
-• Scenario-based questions
-• Passing percentage (typically 70%)
-• Clear explanations for each answer` : ''}
+${options.includeTests ? `STEP 6 — ASSESSMENTS (Generate 1 test per module with questions):
+Generate ONE assessment/test for EACH module (so 4-6 tests total).
+Each test must include:
+• Title: "Module Assessment: [Module Name]"
+• Description: what the test covers
+• passingPercentage: 70
+• questions: Array of 8-12 questions per test with:
+  - type: "mcq" or "scenario"
+  - difficulty: "easy", "medium", or "hard" (mix all three)
+  - questionText: clear question
+  - options: 4 choices (for MCQ)
+  - correctAnswer: the correct option
+  - explanation: why this answer is correct` : ''}
 
 STEP 7 — CERTIFICATE LOGIC:
 Define certificate eligibility rules:
@@ -323,10 +332,13 @@ Return a SINGLE JSON object with this EXACT structure:
 }`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4.1",
-    messages: [{ role: "user", content: prompt }],
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: COURSE_FACTORY_SYSTEM_PROMPT },
+      { role: "user", content: prompt }
+    ],
     response_format: { type: "json_object" },
-    max_completion_tokens: 8192,
+    max_tokens: 8192,
   });
 
   const content = response.choices[0]?.message?.content;
@@ -374,10 +386,10 @@ Return as a JSON object with this structure:
 }`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4.1",
+    model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
-    max_completion_tokens: 4096,
+    max_tokens: 4096,
   });
 
   const content = response.choices[0]?.message?.content;
@@ -424,10 +436,10 @@ Return as JSON with this structure:
 }`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4.1",
+    model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
-    max_completion_tokens: 3000,
+    max_tokens: 3000,
   });
 
   const content = response.choices[0]?.message?.content;
@@ -470,10 +482,10 @@ Return as JSON with this structure:
 }`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4.1",
+    model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
-    max_completion_tokens: 4096,
+    max_tokens: 4096,
   });
 
   const content = response.choices[0]?.message?.content;
@@ -510,10 +522,10 @@ Return as JSON with this structure:
 }`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4.1",
+    model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
-    max_completion_tokens: 3000,
+    max_tokens: 3000,
   });
 
   const content = response.choices[0]?.message?.content;
@@ -561,10 +573,10 @@ IMPORTANT:
 - validationType can be: output, console, regex, function`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4.1",
+    model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
-    max_completion_tokens: 2000,
+    max_tokens: 2000,
   });
 
   const content = response.choices[0]?.message?.content;

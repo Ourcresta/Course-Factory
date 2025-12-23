@@ -81,10 +81,10 @@ export function registerChatRoutes(app: Express): void {
 
       // Stream response from OpenAI
       const stream = await openai.chat.completions.create({
-        model: "gpt-4.1",
+        model: "gpt-4o",
         messages: chatMessages,
         stream: true,
-        max_completion_tokens: 2048,
+        max_tokens: 2048,
       });
 
       let fullResponse = "";

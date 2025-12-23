@@ -258,6 +258,21 @@ export async function registerRoutes(
             }
           }
 
+          // Create certificate with eligibility rules
+          if (generated.certificateRules) {
+            await storage.createCertificate({
+              courseId: course.id,
+              name: `${generated.name} Certificate`,
+              type: certificateType,
+              level: level,
+              requiresTestPass: generated.certificateRules.testPassRequired ?? includeTests,
+              passingPercentage: generated.certificateRules.minScore ?? 70,
+              requiresProjectCompletion: generated.certificateRules.projectSubmissionRequired ?? includeProjects,
+              requiresLabCompletion: (generated.certificateRules.minLabsCompleted ?? 0) > 0,
+              skillTags: generated.skills || [],
+            });
+          }
+
           await storage.createAuditLog({
             action: "ai_generate",
             entityType: "course",
@@ -268,13 +283,16 @@ export async function registerRoutes(
               labs: generated.labs?.length || 0,
               projects: generated.projects?.length || 0,
               tests: generated.tests?.length || 0,
+              certificate: !!generated.certificateRules,
             },
           });
-        } catch (error) {
-          console.error("AI generation error:", error);
+        } catch (error: any) {
+          console.error("AI generation error:", error?.message || error);
+          console.error("Full error details:", JSON.stringify(error, null, 2));
           await storage.updateCourse(course.id, {
             name: "Generation Failed",
             status: "error",
+            description: error?.message || "Unknown error occurred during AI generation",
           });
         }
       })();
