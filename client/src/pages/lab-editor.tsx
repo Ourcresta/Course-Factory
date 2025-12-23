@@ -401,6 +401,7 @@ export default function LabEditor() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="always">Always Available</SelectItem>
+                        <SelectItem value="module_complete">After Module</SelectItem>
                         <SelectItem value="lesson_complete">After Lesson</SelectItem>
                         <SelectItem value="test_pass">After Test Pass</SelectItem>
                         <SelectItem value="lab_complete">After Lab Complete</SelectItem>
