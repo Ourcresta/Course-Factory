@@ -104,3 +104,49 @@ Core entities include:
 - `@replit/vite-plugin-runtime-error-modal`: Error overlay in development
 - `@replit/vite-plugin-cartographer`: Development tooling
 - `@replit/vite-plugin-dev-banner`: Development environment indicator
+
+## Public API for Shishya Integration
+
+The platform exposes a secure REST API for the OurShiksha Shishya student portal to fetch published course data.
+
+### Authentication
+- All public API endpoints require an `X-API-Key` header
+- API keys are managed in Settings > API Keys
+- Keys have format: `ais_` + 64 random hex characters
+- Keys can be activated/deactivated and have optional expiration dates
+
+### Public API Endpoints
+All endpoints return only **published** courses (status: "published").
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/public/courses` | List all published courses (metadata only) |
+| `GET /api/public/courses/:id` | Full course with modules, lessons, AI notes |
+| `GET /api/public/courses/:id/tests` | Tests with questions for a course |
+| `GET /api/public/courses/:id/projects` | Projects with skills and steps |
+| `GET /api/public/courses/:id/labs` | Practice labs with hints and validation config |
+| `GET /api/public/courses/:id/certificate` | Certificate requirements and config |
+
+### Response Format
+All responses follow this structure:
+```json
+{
+  "success": true,
+  "count": 5,
+  "courses": [...] // or "course", "tests", "projects", "labs", "certificate"
+}
+```
+
+### Error Responses
+- `401`: Missing or invalid API key
+- `403`: API key inactive or expired
+- `404`: Course not found or not published
+- `500`: Server error
+
+### Internal API Key Management Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/api-keys` | GET | List all API keys (preview only) |
+| `/api/api-keys` | POST | Create new API key |
+| `/api/api-keys/:id` | PATCH | Update key (name, isActive) |
+| `/api/api-keys/:id` | DELETE | Delete/revoke API key |
