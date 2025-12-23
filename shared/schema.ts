@@ -52,6 +52,7 @@ export const courses = pgTable("courses", {
   jobRoles: jsonb("job_roles").$type<string[]>(),
   includeProjects: boolean("include_projects").default(true),
   includeTests: boolean("include_tests").default(true),
+  includeLabs: boolean("include_labs").default(true),
   certificateType: text("certificate_type").default("completion"),
   status: text("status").notNull().default("draft"),
   aiCommand: text("ai_command"),

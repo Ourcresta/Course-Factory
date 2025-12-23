@@ -99,7 +99,7 @@ export async function registerRoutes(
 
   app.post("/api/courses/generate", async (req, res) => {
     try {
-      const { command, level = "beginner", includeProjects = true, includeTests = true, certificateType = "completion" } = req.body;
+      const { command, level = "beginner", includeProjects = true, includeTests = true, includeLabs = true, certificateType = "completion" } = req.body;
       
       if (!command) {
         return res.status(400).json({ error: "Command is required" });
@@ -113,6 +113,7 @@ export async function registerRoutes(
         level,
         includeProjects,
         includeTests,
+        includeLabs,
         certificateType,
       });
 
@@ -123,6 +124,7 @@ export async function registerRoutes(
             level,
             includeProjects,
             includeTests,
+            includeLabs,
             certificateType,
           });
 
@@ -353,6 +355,7 @@ export async function registerRoutes(
             for (const module of course.modules) {
               const project = await generateProjectForModule(module.title, course.name);
               const createdProject = await storage.createProject({
+                courseId: id,
                 moduleId: module.id,
                 title: project.title,
                 problemStatement: project.problemStatement,

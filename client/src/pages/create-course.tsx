@@ -11,6 +11,7 @@ import {
   BookOpen,
   FolderKanban,
   FileCheck,
+  FlaskConical,
   Award,
   Loader2,
 } from "lucide-react";
@@ -50,6 +51,7 @@ const courseFormSchema = z.object({
   duration: z.string().optional(),
   includeProjects: z.boolean(),
   includeTests: z.boolean(),
+  includeLabs: z.boolean(),
   certificateType: z.enum(["completion", "achievement", "professional"]),
   aiCommand: z.string().optional(),
 });
@@ -80,6 +82,7 @@ export default function CreateCourse() {
       duration: "",
       includeProjects: true,
       includeTests: true,
+      includeLabs: true,
       certificateType: "completion",
       aiCommand: "",
     },
@@ -326,6 +329,26 @@ export default function CreateCourse() {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name="includeLabs"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center gap-3">
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="switch-include-labs"
+                            />
+                          </FormControl>
+                          <div className="flex items-center gap-2">
+                            <FlaskConical className="h-4 w-4 text-muted-foreground" />
+                            <FormLabel className="!mt-0">Include Practice Labs</FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   <Button
@@ -518,6 +541,22 @@ export default function CreateCourse() {
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={form.control}
+                        name="includeLabs"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-3">
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="!mt-0">Include Practice Labs</FormLabel>
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
 
@@ -552,7 +591,7 @@ export default function CreateCourse() {
           <CardTitle className="text-lg">What AI Will Generate</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
               <BookOpen className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div>
@@ -581,11 +620,20 @@ export default function CreateCourse() {
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-              <Award className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <FileCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <h4 className="font-medium text-sm">Assessments</h4>
                 <p className="text-xs text-muted-foreground">
                   MCQs and scenario-based questions
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+              <FlaskConical className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-sm">Practice Labs</h4>
+                <p className="text-xs text-muted-foreground">
+                  Hands-on coding exercises with validation
                 </p>
               </div>
             </div>

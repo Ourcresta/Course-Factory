@@ -69,6 +69,7 @@ export async function generateCourseFromCommand(command: string, options: {
   level: string;
   includeProjects: boolean;
   includeTests: boolean;
+  includeLabs: boolean;
   certificateType: string;
 }): Promise<CourseGeneration> {
   const prompt = `You are an expert course designer. Based on the following command, generate a complete course structure.
@@ -78,6 +79,7 @@ Command: "${command}"
 Level: ${options.level}
 Include Projects: ${options.includeProjects}
 Include Tests: ${options.includeTests}
+Include Practice Labs: ${options.includeLabs}
 Certificate Type: ${options.certificateType}
 
 Generate a comprehensive course with:
