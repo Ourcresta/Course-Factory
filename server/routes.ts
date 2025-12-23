@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { storage } from "./storage";
-import { insertCourseSchema, insertModuleSchema, insertLessonSchema, insertSkillSchema, insertCertificateSchema, insertTestSchema, insertQuestionSchema, insertProjectSchema } from "@shared/schema";
+import { insertCourseSchema, insertModuleSchema, insertLessonSchema, insertSkillSchema, insertCertificateSchema, insertTestSchema, insertQuestionSchema, insertProjectSchema, insertPracticeLabSchema } from "@shared/schema";
 import {
   generateCourseFromCommand,
   generateModulesForCourse,
@@ -1216,6 +1216,181 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error locking project:", error);
       res.status(400).json({ error: "Failed to lock project" });
+    }
+  });
+
+  // ==================== PRACTICE LABS ====================
+
+  // Get all labs for a course (for Shishya distribution)
+  app.get("/api/courses/:courseId/labs", async (req, res) => {
+    try {
+      const courseId = parseInt(req.params.courseId);
+      const labs = await storage.getPracticeLabsByCourse(courseId);
+      res.json({ courseId, labs });
+    } catch (error) {
+      console.error("Error fetching labs:", error);
+      res.status(500).json({ error: "Failed to fetch labs" });
+    }
+  });
+
+  // Get a single lab
+  app.get("/api/labs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lab = await storage.getPracticeLab(id);
+      if (!lab) {
+        return res.status(404).json({ error: "Lab not found" });
+      }
+      res.json(lab);
+    } catch (error) {
+      console.error("Error fetching lab:", error);
+      res.status(500).json({ error: "Failed to fetch lab" });
+    }
+  });
+
+  // Create a new lab
+  app.post("/api/courses/:courseId/labs", async (req, res) => {
+    try {
+      const courseId = parseInt(req.params.courseId);
+      
+      // Check if course is published
+      const check = await checkCourseNotPublished(courseId);
+      if (check.blocked) {
+        return res.status(403).json({ error: check.message });
+      }
+
+      // Generate slug from title
+      const title = req.body.title || "Untitled Lab";
+      const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") + "-" + Date.now().toString(36);
+
+      const validatedData = insertPracticeLabSchema.parse({
+        ...req.body,
+        courseId,
+        slug,
+      });
+
+      const lab = await storage.createPracticeLab(validatedData);
+      
+      await storage.createAuditLog({
+        action: "LAB_CREATED",
+        entityType: "practice_lab",
+        entityId: lab.id,
+        newValue: lab,
+      });
+
+      res.status(201).json(lab);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error creating lab:", error);
+      res.status(500).json({ error: "Failed to create lab" });
+    }
+  });
+
+  // Update a lab
+  app.patch("/api/labs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getPracticeLab(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Lab not found" });
+      }
+
+      // Check if course is published
+      const check = await checkCourseNotPublished(existing.courseId);
+      if (check.blocked) {
+        return res.status(403).json({ error: check.message });
+      }
+
+      if (existing.status === "locked") {
+        return res.status(403).json({ error: "Lab is locked and cannot be modified." });
+      }
+
+      // Update slug if title changes
+      let updateData = { ...req.body };
+      if (req.body.title && req.body.title !== existing.title) {
+        updateData.slug = req.body.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "") + "-" + Date.now().toString(36);
+      }
+
+      const lab = await storage.updatePracticeLab(id, updateData);
+      
+      await storage.createAuditLog({
+        action: "LAB_UPDATED",
+        entityType: "practice_lab",
+        entityId: id,
+        oldValue: existing,
+        newValue: lab,
+      });
+
+      res.json(lab);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error updating lab:", error);
+      res.status(500).json({ error: "Failed to update lab" });
+    }
+  });
+
+  // Delete a lab
+  app.delete("/api/labs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getPracticeLab(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Lab not found" });
+      }
+
+      // Check if course is published
+      const check = await checkCourseNotPublished(existing.courseId);
+      if (check.blocked) {
+        return res.status(403).json({ error: check.message });
+      }
+
+      if (existing.status === "locked") {
+        return res.status(403).json({ error: "Lab is locked and cannot be deleted." });
+      }
+
+      await storage.deletePracticeLab(id);
+      
+      await storage.createAuditLog({
+        action: "LAB_DELETED",
+        entityType: "practice_lab",
+        entityId: id,
+        oldValue: existing,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting lab:", error);
+      res.status(500).json({ error: "Failed to delete lab" });
+    }
+  });
+
+  // Lock a lab (when course is published)
+  app.post("/api/labs/:id/lock", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getPracticeLab(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "Lab not found" });
+      }
+
+      const lab = await storage.updatePracticeLab(id, { status: "locked" });
+      res.json(lab);
+    } catch (error) {
+      console.error("Error locking lab:", error);
+      res.status(400).json({ error: "Failed to lock lab" });
     }
   });
 

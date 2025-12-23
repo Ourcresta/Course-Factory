@@ -23,6 +23,8 @@ import {
   type InsertSkill,
   type AuditLog,
   type InsertAuditLog,
+  type PracticeLab,
+  type InsertPracticeLab,
   users,
   courses,
   modules,
@@ -39,6 +41,7 @@ import {
   auditLogs,
   aiGenerationLogs,
   publishStatus,
+  practiceLabs,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNull, sql } from "drizzle-orm";
@@ -135,6 +138,14 @@ export interface IStorage {
   // Audit Logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogs(entityType?: string, entityId?: number): Promise<AuditLog[]>;
+
+  // Practice Labs
+  getPracticeLab(id: number): Promise<PracticeLab | undefined>;
+  getPracticeLabsByCourse(courseId: number): Promise<PracticeLab[]>;
+  getPracticeLabsByModule(moduleId: number): Promise<PracticeLab[]>;
+  createPracticeLab(lab: InsertPracticeLab): Promise<PracticeLab>;
+  updatePracticeLab(id: number, lab: Partial<InsertPracticeLab>): Promise<PracticeLab | undefined>;
+  deletePracticeLab(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -627,6 +638,46 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(auditLogs.createdAt));
     }
     return db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(100);
+  }
+
+  // Practice Labs
+  async getPracticeLab(id: number): Promise<PracticeLab | undefined> {
+    const [lab] = await db.select().from(practiceLabs).where(eq(practiceLabs.id, id));
+    return lab;
+  }
+
+  async getPracticeLabsByCourse(courseId: number): Promise<PracticeLab[]> {
+    return db
+      .select()
+      .from(practiceLabs)
+      .where(eq(practiceLabs.courseId, courseId))
+      .orderBy(practiceLabs.orderIndex);
+  }
+
+  async getPracticeLabsByModule(moduleId: number): Promise<PracticeLab[]> {
+    return db
+      .select()
+      .from(practiceLabs)
+      .where(eq(practiceLabs.moduleId, moduleId))
+      .orderBy(practiceLabs.orderIndex);
+  }
+
+  async createPracticeLab(lab: InsertPracticeLab): Promise<PracticeLab> {
+    const [newLab] = await db.insert(practiceLabs).values(lab).returning();
+    return newLab;
+  }
+
+  async updatePracticeLab(id: number, lab: Partial<InsertPracticeLab>): Promise<PracticeLab | undefined> {
+    const [updated] = await db
+      .update(practiceLabs)
+      .set({ ...lab, updatedAt: new Date() })
+      .where(eq(practiceLabs.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePracticeLab(id: number): Promise<void> {
+    await db.delete(practiceLabs).where(eq(practiceLabs.id, id));
   }
 }
 
