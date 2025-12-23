@@ -91,23 +91,6 @@ function ChecklistItem({ label, checked, description }: { label: string; checked
   );
 }
 
-function PlatformItem({ name, description, enabled }: { name: string; description: string; enabled: boolean }) {
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border">
-      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${enabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-        <Globe className="h-4 w-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium">{name}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-      <Badge variant={enabled ? "default" : "secondary"} className="text-xs">
-        {enabled ? "Enabled" : "Disabled"}
-      </Badge>
-    </div>
-  );
-}
-
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
@@ -137,7 +120,7 @@ export default function CourseDetail() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Course published",
-        description: "The course is now live on all platforms.",
+        description: "The course is now available via the public API.",
       });
       setShowPublishDialog(false);
     },
@@ -699,35 +682,6 @@ export default function CourseDetail() {
               </Card>
             </div>
 
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Target Platforms</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <PlatformItem
-                    name="learn.aisiksha.in"
-                    description="Course content & lessons"
-                    enabled
-                  />
-                  <PlatformItem
-                    name="test.aisiksha.in"
-                    description="Assessments & quizzes"
-                    enabled={course.includeTests || false}
-                  />
-                  <PlatformItem
-                    name="profile.aisiksha.in"
-                    description="Skill mapping & credentials"
-                    enabled
-                  />
-                  <PlatformItem
-                    name="udyog.aisiksha.in"
-                    description="Job role alignment"
-                    enabled={(course.jobRoles?.length || 0) > 0}
-                  />
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </TabsContent>
       </Tabs>
@@ -737,13 +691,7 @@ export default function CourseDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Publish Course</AlertDialogTitle>
             <AlertDialogDescription>
-              Publishing will make this course available on all Siksha platforms:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>learn.aisiksha.in - Course content</li>
-                <li>test.aisiksha.in - Assessments</li>
-                <li>profile.aisiksha.in - Skill mapping</li>
-                <li>udyog.aisiksha.in - Job relevance</li>
-              </ul>
+              Publishing will make this course available via the public API. External platforms like Shishya can then fetch the course content using their API key.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -771,7 +719,7 @@ export default function CourseDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Unpublish Course</AlertDialogTitle>
             <AlertDialogDescription>
-              Unpublishing will remove this course from all Siksha platforms and return it to draft mode. The course will become editable again.
+              Unpublishing will remove this course from the public API and return it to draft mode. The course will become editable again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

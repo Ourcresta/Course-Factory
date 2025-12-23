@@ -11,7 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Moon, Sun, Monitor, Globe, Bell, Shield, Database, Key, Plus, Trash2, 
+  Moon, Sun, Monitor, Bell, Shield, Database, Key, Plus, Trash2, 
   Copy, Check, Eye, EyeOff, RefreshCw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -434,67 +434,6 @@ export default function Settings() {
                 <Monitor className="h-4 w-4 mr-2" />
                 System
               </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Publishing
-          </CardTitle>
-          <CardDescription>
-            Configure how courses are published to platforms.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-base">Auto-sync on publish</Label>
-              <p className="text-sm text-muted-foreground">
-                Automatically sync to all platforms when a course is published.
-              </p>
-            </div>
-            <Switch defaultChecked data-testid="switch-auto-sync" />
-          </div>
-          <Separator />
-          <div className="space-y-4">
-            <Label className="text-base">Platform Endpoints</Label>
-            <div className="grid gap-4">
-              <div className="flex items-center gap-4">
-                <Label className="w-32 text-sm">Learn Platform</Label>
-                <Input
-                  defaultValue="https://learn.aisiksha.in"
-                  className="flex-1"
-                  disabled
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <Label className="w-32 text-sm">Test Platform</Label>
-                <Input
-                  defaultValue="https://test.aisiksha.in"
-                  className="flex-1"
-                  disabled
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <Label className="w-32 text-sm">Profile Platform</Label>
-                <Input
-                  defaultValue="https://profile.aisiksha.in"
-                  className="flex-1"
-                  disabled
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <Label className="w-32 text-sm">Udyog Platform</Label>
-                <Input
-                  defaultValue="https://udyog.aisiksha.in"
-                  className="flex-1"
-                  disabled
-                />
-              </div>
             </div>
           </div>
         </CardContent>
