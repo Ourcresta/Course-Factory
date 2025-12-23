@@ -141,6 +141,9 @@ export async function registerRoutes(
             status: "draft",
           });
 
+          // Track created modules and lessons for linking labs
+          const createdModules: { id: number; index: number; lessons: { id: number; index: number }[] }[] = [];
+
           // Create modules and lessons
           for (let i = 0; i < generated.modules.length; i++) {
             const moduleData = generated.modules[i];
@@ -152,10 +155,12 @@ export async function registerRoutes(
               orderIndex: i,
             });
 
+            const createdLessons: { id: number; index: number }[] = [];
+
             // Create lessons for this module
             for (let j = 0; j < moduleData.lessons.length; j++) {
               const lessonData = moduleData.lessons[j];
-              await storage.createLesson({
+              const lesson = await storage.createLesson({
                 moduleId: module.id,
                 title: lessonData.title,
                 objectives: lessonData.objectives,
@@ -163,6 +168,93 @@ export async function registerRoutes(
                 keyConceptS: lessonData.keyConceptS,
                 orderIndex: j,
               });
+              createdLessons.push({ id: lesson.id, index: j });
+            }
+
+            createdModules.push({ id: module.id, index: i, lessons: createdLessons });
+          }
+
+          // Create practice labs if generated
+          if (generated.labs && generated.labs.length > 0) {
+            for (let i = 0; i < generated.labs.length; i++) {
+              const labData = generated.labs[i];
+              const targetModule = createdModules.find(m => m.index === labData.moduleIndex);
+              const targetLesson = targetModule?.lessons.find(l => l.index === labData.lessonIndex);
+
+              // Parse estimatedTime to number (e.g., "15 minutes" -> 15)
+              const timeMatch = labData.estimatedTime?.match(/(\d+)/);
+              const estimatedMinutes = timeMatch ? parseInt(timeMatch[1]) : 15;
+
+              // Generate slug from title
+              const labSlug = labData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+              await storage.createPracticeLab({
+                courseId: course.id,
+                moduleId: targetModule?.id || null,
+                lessonId: targetLesson?.id || null,
+                slug: `${labSlug}-${Date.now()}-${i}`,
+                title: labData.title,
+                instructions: labData.problemStatement,
+                language: labData.language || "javascript",
+                starterCode: labData.starterCode,
+                expectedOutput: labData.expectedOutput,
+                validationType: labData.validationType || "output",
+                hints: labData.hints || [],
+                estimatedTime: estimatedMinutes,
+                difficulty: labData.difficulty || "beginner",
+                unlockType: "always",
+                orderIndex: i,
+              });
+            }
+          }
+
+          // Create projects if generated
+          if (generated.projects && generated.projects.length > 0) {
+            for (let i = 0; i < generated.projects.length; i++) {
+              const projectData = generated.projects[i];
+              const targetModule = createdModules.find(m => m.index === projectData.moduleIndex);
+
+              await storage.createProject({
+                courseId: course.id,
+                moduleId: targetModule?.id || null,
+                title: projectData.title,
+                problemStatement: projectData.problemStatement,
+                techStack: projectData.techStack || [],
+                difficulty: projectData.difficulty || "intermediate",
+                evaluationChecklist: projectData.deliverables || [],
+                orderIndex: i,
+              });
+            }
+          }
+
+          // Create tests if generated
+          if (generated.tests && generated.tests.length > 0) {
+            for (const testData of generated.tests) {
+              const targetModule = createdModules.find(m => m.index === testData.moduleIndex);
+
+              const createdTest = await storage.createTest({
+                moduleId: targetModule?.id || createdModules[0]?.id,
+                title: testData.title,
+                description: testData.description,
+                passingPercentage: testData.passingPercentage || 70,
+              });
+
+              // Create questions for the test
+              if (testData.questions && testData.questions.length > 0) {
+                for (let q = 0; q < testData.questions.length; q++) {
+                  const questionData = testData.questions[q];
+                  await storage.createQuestion({
+                    testId: createdTest.id,
+                    type: questionData.type || "mcq",
+                    difficulty: questionData.difficulty || "medium",
+                    questionText: questionData.questionText,
+                    options: questionData.options || [],
+                    correctAnswer: questionData.correctAnswer,
+                    explanation: questionData.explanation,
+                    orderIndex: q,
+                  });
+                }
+              }
             }
           }
 
@@ -170,7 +262,13 @@ export async function registerRoutes(
             action: "ai_generate",
             entityType: "course",
             entityId: course.id,
-            metadata: { command, modules: generated.modules.length },
+            metadata: { 
+              command, 
+              modules: generated.modules.length,
+              labs: generated.labs?.length || 0,
+              projects: generated.projects?.length || 0,
+              tests: generated.tests?.length || 0,
+            },
           });
         } catch (error) {
           console.error("AI generation error:", error);

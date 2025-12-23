@@ -42,7 +42,10 @@ The server handles course CRUD operations, AI-powered content generation, and se
 
 ### AI Integration
 - **Provider**: OpenAI API (via Replit AI Integrations)
-- **Features**: Course generation from commands, module/lesson creation, project generation, test generation, notes generation
+- **Course Factory Engine**: Comprehensive AI system prompt that acts as Senior Instructional Designer, Subject Matter Expert, Skill Assessment Architect, and Practice Platform Designer
+- **Features**: Full course generation from commands including modules, lessons, practice labs, projects, tests, and certificate rules in a single AI call
+- **Generation Options**: includeLabs, includeProjects, includeTests toggles for customizing course content
+- **Practice-First Design**: Labs are generated for coding-related lessons with starter code, hints (no direct answers), and automatic validation
 - **Batch Processing**: Custom utilities with rate limiting and retry logic for bulk AI operations
 - **Chat Interface**: Built-in conversation management for interactive AI features
 
@@ -55,7 +58,7 @@ Core entities include:
 - **Projects**: Course-scoped hands-on assignments with objectives, deliverables, submission instructions, evaluation notes, and skill mapping via `projectSkills` join table
 - **Tests**: Module-scoped assessments with passing criteria and optional time limits
 - **Questions**: Test questions supporting MCQ (multiple choice) and scenario-based types with difficulty levels
-- **Practice Labs**: Course-scoped coding exercises with validation types (output/console/api/regex/function), progressive hints, AI context for Mithra tutor, unlock mechanisms (always/lesson_complete/test_pass/lab_complete), and certificate weight contribution
+- **Practice Labs**: Course-scoped coding exercises with validation types (output/console/api/regex/function), progressive hints, AI context for Mithra tutor, unlock mechanisms (always/module_complete/lesson_complete/test_pass/lab_complete), and certificate weight contribution
 - **Certificates**: Course completion/achievement certificates with skill tags, test requirements, project completion requirements, and lab completion requirements
 - **Skills**: Global tagging system for courses and projects
 - **Audit Logs**: Activity tracking for admin actions (course publish/unpublish, test/question/project CRUD)
