@@ -67,6 +67,7 @@ export const coursesRelations = relations(courses, ({ many }) => ({
   courseSkills: many(courseSkills),
   certificates: many(certificates),
   projects: many(projects),
+  practiceLabs: many(practiceLabs),
 }));
 
 export const insertCourseSchema = createInsertSchema(courses).omit({
@@ -421,3 +422,47 @@ export const insertPublishStatusSchema = createInsertSchema(publishStatus).omit(
 
 export type InsertPublishStatus = z.infer<typeof insertPublishStatusSchema>;
 export type PublishStatus = typeof publishStatus.$inferSelect;
+
+// ==================== PRACTICE LABS ====================
+export const practiceLabs = pgTable("practice_labs", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  moduleId: integer("module_id").references(() => modules.id, { onDelete: "set null" }),
+  lessonId: integer("lesson_id").references(() => lessons.id, { onDelete: "set null" }),
+  slug: text("slug").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  difficulty: text("difficulty").notNull().default("beginner"),
+  language: text("language").notNull().default("javascript"),
+  estimatedTime: integer("estimated_time"),
+  instructions: text("instructions"),
+  starterCode: text("starter_code"),
+  expectedOutput: jsonb("expected_output").$type<string[]>(),
+  validationType: text("validation_type").notNull().default("console"),
+  unlockType: text("unlock_type"),
+  unlockRefId: integer("unlock_ref_id"),
+  hints: jsonb("hints").$type<string[]>(),
+  aiPromptContext: text("ai_prompt_context"),
+  markLabComplete: boolean("mark_lab_complete").default(true),
+  unlockNext: boolean("unlock_next").default(true),
+  contributesToCertificate: boolean("contributes_to_certificate").default(false),
+  status: text("status").notNull().default("draft"),
+  orderIndex: integer("order_index").notNull().default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const practiceLabsRelations = relations(practiceLabs, ({ one }) => ({
+  course: one(courses, { fields: [practiceLabs.courseId], references: [courses.id] }),
+  module: one(modules, { fields: [practiceLabs.moduleId], references: [modules.id] }),
+  lesson: one(lessons, { fields: [practiceLabs.lessonId], references: [lessons.id] }),
+}));
+
+export const insertPracticeLabSchema = createInsertSchema(practiceLabs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPracticeLab = z.infer<typeof insertPracticeLabSchema>;
+export type PracticeLab = typeof practiceLabs.$inferSelect;

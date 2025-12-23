@@ -1,0 +1,171 @@
+You are a Senior Full-Stack Engineer, Platform Architect, and Ed-Tech System Designer.
+
+Context:
+We already have:
+1) An Admin Portal (Course Factory)
+2) A Student Portal (Shishya)
+3) Browser-based JavaScript Practice Labs in Shishya
+4) Labs are rendered at route: /shishya/lab/:courseId/:labId
+5) Labs execute JavaScript in a sandboxed iframe (client-side only)
+
+IMPORTANT:
+There is NO cloud IDE.
+There is NO server-side code execution.
+Labs are content-driven and browser-executed.
+
+Your task:
+Design and implement a COMPLETE **Admin-driven Practice Lab system** that feeds the Shishya Practice Labs via the Course Factory API.
+
+────────────────────────────────────
+SYSTEM GOAL
+────────────────────────────────────
+
+Admin creates Practice Labs →
+Course Factory stores them →
+Shishya fetches and renders them →
+Student writes JS →
+Sandboxed execution →
+Output validation →
+Progress unlocks next lesson/lab
+
+────────────────────────────────────
+PART 1: ADMIN PORTAL – PRACTICE LAB BUILDER
+────────────────────────────────────
+
+Add a new entity called **Practice Lab** in Admin Portal.
+
+Admin UI must allow creating/editing labs with the following fields:
+
+1. Basic Info
+- labId (auto-generated, slug-safe)
+- courseId (linked to course)
+- moduleId (optional)
+- lessonId (optional)
+- title
+- description
+- difficulty (Beginner / Intermediate / Advanced)
+- language (javascript only for now)
+- estimatedTime (minutes)
+
+2. Lab Content
+- instructions (markdown supported)
+- starterCode (string)
+- expectedOutput (string OR array of strings)
+- validationType ("console" only for v1)
+
+3. Unlock Rules
+- unlockType:
+  - "lessonCompleted"
+  - "labCompleted"
+- unlockRefId (lessonId or labId)
+
+4. Mithra AI Support
+- hints (array of strings)
+- aiPromptContext (text to help Mithra explain concepts)
+RULE:
+Mithra must NEVER return full final code.
+Only hints, explanations, and guidance.
+
+5. Completion Actions
+- markLabComplete (boolean)
+- unlockNext (boolean)
+- contributesToCertificate (boolean)
+
+Persist all labs in database or structured JSON exactly as defined above.
+
+────────────────────────────────────
+PART 2: COURSE FACTORY – LAB DISTRIBUTION
+────────────────────────────────────
+
+When a course is published:
+- Labs linked to that course must be auto-synced
+- Expose API endpoint:
+
+GET /api/courses/:courseId/labs
+
+Response format:
+{
+  courseId,
+  labs: [ PracticeLabObject ]
+}
+
+Do NOT embed execution logic here.
+Course Factory only distributes content + rules.
+
+────────────────────────────────────
+PART 3: SHISHYA PORTAL – LAB RENDERING
+────────────────────────────────────
+
+Shishya Lab Viewer must:
+
+1. Fetch lab data from Course Factory API
+2. Render:
+   - Title
+   - Instructions
+   - Starter Code in editor
+3. Allow student to write JavaScript
+4. Execute code inside a sandboxed iframe
+   - No DOM access
+   - No window.parent
+   - Capture console.log output
+5. Compare output with expectedOutput
+   - Trim whitespace
+   - Normalize line breaks
+6. On success:
+   - Save completion in localStorage
+     key: shishya_progress_{courseId}
+   - Unlock next lesson/lab
+7. On failure:
+   - Show friendly error message
+
+────────────────────────────────────
+PART 4: CODE PERSISTENCE
+────────────────────────────────────
+
+Student code must persist using localStorage:
+- Key: shishya_lab_code_{courseId}_{labId}
+- Restore code on refresh
+- No backend persistence required for v1
+
+────────────────────────────────────
+PART 5: SECURITY RULES (NON-NEGOTIABLE)
+────────────────────────────────────
+
+- NO eval() in main window
+- Execution only inside iframe sandbox
+- Add execution timeout (future-safe)
+- No server-side execution
+
+────────────────────────────────────
+PART 6: WHAT NOT TO BUILD (VERY IMPORTANT)
+────────────────────────────────────
+
+Do NOT:
+- Add cloud IDE
+- Add Docker execution
+- Add multi-language runtime
+- Add server-side grading
+- Over-engineer permissions
+
+This is Phase-1 MVP focused on learning intelligence, not infra.
+
+────────────────────────────────────
+EXPECTED OUTPUT FROM YOU (REPLIT AI)
+────────────────────────────────────
+
+1. Database / JSON schema for Practice Labs
+2. Admin UI fields & form logic
+3. API contract between Course Factory & Shishya
+4. Shishya Lab execution flow (React components)
+5. Clear separation of:
+   - Content
+   - Execution
+   - Validation
+6. Clean, readable, maintainable code
+7. No breaking changes to existing courses
+
+Think step-by-step.
+Do not skip architecture.
+Assume this system will scale later.
+
+Proceed.
