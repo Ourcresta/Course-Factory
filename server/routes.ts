@@ -120,12 +120,14 @@ export async function registerRoutes(
       // Generate course content with AI (async)
       (async () => {
         try {
+          const mode = req.body.mode || "publish";
           const generated = await generateCourseFromCommand(command, {
             level,
             includeProjects,
             includeTests,
             includeLabs,
             certificateType,
+            mode,
           });
 
           // Update course with generated content

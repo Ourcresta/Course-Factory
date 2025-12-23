@@ -14,6 +14,8 @@ import {
   FlaskConical,
   Award,
   Loader2,
+  Eye,
+  Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,6 +73,7 @@ export default function CreateCourse() {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState("ai");
+  const [generationMode, setGenerationMode] = useState<"preview" | "publish">("preview");
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -115,7 +118,16 @@ export default function CreateCourse() {
   const generateWithAI = useMutation({
     mutationFn: async (command: string) => {
       setIsGenerating(true);
-      const response = await apiRequest("POST", "/api/courses/generate", { command });
+      const { level, includeProjects, includeTests, includeLabs, certificateType } = form.getValues();
+      const response = await apiRequest("POST", "/api/courses/generate", { 
+        command,
+        level,
+        includeProjects,
+        includeTests,
+        includeLabs,
+        certificateType,
+        mode: generationMode,
+      });
       return response;
     },
     onSuccess: (data: { id: number }) => {
@@ -351,6 +363,40 @@ export default function CreateCourse() {
                     />
                   </div>
 
+                  <div className="border rounded-md p-4 bg-muted/30">
+                    <Label className="text-sm font-medium mb-3 block">Generation Mode</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={generationMode === "preview" ? "default" : "outline"}
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setGenerationMode("preview")}
+                        data-testid="button-mode-preview"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview Mode
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={generationMode === "publish" ? "default" : "outline"}
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setGenerationMode("publish")}
+                        data-testid="button-mode-publish"
+                      >
+                        <Rocket className="h-4 w-4 mr-2" />
+                        Publish Mode
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {generationMode === "preview" 
+                        ? "Preview creates a draft with concise content for quick review. Faster generation."
+                        : "Publish creates complete, detailed content ready for students. Takes longer."
+                      }
+                    </p>
+                  </div>
+
                   <Button
                     type="submit"
                     size="lg"
@@ -361,12 +407,12 @@ export default function CreateCourse() {
                     {generateWithAI.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
+                        {generationMode === "preview" ? "Generating Preview..." : "Generating Full Course..."}
                       </>
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4 mr-2" />
-                        Generate Course with AI
+                        {generationMode === "preview" ? "Generate Preview" : "Generate Full Course"}
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </>
                     )}
