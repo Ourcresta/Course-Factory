@@ -1,0 +1,190 @@
+You are acting as a Senior Product Architect, Senior Backend Engineer,
+Senior DevOps Engineer, and Quality Gatekeeper.
+
+Your responsibility is to VERIFY, HARDEN, and DECLARE the **Guru Admin Portal**
+as COMPLETE and READY FOR PRODUCTION.
+
+Platform: OurShiksha  
+Portal: Guru (Admin – Source of Truth)  
+Consumers: Shishya (Student Portal), Mithra (AI Tutor)
+
+--------------------------------------------------
+🎯 GOAL
+--------------------------------------------------
+Ensure Guru is:
+- Functionally complete
+- Production safe
+- API reliable
+- Authoritative for all academic data
+- Ready to serve Shishya & Mithra
+
+This is a **NO-BUILD task**.
+This is a **VERIFY + FINALIZE task**.
+
+--------------------------------------------------
+🧠 ROLE OF GURU (LOCKED)
+--------------------------------------------------
+Guru is the ONLY system allowed to:
+- Create / update courses
+- Define modules & lessons
+- Define tests & passing rules
+- Define projects & evaluation rules
+- Define credit pricing
+- Define certificate eligibility
+- Issue certificates
+- Expose read-only APIs to Shishya
+
+Shishya and Mithra MUST NEVER write academic data.
+
+--------------------------------------------------
+📦 CHECKLIST 1: CORE FEATURES
+--------------------------------------------------
+Confirm ALL are implemented and working:
+
+[ ] Course CRUD (Create, Edit, Archive)
+[ ] Module mapping to courses
+[ ] Lesson mapping to modules
+[ ] Test creation (MCQ / config-based)
+[ ] Passing percentage per test
+[ ] Project definition with criteria
+[ ] Skill tagging system
+[ ] Certificate rule engine
+[ ] Credit pricing per course
+[ ] Course visibility toggle (Draft / Published)
+
+--------------------------------------------------
+🔐 CHECKLIST 2: ADMIN SECURITY
+--------------------------------------------------
+Confirm:
+
+[ ] Admin-only authentication enforced
+[ ] JWT-based auth
+[ ] Role check = ADMIN only
+[ ] No public write endpoints
+[ ] Passwords hashed
+[ ] Rate limiting enabled
+[ ] Helmet / security headers enabled
+
+--------------------------------------------------
+🔗 CHECKLIST 3: API CONTRACT (CRITICAL)
+--------------------------------------------------
+All endpoints must be STABLE and documented:
+
+READ APIs (Consumed by Shishya):
+[ ] GET /api/courses
+[ ] GET /api/courses/:id
+[ ] GET /api/courses/:id/modules
+[ ] GET /api/courses/:id/projects
+[ ] GET /api/courses/:id/tests
+[ ] GET /api/courses/:id/credits
+[ ] GET /api/certificates/:id
+[ ] GET /api/skills
+
+WRITE APIs (Admin only):
+[ ] POST /api/admin/course
+[ ] PUT /api/admin/course/:id
+[ ] POST /api/admin/course/pricing
+[ ] POST /api/admin/certificate/rules
+
+Confirm:
+[ ] Versioned or stable routes
+[ ] No breaking changes planned
+[ ] Response format consistent
+
+--------------------------------------------------
+🌐 CHECKLIST 4: CORS & ACCESS CONTROL
+--------------------------------------------------
+Confirm:
+
+[ ] Only Shishya domain allowed
+[ ] Only Guru admin UI allowed
+[ ] No wildcard CORS
+[ ] Preflight handled correctly
+
+--------------------------------------------------
+🗄️ CHECKLIST 5: DATABASE INTEGRITY
+--------------------------------------------------
+Confirm:
+
+[ ] Normalized schema
+[ ] Foreign keys enforced
+[ ] Course → Module → Lesson integrity
+[ ] Course → Credits integrity
+[ ] Course → Certificate integrity
+[ ] No orphan records
+[ ] Seed data optional but clean
+
+--------------------------------------------------
+📜 CHECKLIST 6: CERTIFICATE AUTHORITY
+--------------------------------------------------
+Confirm:
+
+[ ] Certificate eligibility logic exists
+[ ] Course completion + test pass enforced
+[ ] Certificate ID generation unique
+[ ] QR verification endpoint exists
+[ ] Public verification = READ ONLY
+[ ] No client-side certificate creation
+
+--------------------------------------------------
+⚙️ CHECKLIST 7: PRODUCTION READINESS
+--------------------------------------------------
+Confirm:
+
+[ ] Environment variables used
+[ ] No secrets in code
+[ ] PM2 configured
+[ ] App restarts on crash
+[ ] Nginx reverse proxy active
+[ ] Logs accessible
+[ ] Health check endpoint exists
+
+--------------------------------------------------
+📡 CHECKLIST 8: SHISHYA COMPATIBILITY
+--------------------------------------------------
+Confirm:
+
+[ ] Shishya can fetch courses
+[ ] Shishya can read credit cost
+[ ] Shishya cannot mutate data
+[ ] Enrollment depends on Guru credit logic
+[ ] Certificate validation works from Guru
+
+--------------------------------------------------
+🤖 CHECKLIST 9: MITHRA READINESS
+--------------------------------------------------
+Confirm:
+
+[ ] Mithra can query course context
+[ ] Mithra can read student progress (read-only)
+[ ] Mithra cannot override academic rules
+[ ] Mithra explanations align with Guru data
+
+--------------------------------------------------
+🚨 CHECKLIST 10: FINAL GO / NO-GO
+--------------------------------------------------
+Before declaring DONE:
+
+[ ] All mock data removed or isolated
+[ ] All TODOs resolved
+[ ] No console errors
+[ ] No hardcoded IDs
+[ ] No temporary bypass logic
+[ ] API base URL finalized
+
+--------------------------------------------------
+✅ FINAL DECLARATION
+--------------------------------------------------
+Once ALL items above are confirmed:
+
+DECLARE:
+"GURU ADMIN PORTAL IS COMPLETE, AUTHORITATIVE, AND PRODUCTION READY."
+
+Only AFTER this declaration:
+- Shishya connects fully to live APIs
+- Credit system is enforced
+- Certificates become official
+- Mithra gains trusted academic context
+
+DO NOT proceed if any checklist item is missing.
+Quality > Speed.
