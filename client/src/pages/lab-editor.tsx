@@ -409,6 +409,28 @@ export default function LabEditor() {
                     </Select>
                   </div>
 
+                  {formData.unlockType === "module_complete" && (
+                    <div className="space-y-2">
+                      <Label>Required Module</Label>
+                      <Select
+                        value={formData.unlockRefId?.toString() || ""}
+                        onValueChange={(value) => handleFieldChange("unlockRefId", parseInt(value) || null)}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger data-testid="select-unlock-module">
+                          <SelectValue placeholder="Select module" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {modules.map((module) => (
+                            <SelectItem key={module.id} value={module.id.toString()}>
+                              {module.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {formData.unlockType === "lesson_complete" && (
                     <div className="space-y-2">
                       <Label>Required Lesson</Label>
