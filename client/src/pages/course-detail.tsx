@@ -23,6 +23,7 @@ import {
   Check,
   X,
   Globe,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,7 @@ import { FormSkeleton, ModuleListSkeleton } from "@/components/loading-skeleton"
 import { CertificateDesigner } from "@/components/certificate-designer";
 import { TestManager } from "@/components/test-manager";
 import { ProjectManager } from "@/components/project-manager";
+import { LabManager } from "@/components/lab-manager";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Course, Module, Lesson, Project, Test } from "@shared/schema";
@@ -392,6 +394,7 @@ export default function CourseDetail() {
           <TabsTrigger value="modules" data-testid="tab-modules">Modules</TabsTrigger>
           <TabsTrigger value="projects" data-testid="tab-projects">Projects</TabsTrigger>
           <TabsTrigger value="tests" data-testid="tab-tests">Tests</TabsTrigger>
+          <TabsTrigger value="labs" data-testid="tab-labs">Labs</TabsTrigger>
           <TabsTrigger value="certificate" data-testid="tab-certificate">Certificate</TabsTrigger>
           <TabsTrigger value="publish" data-testid="tab-publish">Publish</TabsTrigger>
         </TabsList>
@@ -603,6 +606,14 @@ export default function CourseDetail() {
           <TestManager
             courseId={courseId!}
             modules={course.modules || []}
+            isPublished={course.status === "published"}
+            certificate={certificate || null}
+          />
+        </TabsContent>
+
+        <TabsContent value="labs" className="mt-6">
+          <LabManager
+            courseId={courseId!}
             isPublished={course.status === "published"}
             certificate={certificate || null}
           />
