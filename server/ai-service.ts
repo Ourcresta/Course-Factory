@@ -673,4 +673,62 @@ IMPORTANT:
   return JSON.parse(content) as LabGeneration;
 }
 
+export async function generateCourseSuggestions(count: number = 5): Promise<string[]> {
+  const categories = [
+    "Web Development", "Mobile Development", "Data Science", "Cloud Computing",
+    "DevOps", "Cybersecurity", "Machine Learning", "UI/UX Design",
+    "Database Management", "Software Architecture", "API Development",
+    "Blockchain", "IoT", "Game Development", "Automation", "Testing"
+  ];
+  
+  const randomCategories = categories
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3)
+    .join(", ");
+
+  const prompt = `Generate ${count} unique, specific, and compelling course creation commands for an educational platform.
+Focus on trending topics in: ${randomCategories}
+
+Each command should be a natural language instruction that describes:
+- The specific topic/technology
+- Target audience (freshers, professionals, career changers, etc.)
+- Key features to include (projects, certifications, hands-on labs, etc.)
+
+Return JSON format:
+{
+  "suggestions": [
+    "Create a [specific topic] course for [audience] with [features]",
+    ...
+  ]
+}
+
+Make each suggestion unique, practical, and immediately actionable. Focus on in-demand skills.`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      max_tokens: 1000,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No response from AI");
+    }
+
+    const result = JSON.parse(content);
+    return result.suggestions || [];
+  } catch (error) {
+    console.error("[AI] Error generating course suggestions:", error);
+    return [
+      "Create a Full Stack Developer course for freshers with projects and tests",
+      "Create a Cloud Architecture course for DevOps engineers with AWS/Azure labs",
+      "Create a Data Analytics course with Python, SQL, and Power BI projects",
+      "Create a Mobile App Development course with React Native for beginners",
+      "Create a Cybersecurity Fundamentals course with hands-on penetration testing labs",
+    ];
+  }
+}
+
 export { CourseGeneration, FullCourseGeneration, ProjectGeneration, TestGeneration, NotesGeneration, LabGeneration };

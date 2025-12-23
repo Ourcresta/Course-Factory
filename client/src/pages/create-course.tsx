@@ -15,6 +15,8 @@ import {
   Loader2,
   Eye,
   Rocket,
+  RefreshCw,
+  Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +84,8 @@ export default function CreateCourse() {
   const [generatingCourseId, setGeneratingCourseId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("ai");
   const [generationMode, setGenerationMode] = useState<"preview" | "publish">("preview");
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>(exampleCommands);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -175,6 +179,30 @@ export default function CreateCourse() {
 
   const handleExampleClick = (example: string) => {
     form.setValue("aiCommand", example);
+  };
+
+  const fetchAiSuggestions = async () => {
+    setIsLoadingSuggestions(true);
+    try {
+      const response = await fetch("/api/courses/suggestions?count=5");
+      if (!response.ok) throw new Error("Failed to fetch suggestions");
+      const data = await response.json();
+      if (data.suggestions && data.suggestions.length > 0) {
+        setAiSuggestions(data.suggestions);
+        toast({
+          title: "Fresh ideas loaded",
+          description: "AI generated new course suggestions for you.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Could not load suggestions",
+        description: "Using default examples instead.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
   };
 
   const handleGenerationComplete = () => {
@@ -276,25 +304,49 @@ export default function CreateCourse() {
                     )}
                   />
 
-                  <div>
-                    <Label className="text-sm text-muted-foreground mb-2 block">
-                      Try an example:
-                    </Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4 text-amber-500" />
+                        <Label className="text-sm font-medium">AI Suggested Courses</Label>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={fetchAiSuggestions}
+                        disabled={isLoadingSuggestions}
+                        data-testid="button-refresh-suggestions"
+                      >
+                        {isLoadingSuggestions ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                        <span className="ml-1 text-xs">
+                          {isLoadingSuggestions ? "Loading..." : "Get New Ideas"}
+                        </span>
+                      </Button>
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {exampleCommands.map((example, index) => (
+                      {aiSuggestions.map((suggestion, index) => (
                         <Button
                           key={index}
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="text-xs"
-                          onClick={() => handleExampleClick(example)}
-                          data-testid={`button-example-${index}`}
+                          className="text-xs text-left h-auto py-2 px-3"
+                          onClick={() => handleExampleClick(suggestion)}
+                          disabled={isLoadingSuggestions}
+                          data-testid={`button-suggestion-${index}`}
                         >
-                          {example.slice(0, 40)}...
+                          {suggestion.length > 50 ? `${suggestion.slice(0, 50)}...` : suggestion}
                         </Button>
                       ))}
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Click a suggestion to use it, or click "Get New Ideas" for AI-powered course recommendations.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

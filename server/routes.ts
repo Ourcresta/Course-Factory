@@ -10,6 +10,7 @@ import {
   generateProjectForModule,
   generateTestForModule,
   generateNotesForLesson,
+  generateCourseSuggestions,
 } from "./ai-service";
 import { registerPublicRoutes } from "./public-routes";
 
@@ -59,6 +60,18 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching courses:", error);
       res.status(500).json({ error: "Failed to fetch courses" });
+    }
+  });
+
+  // AI Course Suggestions - must be before :id route
+  app.get("/api/courses/suggestions", async (req, res) => {
+    try {
+      const count = parseInt(req.query.count as string) || 5;
+      const suggestions = await generateCourseSuggestions(count);
+      res.json({ suggestions });
+    } catch (error) {
+      console.error("Error generating course suggestions:", error);
+      res.status(500).json({ error: "Failed to generate suggestions" });
     }
   });
 
