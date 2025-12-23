@@ -13,6 +13,8 @@ import {
   generateCourseSuggestions,
 } from "./ai-service";
 import { registerPublicRoutes } from "./public-routes";
+import { registerAuthRoutes } from "./auth-routes";
+import { apiRateLimiter } from "./auth-middleware";
 
 function handleValidationError(error: unknown, res: any) {
   if (error instanceof z.ZodError) {

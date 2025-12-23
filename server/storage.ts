@@ -27,6 +27,8 @@ import {
   type InsertPracticeLab,
   type ApiKey,
   type InsertApiKey,
+  type OtpToken,
+  type InsertOtpToken,
   users,
   courses,
   modules,
@@ -45,15 +47,25 @@ import {
   publishStatus,
   practiceLabs,
   apiKeys,
+  otpTokens,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, isNull, sql } from "drizzle-orm";
+import { eq, desc, and, isNull, sql, lt } from "drizzle-orm";
 
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserLastLogin(id: string): Promise<void>;
+
+  // OTP Tokens
+  createOtpToken(token: InsertOtpToken): Promise<OtpToken>;
+  getLatestOtpToken(userId: string): Promise<OtpToken | undefined>;
+  incrementOtpAttempts(id: number): Promise<void>;
+  markOtpAsUsed(id: number): Promise<void>;
+  invalidateUserOtps(userId: string): Promise<void>;
 
   // Courses
   getCourse(id: number): Promise<Course | undefined>;
@@ -189,6 +201,46 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async updateUserLastLogin(id: string): Promise<void> {
+    await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, id));
+  }
+
+  // OTP Tokens
+  async createOtpToken(token: InsertOtpToken): Promise<OtpToken> {
+    const [newToken] = await db.insert(otpTokens).values(token).returning();
+    return newToken;
+  }
+
+  async getLatestOtpToken(userId: string): Promise<OtpToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(otpTokens)
+      .where(eq(otpTokens.userId, userId))
+      .orderBy(desc(otpTokens.createdAt))
+      .limit(1);
+    return token;
+  }
+
+  async incrementOtpAttempts(id: number): Promise<void> {
+    await db
+      .update(otpTokens)
+      .set({ attempts: sql`${otpTokens.attempts} + 1` })
+      .where(eq(otpTokens.id, id));
+  }
+
+  async markOtpAsUsed(id: number): Promise<void> {
+    await db.update(otpTokens).set({ isUsed: true }).where(eq(otpTokens.id, id));
+  }
+
+  async invalidateUserOtps(userId: string): Promise<void> {
+    await db.update(otpTokens).set({ isUsed: true }).where(eq(otpTokens.userId, userId));
   }
 
   // Courses

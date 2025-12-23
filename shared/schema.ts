@@ -6,22 +6,49 @@ import { z } from "zod";
 // Re-export chat models
 export * from "./models/chat";
 
-// ==================== USERS ====================
+// ==================== USERS (ADMIN) ====================
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("admin"),
+  isEmailVerified: boolean("is_email_verified").default(false).notNull(),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
   password: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// ==================== OTP TOKENS ====================
+export const otpTokens = pgTable("otp_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  otp: text("otp").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  isUsed: boolean("is_used").default(false).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const otpTokensRelations = relations(otpTokens, ({ one }) => ({
+  user: one(users, { fields: [otpTokens.userId], references: [users.id] }),
+}));
+
+export const insertOtpTokenSchema = createInsertSchema(otpTokens).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertOtpToken = z.infer<typeof insertOtpTokenSchema>;
+export type OtpToken = typeof otpTokens.$inferSelect;
 
 // ==================== SKILLS ====================
 export const skills = pgTable("skills", {
