@@ -474,6 +474,101 @@ export async function registerRoutes(
     }
   });
 
+  // Course Pricing - GET
+  app.get("/api/courses/:id/pricing", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const course = await storage.getCourse(id);
+      
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+
+      res.json({
+        courseId: course.id,
+        courseName: course.name,
+        creditCost: course.creditCost ?? 0,
+        isFree: course.isFree ?? true,
+        originalCreditCost: course.originalCreditCost,
+        pricingUpdatedAt: course.pricingUpdatedAt,
+        status: course.status,
+      });
+    } catch (error) {
+      console.error("Error fetching course pricing:", error);
+      res.status(500).json({ error: "Failed to fetch course pricing" });
+    }
+  });
+
+  // Course Pricing - UPDATE
+  app.put("/api/courses/:id/pricing", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const course = await storage.getCourse(id);
+      
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+
+      // Validate input
+      const pricingSchema = z.object({
+        creditCost: z.number().min(0).max(100000),
+        isFree: z.boolean(),
+      });
+
+      const validated = pricingSchema.parse(req.body);
+
+      // If setting to free, store original cost for potential restore
+      const originalCreditCost = validated.isFree && !course.isFree 
+        ? course.creditCost 
+        : (course.originalCreditCost ?? course.creditCost);
+
+      // If free, force creditCost to 0
+      const finalCreditCost = validated.isFree ? 0 : validated.creditCost;
+
+      const updatedCourse = await storage.updateCoursePricing(id, {
+        creditCost: finalCreditCost,
+        isFree: validated.isFree,
+        originalCreditCost,
+        pricingUpdatedAt: new Date(),
+      });
+
+      if (!updatedCourse) {
+        return res.status(500).json({ error: "Failed to update course pricing" });
+      }
+
+      // Log the pricing change
+      await storage.createAuditLog({
+        action: "update_pricing",
+        entityType: "course",
+        entityId: id,
+        oldValue: {
+          creditCost: course.creditCost,
+          isFree: course.isFree,
+        },
+        newValue: {
+          creditCost: finalCreditCost,
+          isFree: validated.isFree,
+        },
+      });
+
+      res.json({
+        courseId: updatedCourse.id,
+        courseName: updatedCourse.name,
+        creditCost: updatedCourse.creditCost,
+        isFree: updatedCourse.isFree,
+        originalCreditCost: updatedCourse.originalCreditCost,
+        pricingUpdatedAt: updatedCourse.pricingUpdatedAt,
+        status: updatedCourse.status,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error updating course pricing:", error);
+      res.status(500).json({ error: "Failed to update course pricing" });
+    }
+  });
+
   app.post("/api/courses/:id/generate/:type", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

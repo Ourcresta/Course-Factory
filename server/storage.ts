@@ -64,6 +64,12 @@ export interface IStorage {
   deleteCourse(id: number): Promise<void>;
   publishCourse(id: number): Promise<Course | undefined>;
   unpublishCourse(id: number): Promise<Course | undefined>;
+  updateCoursePricing(id: number, pricing: {
+    creditCost: number;
+    isFree: boolean;
+    originalCreditCost: number | null;
+    pricingUpdatedAt: Date;
+  }): Promise<Course | undefined>;
   getDashboardStats(): Promise<{
     totalCourses: number;
     publishedCourses: number;
@@ -263,6 +269,26 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(courses)
       .set({ status: "draft", updatedAt: new Date() })
+      .where(eq(courses.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateCoursePricing(id: number, pricing: {
+    creditCost: number;
+    isFree: boolean;
+    originalCreditCost: number | null;
+    pricingUpdatedAt: Date;
+  }): Promise<Course | undefined> {
+    const [updated] = await db
+      .update(courses)
+      .set({
+        creditCost: pricing.creditCost,
+        isFree: pricing.isFree,
+        originalCreditCost: pricing.originalCreditCost,
+        pricingUpdatedAt: pricing.pricingUpdatedAt,
+        updatedAt: new Date(),
+      })
       .where(eq(courses.id, id))
       .returning();
     return updated;
