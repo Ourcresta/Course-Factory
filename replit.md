@@ -1,8 +1,10 @@
-# AISiksha Admin Course Factory
+# Oushiksha Guru - Admin Course Factory
 
 ## Overview
 
-AISiksha Admin Course Factory is an AI-powered course creation platform designed for administrators to generate complete educational courses from simple instructions. The platform transforms single commands into production-ready courses with full syllabi, modules, lessons, projects, and tests. It follows a modern SaaS admin interface design pattern (similar to Linear, Notion, Vercel Dashboard) focused on clarity, information density, and efficient workflow management.
+Oushiksha Guru (formerly AISiksha) is an AI-powered course creation platform designed for administrators to generate complete educational courses from simple instructions. The platform transforms single commands into production-ready courses with full syllabi, modules, lessons, projects, and tests. It follows a modern SaaS admin interface design pattern (similar to Linear, Notion, Vercel Dashboard) focused on clarity, information density, and efficient workflow management.
+
+Integrated with OurShiksha Shishya (student portal) via REST API where Shishya pulls published course data using secure API keys.
 
 ## User Preferences
 
