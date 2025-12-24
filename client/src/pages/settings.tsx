@@ -12,8 +12,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Moon, Sun, Monitor, Bell, Shield, Database, Key, Plus, Trash2, 
-  Copy, Check, Eye, EyeOff, RefreshCw
+  Copy, Check, Eye, EyeOff, RefreshCw, Building2, Landmark, CheckCircle
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -376,6 +383,237 @@ function ApiKeysSection() {
   );
 }
 
+interface BankAccount {
+  id: number;
+  bankName: string;
+  accountNumber: string;
+  accountHolderName: string;
+  ifscCode: string;
+  branchName?: string;
+  accountType: string;
+  isActive: boolean;
+  isPrimary: boolean;
+}
+
+function BankAccountSection() {
+  const { toast } = useToast();
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    bankName: "",
+    accountNumber: "",
+    accountHolderName: "",
+    ifscCode: "",
+    branchName: "",
+    accountType: "savings",
+  });
+
+  const { data: bankAccounts = [], isLoading } = useQuery<BankAccount[]>({
+    queryKey: ["/api/bank-accounts"],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      return await apiRequest("POST", "/api/bank-accounts", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bank-accounts"] });
+      toast({ title: "Bank Account Added", description: "Your bank account has been saved." });
+      setShowForm(false);
+      setFormData({ bankName: "", accountNumber: "", accountHolderName: "", ifscCode: "", branchName: "", accountType: "savings" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save bank account", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/bank-accounts/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bank-accounts"] });
+      toast({ title: "Deleted", description: "Bank account removed successfully." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete bank account", variant: "destructive" });
+    },
+  });
+
+  const setPrimaryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("PATCH", `/api/bank-accounts/${id}`, { isPrimary: true });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bank-accounts"] });
+      toast({ title: "Updated", description: "Primary bank account updated." });
+    },
+  });
+
+  return (
+    <Card className="relative overflow-visible">
+      <div 
+        className="absolute inset-0 rounded-xl opacity-5"
+        style={{
+          backgroundImage: "linear-gradient(135deg, #1a365d 0%, #2a4365 50%, #2c5282 100%)",
+        }}
+      />
+      <CardHeader className="relative z-10">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Landmark className="h-5 w-5" />
+            <div>
+              <CardTitle>Bank Account Settings</CardTitle>
+              <CardDescription>Configure bank accounts for payment settlements.</CardDescription>
+            </div>
+          </div>
+          <Button size="sm" onClick={() => setShowForm(!showForm)} data-testid="button-add-bank-account">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Account
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 relative z-10">
+        {showForm && (
+          <div className="p-4 border rounded-md bg-background space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Bank Name</Label>
+                <Input
+                  placeholder="e.g., State Bank of India"
+                  value={formData.bankName}
+                  onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                  data-testid="input-bank-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Account Holder Name</Label>
+                <Input
+                  placeholder="Name as per bank records"
+                  value={formData.accountHolderName}
+                  onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
+                  data-testid="input-account-holder"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Account Number</Label>
+                <Input
+                  placeholder="Account number"
+                  value={formData.accountNumber}
+                  onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                  data-testid="input-account-number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>IFSC Code</Label>
+                <Input
+                  placeholder="e.g., SBIN0001234"
+                  value={formData.ifscCode}
+                  onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value.toUpperCase() })}
+                  data-testid="input-ifsc"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Branch Name</Label>
+                <Input
+                  placeholder="Branch name (optional)"
+                  value={formData.branchName}
+                  onChange={(e) => setFormData({ ...formData, branchName: e.target.value })}
+                  data-testid="input-branch"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Account Type</Label>
+                <Select value={formData.accountType} onValueChange={(v) => setFormData({ ...formData, accountType: v })}>
+                  <SelectTrigger data-testid="select-account-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="savings">Savings</SelectItem>
+                    <SelectItem value="current">Current</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                onClick={() => createMutation.mutate(formData)}
+                disabled={!formData.bankName || !formData.accountNumber || !formData.accountHolderName || !formData.ifscCode || createMutation.isPending}
+                data-testid="button-save-bank-account"
+              >
+                {createMutation.isPending ? "Saving..." : "Save Account"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground">Loading bank accounts...</div>
+        ) : bankAccounts.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-md">
+            <Building2 className="h-10 w-10 mx-auto mb-3 opacity-50" />
+            <p className="text-sm">No bank accounts configured</p>
+            <p className="text-xs mt-1">Add a bank account to receive payment settlements</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {bankAccounts.map((account) => (
+              <div
+                key={account.id}
+                className="flex items-center justify-between p-4 border rounded-md bg-background"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
+                    <Landmark className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{account.bankName}</span>
+                      {account.isPrimary && (
+                        <Badge variant="default" className="text-xs">Primary</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {account.accountHolderName} | ****{account.accountNumber.slice(-4)} | {account.ifscCode}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!account.isPrimary && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPrimaryMutation.mutate(account.id)}
+                      data-testid={`button-set-primary-${account.id}`}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Set Primary
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteMutation.mutate(account.id)}
+                    className="text-destructive"
+                    data-testid={`button-delete-bank-${account.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Settings() {
   const { theme, setTheme } = useTheme();
 
@@ -385,6 +623,8 @@ export default function Settings() {
         title="Settings"
         description="Manage your application preferences and configurations."
       />
+
+      <BankAccountSection />
 
       <ApiKeysSection />
 

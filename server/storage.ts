@@ -53,6 +53,8 @@ import {
   giftBoxes,
   paymentGateways,
   upiSettings,
+  bankAccounts,
+  systemSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNull, sql, lt } from "drizzle-orm";
@@ -1171,6 +1173,56 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUpiSetting(id: number) {
     await db.delete(upiSettings).where(eq(upiSettings.id, id));
+  }
+
+  // Bank Accounts
+  async getBankAccount(id: number) {
+    const [account] = await db.select().from(bankAccounts).where(eq(bankAccounts.id, id));
+    return account;
+  }
+
+  async getAllBankAccounts() {
+    return db.select().from(bankAccounts).orderBy(desc(bankAccounts.createdAt));
+  }
+
+  async createBankAccount(account: any) {
+    const [created] = await db.insert(bankAccounts).values(account).returning();
+    return created;
+  }
+
+  async updateBankAccount(id: number, account: any) {
+    const [updated] = await db.update(bankAccounts).set({ ...account, updatedAt: new Date() }).where(eq(bankAccounts.id, id)).returning();
+    return updated;
+  }
+
+  async deleteBankAccount(id: number) {
+    await db.delete(bankAccounts).where(eq(bankAccounts.id, id));
+  }
+
+  // System Settings
+  async getSystemSetting(key: string) {
+    const [setting] = await db.select().from(systemSettings).where(eq(systemSettings.key, key));
+    return setting;
+  }
+
+  async getAllSystemSettings() {
+    return db.select().from(systemSettings);
+  }
+
+  async upsertSystemSetting(key: string, value: string, description?: string) {
+    const existing = await this.getSystemSetting(key);
+    if (existing) {
+      const [updated] = await db.update(systemSettings)
+        .set({ value, description, updatedAt: new Date() })
+        .where(eq(systemSettings.key, key))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(systemSettings)
+        .values({ key, value, description })
+        .returning();
+      return created;
+    }
   }
 }
 

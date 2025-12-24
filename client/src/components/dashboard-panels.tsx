@@ -1,4 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   Brain,
   CheckCircle,
@@ -20,12 +22,16 @@ import {
   RefreshCw,
   Eye,
   Send,
+  Link2,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 
 interface CourseFactoryStatus {
   lastRunTime: string | null;
@@ -190,10 +196,22 @@ export function CourseFactoryPanel() {
         )}
 
         <div className="flex gap-2 pt-2">
-          <Button size="sm" variant="outline" className="flex-1">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => window.location.href = "/courses/new"}
+            data-testid="button-rerun-ai"
+          >
             <RefreshCw className="h-3 w-3 mr-1" /> Re-run AI
           </Button>
-          <Button size="sm" variant="outline" className="flex-1">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => window.open("/api/ai/system-prompt", "_blank")}
+            data-testid="button-view-system-role"
+          >
             <Brain className="h-3 w-3 mr-1" /> View System Role
           </Button>
         </div>
@@ -586,6 +604,138 @@ export function SecurityPanel() {
             <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-xs font-medium">{security.pendingApprovals} admin approval(s) pending</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+interface ShishyaStatus {
+  isEnabled: boolean;
+  activeApiKeys: number;
+  totalApiKeys: number;
+  lastSyncAt: string | null;
+}
+
+export function ShishyaControlPanel() {
+  const { toast } = useToast();
+  const { data, isLoading } = useQuery<ShishyaStatus>({
+    queryKey: ["/api/dashboard/shishya-status"],
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      return await apiRequest("POST", "/api/system-settings", {
+        key: "shishya_enabled",
+        value: enabled ? "true" : "false",
+        description: "Controls whether Shishya student portal integration is active",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/shishya-status"] });
+      toast({
+        title: "Shishya Integration Updated",
+        description: "The student portal integration status has been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update Shishya integration status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const mockData: ShishyaStatus = {
+    isEnabled: false,
+    activeApiKeys: 0,
+    totalApiKeys: 0,
+    lastSyncAt: null,
+  };
+
+  const status = data || mockData;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="relative overflow-hidden">
+      <div 
+        className="absolute inset-0 opacity-10"
+        style={{
+          backgroundImage: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        }}
+      />
+      <CardHeader className="pb-2 relative z-10">
+        <CardTitle className="flex items-center gap-2">
+          <Link2 className="h-5 w-5 text-primary" />
+          Shishya Integration
+        </CardTitle>
+        <CardDescription>
+          Control student portal connection
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 relative z-10">
+        <div className="flex items-center justify-between p-4 rounded-md bg-background/80 border">
+          <div className="flex items-center gap-3">
+            {status.isEnabled ? (
+              <Power className="h-5 w-5 text-green-500" />
+            ) : (
+              <PowerOff className="h-5 w-5 text-muted-foreground" />
+            )}
+            <div>
+              <p className="text-sm font-medium">Portal Status</p>
+              <p className="text-xs text-muted-foreground">
+                {status.isEnabled ? "Active and receiving data" : "Disabled - no data sync"}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={status.isEnabled}
+            onCheckedChange={(checked) => toggleMutation.mutate(checked)}
+            disabled={toggleMutation.isPending}
+            data-testid="switch-shishya-toggle"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-3 rounded-md bg-background/80 text-center border">
+            <p className="text-2xl font-bold">{status.activeApiKeys}</p>
+            <p className="text-xs text-muted-foreground">Active API Keys</p>
+          </div>
+          <div className="p-3 rounded-md bg-background/80 text-center border">
+            <p className="text-2xl font-bold">{status.totalApiKeys}</p>
+            <p className="text-xs text-muted-foreground">Total Keys</p>
+          </div>
+        </div>
+
+        {!status.isEnabled && (
+          <div className="p-3 rounded-md bg-yellow-500/10 border border-yellow-500/20">
+            <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-xs font-medium">Enable to start syncing courses with Shishya</span>
+            </div>
+          </div>
+        )}
+
+        {status.isEnabled && status.activeApiKeys === 0 && (
+          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-xs font-medium">No active API keys - create one in Settings</span>
             </div>
           </div>
         )}

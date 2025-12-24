@@ -2063,6 +2063,108 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== BANK ACCOUNT ROUTES ====================
+  
+  app.get("/api/bank-accounts", async (req, res) => {
+    try {
+      const accounts = await storage.getAllBankAccounts();
+      res.json(accounts);
+    } catch (error) {
+      console.error("Error fetching bank accounts:", error);
+      res.status(500).json({ error: "Failed to fetch bank accounts" });
+    }
+  });
+
+  app.post("/api/bank-accounts", async (req, res) => {
+    try {
+      const account = await storage.createBankAccount(req.body);
+      res.status(201).json(account);
+    } catch (error) {
+      console.error("Error creating bank account:", error);
+      res.status(500).json({ error: "Failed to create bank account" });
+    }
+  });
+
+  app.patch("/api/bank-accounts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const account = await storage.updateBankAccount(id, req.body);
+      if (!account) {
+        return res.status(404).json({ error: "Bank account not found" });
+      }
+      res.json(account);
+    } catch (error) {
+      console.error("Error updating bank account:", error);
+      res.status(500).json({ error: "Failed to update bank account" });
+    }
+  });
+
+  app.delete("/api/bank-accounts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteBankAccount(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting bank account:", error);
+      res.status(500).json({ error: "Failed to delete bank account" });
+    }
+  });
+
+  // ==================== SYSTEM SETTINGS ROUTES ====================
+
+  app.get("/api/system-settings", async (req, res) => {
+    try {
+      const settings = await storage.getAllSystemSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching system settings:", error);
+      res.status(500).json({ error: "Failed to fetch system settings" });
+    }
+  });
+
+  app.get("/api/system-settings/:key", async (req, res) => {
+    try {
+      const setting = await storage.getSystemSetting(req.params.key);
+      if (!setting) {
+        return res.json({ key: req.params.key, value: null });
+      }
+      res.json(setting);
+    } catch (error) {
+      console.error("Error fetching system setting:", error);
+      res.status(500).json({ error: "Failed to fetch system setting" });
+    }
+  });
+
+  app.post("/api/system-settings", async (req, res) => {
+    try {
+      const { key, value, description } = req.body;
+      const setting = await storage.upsertSystemSetting(key, value, description);
+      res.json(setting);
+    } catch (error) {
+      console.error("Error updating system setting:", error);
+      res.status(500).json({ error: "Failed to update system setting" });
+    }
+  });
+
+  // Shishya Integration Status endpoint
+  app.get("/api/dashboard/shishya-status", async (req, res) => {
+    try {
+      const shishyaSetting = await storage.getSystemSetting("shishya_enabled");
+      const apiKeys = await storage.getAllApiKeys();
+      const activeKeys = apiKeys.filter(k => k.isActive);
+      
+      res.json({
+        isEnabled: shishyaSetting?.value === "true",
+        activeApiKeys: activeKeys.length,
+        totalApiKeys: apiKeys.length,
+        lastSyncAt: null,
+      });
+    } catch (error) {
+      console.error("Error fetching Shishya status:", error);
+      res.status(500).json({ error: "Failed to fetch Shishya status" });
+    }
+  });
+
   // Register public API routes for Shishya integration
   registerPublicRoutes(app);
 

@@ -29,6 +29,7 @@ import {
   CertificateSkillPanel,
   CreditPanel,
   SecurityPanel,
+  ShishyaControlPanel,
 } from "@/components/dashboard-panels";
 import type { Course } from "@shared/schema";
 
@@ -211,6 +212,11 @@ export default function Dashboard() {
       <section className="grid gap-6 lg:grid-cols-2">
         <CreditPanel />
         <SecurityPanel />
+      </section>
+
+      {/* Section 9: Shishya Integration Control */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <ShishyaControlPanel />
       </section>
 
       {/* Recent Courses */}
