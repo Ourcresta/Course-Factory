@@ -43,6 +43,12 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Register authentication routes first
+  registerAuthRoutes(app);
+  
+  // Apply rate limiting to API routes
+  app.use('/api', apiRateLimiter);
+  
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
