@@ -1,0 +1,238 @@
+You are a Senior SaaS Architect, Security Engineer, Platform Owner,
+and Enterprise LMS Product Designer.
+
+Context:
+We are building GURU, the Admin Portal and Backend API for the OURSHIKSHA platform.
+
+There are TWO systems:
+1) GURU (Admin Portal + Backend APIs) → SOURCE OF TRUTH
+2) SHISHYA (Student Portal) → READ-ONLY CONSUMER
+
+NON-NEGOTIABLE PRINCIPLE:
+❗ GURU is the ONLY authority for:
+- Courses & content
+- Pricing & subscriptions
+- Coins & credits
+- Feature access
+- Certificates & marksheets
+- Rules, policies, and governance
+
+SHISHYA must NEVER override Guru logic.
+
+------------------------------------------------
+GOAL
+------------------------------------------------
+Harden GURU into a **production-grade control plane** that:
+- Controls the entire OURSHIKSHA ecosystem
+- Securely serves Shishya via public APIs
+- Provides full visibility into users, revenue, quality, and risk
+- Is audit-ready, scalable, and future-proof
+
+------------------------------------------------
+TECH STACK (FIXED)
+------------------------------------------------
+Frontend:
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS + Shadcn UI
+- Recharts / Tremor for analytics
+- Role-based UI rendering
+
+Backend:
+- Node.js + Express + TypeScript
+- PostgreSQL (Neon / Supabase / RDS)
+- Drizzle ORM
+- JWT authentication
+- API key management
+
+Infra:
+- AWS EC2 (t3.micro / t3.small)
+- Nginx reverse proxy
+- PM2 / systemd
+- HTTPS (Let’s Encrypt)
+
+------------------------------------------------
+ARCHITECTURE (MANDATORY)
+------------------------------------------------
+
+Admin UI (Guru)
+   ↓
+Guru Backend (Auth + Business Logic)
+   ↓
+Database (Source of Truth)
+   ↓
+Public APIs (Scoped, Read-Only)
+   ↓
+Shishya Backend (Proxy)
+
+Rules:
+- No direct DB access from Shishya
+- All public APIs are read-only unless explicitly allowed
+- All write operations are admin-only
+
+------------------------------------------------
+CORE MODULES TO HARDEN
+------------------------------------------------
+
+1) ADMIN AUTH & GOVERNANCE
+- Super Admin / Admin / Reviewer roles
+- Admin invite + approval flow
+- Login audit logs
+- Failed login tracking
+- IP allowlist (optional)
+- Force logout & session revocation
+
+2) COURSE FACTORY (LOCK QUALITY GATES)
+- Draft → Preview → Publish lifecycle
+- Publish blockers:
+  - Missing labs
+  - Missing tests
+  - Missing certificates
+  - Missing skills mapping
+  - Missing pricing
+- AI Course Factory rerun with diff preview
+- Versioning for courses
+
+3) PRACTICE, TEST & PROJECT GOVERNANCE
+- Lab validation coverage tracking
+- Hint completeness enforcement
+- Test attempt rules
+- Project evaluation workflow
+- Skill-to-activity mapping enforcement
+
+4) CERTIFICATES & MARKSHEETS
+- Certificate templates
+- Eligibility rules
+- Skill requirements
+- Marks calculation logic
+- Public verification URLs
+- Revoke / reissue certificates
+
+5) CREDITS, PRICING & SUBSCRIPTIONS (CRITICAL)
+- Plan management:
+  - Free / Basic / Pro / Elite
+  - Monthly & yearly pricing
+  - Coins per month
+  - Signup bonus coins
+  - Feature toggles
+- Promotions & campaigns
+- Coin usage pricing per feature
+- Prevent negative balances
+- Full coin transaction ledger
+
+6) SHISHYA CONTROL PANEL
+- Total users
+- Active users (DAU / MAU)
+- Free vs paid users
+- Revenue (today / month / lifetime)
+- Subscriptions & renewals
+- Payments (success / failed)
+- Engagement metrics
+- User drill-down view
+
+7) DASHBOARD & REPORTS (EXECUTIVE-GRADE)
+Dashboard Sections:
+- System Snapshot
+- Academic Health
+- Practice-First Quality
+- Certificate & Skill Governance
+- Monetization Health
+- Shishya Growth & Revenue
+- Security & Risk
+
+Reports Tab:
+- Uses SAME components as dashboard
+- Date range filters
+- Export CSV / PDF
+- Comparison views
+
+8) PUBLIC API LAYER (FOR SHISHYA)
+- API key issuance & rotation
+- Scoped permissions
+- Rate limiting
+- Caching headers
+- Fallback-safe responses
+
+Example APIs:
+- GET /api/public/courses
+- GET /api/public/course/:id
+- GET /api/public/plans
+- GET /api/public/cert-requirements
+
+------------------------------------------------
+SECURITY & COMPLIANCE (NON-NEGOTIABLE)
+------------------------------------------------
+- All secrets server-side only
+- No pricing logic in frontend
+- API request signing
+- Rate limiting
+- SQL injection protection
+- Full audit logs for admin actions
+- Soft deletes for critical data
+- Backup & restore strategy
+
+------------------------------------------------
+DATABASE MODELS (CORE)
+------------------------------------------------
+- admins
+- admin_sessions
+- courses
+- modules
+- lessons
+- labs
+- tests
+- projects
+- certificates
+- skills
+- plans
+- subscriptions
+- promotions
+- coin_wallets
+- coin_transactions
+- users (Shishya mirror)
+- payments
+- activity_logs
+- audit_logs
+
+------------------------------------------------
+ENVIRONMENT VARIABLES
+------------------------------------------------
+DATABASE_URL
+JWT_SECRET
+ADMIN_API_KEY
+OPENAI_API_KEY
+RESEND_API_KEY
+RAZORPAY_WEBHOOK_SECRET
+BASE_DOMAIN
+ENV
+
+------------------------------------------------
+DEPLOYMENT REQUIREMENTS
+------------------------------------------------
+- AWS EC2 production deployment
+- Nginx + HTTPS
+- Admin routes protected
+- Public APIs isolated
+- Health checks
+- Error logging
+- Billing alerts
+
+------------------------------------------------
+OUTPUT EXPECTATION
+------------------------------------------------
+Generate:
+1) Hardened Admin UI
+2) Secure backend APIs
+3) Role-based access control
+4) Shishya Control Panel
+5) Executive dashboard & reports
+6) Pricing & coins engine
+7) Public API layer
+8) Database schema (Drizzle)
+9) Deployment notes
+10) README explaining Guru → Shishya authority model
+
+Think like a platform owner.
+Enforce governance strictly.
+Design for scale, audits, and monetization.
+Deliver enterprise-grade, production-ready code.

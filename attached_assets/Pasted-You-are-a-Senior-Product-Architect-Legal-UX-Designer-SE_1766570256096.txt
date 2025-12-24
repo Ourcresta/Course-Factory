@@ -1,0 +1,156 @@
+You are a Senior Product Architect, Legal UX Designer,
+SEO Specialist, and Frontend Engineer.
+
+Your task is to IMPLEMENT fully professional,
+production-ready PUBLIC PAGES for OurShiksha.
+
+--------------------------------------------------
+🎯 GOAL
+--------------------------------------------------
+
+• Add About, Terms, Privacy, Contact pages
+• Use a single consistent public layout
+• Ensure trust, compliance, and SEO
+• No authentication required
+• Reusable across the platform
+
+--------------------------------------------------
+📍 ROUTES (MANDATORY)
+--------------------------------------------------
+
+/about
+/terms
+/privacy
+/contact
+
+--------------------------------------------------
+🧭 NAVIGATION (PUBLIC)
+--------------------------------------------------
+
+Top Navbar must include:
+• OurShiksha logo
+• Search courses
+• Pricing
+• Get 500 Free Credits (highlight CTA)
+• Login
+• Sign Up
+
+Footer must include:
+• About
+• Privacy Policy
+• Terms of Service
+• Contact
+• © OurShiksha 2025
+
+--------------------------------------------------
+📄 PAGE CONTENT REQUIREMENTS
+--------------------------------------------------
+
+### 1️⃣ ABOUT PAGE (/about)
+
+Sections:
+• Platform mission
+• Learn. Practice. Prove.
+• What makes OurShiksha different
+• AI-powered learning (Mithra)
+• Credits-based access model
+• Certifications & verification
+• Chennai, India mention
+• Trust & transparency tone
+
+--------------------------------------------------
+
+### 2️⃣ TERMS OF SERVICE (/terms)
+
+Include sections:
+• Platform usage
+• Account responsibility
+• Course access & credits
+• Payments & refunds
+• Academic integrity
+• Certificate authenticity
+• Misuse & termination
+• Liability limitation
+• Governing jurisdiction (India)
+
+Plain, readable language.
+No legal overkill.
+
+--------------------------------------------------
+
+### 3️⃣ PRIVACY POLICY (/privacy)
+
+Include:
+• Data collected
+• Account data
+• Payment handling (via Razorpay)
+• Cookies & analytics
+• Data security
+• No selling of personal data
+• User rights
+• Contact for data queries
+
+Mention compliance with Indian data practices.
+
+--------------------------------------------------
+
+### 4️⃣ CONTACT PAGE (/contact)
+
+Include:
+• Support email
+• Chennai location
+• Contact form:
+  - Name
+  - Email
+  - Message
+• Success confirmation message
+• Future-ready (API hook placeholder)
+
+--------------------------------------------------
+🎨 UI / UX STANDARDS
+--------------------------------------------------
+
+• Clean academic design
+• White background
+• Subtle brand colors
+• Readable typography
+• Mobile responsive
+• SEO meta tags for all pages
+
+--------------------------------------------------
+🔐 SECURITY & ACCESS
+--------------------------------------------------
+
+• Public access only
+• No auth required
+• No admin actions
+• No API secrets exposed
+
+--------------------------------------------------
+🧪 TEST CASES
+--------------------------------------------------
+
+✔ All pages load without login
+✔ Navbar consistent everywhere
+✔ Footer links work
+✔ SEO title & description set
+✔ Contact form validates input
+
+--------------------------------------------------
+🚫 DO NOT
+--------------------------------------------------
+
+✗ Put these pages inside admin
+✗ Require authentication
+✗ Duplicate layout logic
+✗ Add payment logic here
+
+--------------------------------------------------
+✅ FINAL RESULT
+--------------------------------------------------
+
+OurShiksha now has:
+• Legal trust layer
+• Public credibility
+• SEO-ready foundation
+• Investor & user confidence
