@@ -58,6 +58,9 @@ export async function sendOTPEmail(toEmail: string, otp: string, customMessage?:
       ? `<p style="color: #444; font-size: 16px; line-height: 1.5; margin-bottom: 16px;">${customMessage}</p><p style="color: #444; font-size: 16px; line-height: 1.5;">Approval verification code:</p>`
       : `<p style="color: #444; font-size: 16px; line-height: 1.5;">Your One-Time Verification Code is:</p>`;
     
+    console.log('[Email Service] Sending email from:', fromEmail || 'OurShiksha Admin <admin@mail.dishabrooms.com>');
+    console.log('[Email Service] Sending email to:', toEmail);
+    
     const result = await client.emails.send({
       from: fromEmail || 'OurShiksha Admin <admin@mail.dishabrooms.com>',
       to: toEmail,
@@ -82,7 +85,14 @@ export async function sendOTPEmail(toEmail: string, otp: string, customMessage?:
       text: `${customMessage ? customMessage + '\n\n' : ''}Verification Code: ${otp}\n\nThis code is valid for 5 minutes.\nDo not share this code with anyone.`
     });
 
-    console.log('[Email Service] OTP email sent successfully to:', toEmail);
+    console.log('[Email Service] Resend API response:', JSON.stringify(result));
+    
+    if (result.error) {
+      console.error('[Email Service] Resend error:', result.error);
+      return false;
+    }
+    
+    console.log('[Email Service] OTP email sent successfully to:', toEmail, 'ID:', result.data?.id);
     return true;
   } catch (error) {
     console.error('[Email Service] Failed to send OTP email:', error);
