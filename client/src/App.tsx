@@ -25,6 +25,12 @@ import LabEditor from "@/pages/lab-editor";
 import Skills from "@/pages/skills";
 import Certificates from "@/pages/certificates";
 import Settings from "@/pages/settings";
+import Tests from "@/pages/tests";
+import Labs from "@/pages/labs";
+import Projects from "@/pages/projects";
+import CertificatesList from "@/pages/certificates-list";
+import Credits from "@/pages/credits";
+import Payments from "@/pages/payments";
 
 function Router() {
   return (
@@ -34,8 +40,15 @@ function Router() {
       <Route path="/courses" component={Courses} />
       <Route path="/courses/new" component={CreateCourse} />
       <Route path="/skills" component={Skills} />
-      <Route path="/certificates" component={Certificates} />
       <Route path="/settings" component={Settings} />
+
+      {/* Independent content sections */}
+      <Route path="/tests" component={Tests} />
+      <Route path="/labs" component={Labs} />
+      <Route path="/projects" component={Projects} />
+      <Route path="/certificates" component={CertificatesList} />
+      <Route path="/credits" component={Credits} />
+      <Route path="/payments" component={Payments} />
 
       {/* Course-scoped routes */}
       <Route path="/courses/:id" component={CourseDetail} />
@@ -45,21 +58,11 @@ function Router() {
       <Route path="/courses/:courseId/tests/:testId" component={TestEditor} />
       <Route path="/courses/:courseId/projects/:projectId" component={ProjectEditor} />
       <Route path="/courses/:courseId/labs/:labId" component={LabEditor} />
+      <Route path="/courses/:courseId/certificate" component={Certificates} />
 
-      {/* Redirect invalid routes to courses */}
-      <Route path="/modules">
-        <Redirect to="/courses" />
-      </Route>
-      <Route path="/projects">
-        <Redirect to="/courses" />
-      </Route>
-      <Route path="/tests">
-        <Redirect to="/courses" />
-      </Route>
-
-      {/* Fallback - redirect to courses */}
+      {/* Fallback - redirect to dashboard */}
       <Route>
-        <Redirect to="/courses" />
+        <Redirect to="/" />
       </Route>
     </Switch>
   );

@@ -1660,6 +1660,409 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== INDEPENDENT ENTITY ROUTES ====================
+  
+  // Get all tests (independent list)
+  app.get("/api/tests", async (req, res) => {
+    try {
+      const allTests = await storage.getAllTests();
+      res.json(allTests);
+    } catch (error) {
+      console.error("Error fetching tests:", error);
+      res.status(500).json({ error: "Failed to fetch tests" });
+    }
+  });
+
+  // Create standalone test
+  app.post("/api/tests", async (req, res) => {
+    try {
+      const validatedData = insertTestSchema.parse(req.body);
+      const test = await storage.createTest(validatedData);
+      res.status(201).json(test);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error creating test:", error);
+      res.status(500).json({ error: "Failed to create test" });
+    }
+  });
+
+  // Link test to course
+  app.post("/api/tests/:id/link", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { courseId } = req.body;
+      const test = await storage.linkTestToCourse(id, courseId);
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      res.json(test);
+    } catch (error) {
+      console.error("Error linking test:", error);
+      res.status(500).json({ error: "Failed to link test" });
+    }
+  });
+
+  // Delete test (standalone)
+  app.delete("/api/tests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const test = await storage.getTest(id);
+      if (!test) {
+        return res.status(404).json({ error: "Test not found" });
+      }
+      await storage.deleteTest(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting test:", error);
+      res.status(500).json({ error: "Failed to delete test" });
+    }
+  });
+
+  // Get all projects (independent list)
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const allProjects = await storage.getAllProjects();
+      res.json(allProjects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  // Create standalone project
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const validatedData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(validatedData);
+      res.status(201).json(project);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error creating project:", error);
+      res.status(500).json({ error: "Failed to create project" });
+    }
+  });
+
+  // Link project to course
+  app.post("/api/projects/:id/link", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { courseId } = req.body;
+      const project = await storage.linkProjectToCourse(id, courseId);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error("Error linking project:", error);
+      res.status(500).json({ error: "Failed to link project" });
+    }
+  });
+
+  // Delete project (standalone)
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const project = await storage.getProject(id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      await storage.deleteProject(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+
+  // Get all labs (independent list)
+  app.get("/api/labs", async (req, res) => {
+    try {
+      const allLabs = await storage.getAllPracticeLabs();
+      res.json(allLabs);
+    } catch (error) {
+      console.error("Error fetching labs:", error);
+      res.status(500).json({ error: "Failed to fetch labs" });
+    }
+  });
+
+  // Create standalone lab
+  app.post("/api/labs", async (req, res) => {
+    try {
+      const validatedData = insertPracticeLabSchema.parse(req.body);
+      const lab = await storage.createPracticeLab(validatedData);
+      res.status(201).json(lab);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error creating lab:", error);
+      res.status(500).json({ error: "Failed to create lab" });
+    }
+  });
+
+  // Link lab to course
+  app.post("/api/labs/:id/link", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { courseId } = req.body;
+      const lab = await storage.linkLabToCourse(id, courseId);
+      if (!lab) {
+        return res.status(404).json({ error: "Lab not found" });
+      }
+      res.json(lab);
+    } catch (error) {
+      console.error("Error linking lab:", error);
+      res.status(500).json({ error: "Failed to link lab" });
+    }
+  });
+
+  // Get all certificates (independent list)
+  app.get("/api/certificates", async (req, res) => {
+    try {
+      const allCertificates = await storage.getAllCertificates();
+      res.json(allCertificates);
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+      res.status(500).json({ error: "Failed to fetch certificates" });
+    }
+  });
+
+  // Create standalone certificate
+  app.post("/api/certificates", async (req, res) => {
+    try {
+      const validatedData = insertCertificateSchema.parse(req.body);
+      const certificate = await storage.createCertificate(validatedData);
+      res.status(201).json(certificate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return handleValidationError(error, res);
+      }
+      console.error("Error creating certificate:", error);
+      res.status(500).json({ error: "Failed to create certificate" });
+    }
+  });
+
+  // Delete certificate
+  app.delete("/api/certificates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const certificate = await storage.getCertificate(id);
+      if (!certificate) {
+        return res.status(404).json({ error: "Certificate not found" });
+      }
+      await storage.deleteCertificate(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting certificate:", error);
+      res.status(500).json({ error: "Failed to delete certificate" });
+    }
+  });
+
+  // Link certificate to course
+  app.post("/api/certificates/:id/link", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { courseId } = req.body;
+      const certificate = await storage.linkCertificateToCourse(id, courseId);
+      if (!certificate) {
+        return res.status(404).json({ error: "Certificate not found" });
+      }
+      res.json(certificate);
+    } catch (error) {
+      console.error("Error linking certificate:", error);
+      res.status(500).json({ error: "Failed to link certificate" });
+    }
+  });
+
+  // ==================== CREDITS & PRICING ROUTES ====================
+  
+  // Credit packages
+  app.get("/api/credit-packages", async (req, res) => {
+    try {
+      const packages = await storage.getAllCreditPackages();
+      res.json(packages);
+    } catch (error) {
+      console.error("Error fetching credit packages:", error);
+      res.status(500).json({ error: "Failed to fetch credit packages" });
+    }
+  });
+
+  app.post("/api/credit-packages", async (req, res) => {
+    try {
+      const pkg = await storage.createCreditPackage(req.body);
+      res.status(201).json(pkg);
+    } catch (error) {
+      console.error("Error creating credit package:", error);
+      res.status(500).json({ error: "Failed to create credit package" });
+    }
+  });
+
+  app.delete("/api/credit-packages/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCreditPackage(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting credit package:", error);
+      res.status(500).json({ error: "Failed to delete credit package" });
+    }
+  });
+
+  // Course pricing
+  app.patch("/api/courses/:id/pricing", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { creditCost, isFree } = req.body;
+      const course = await storage.updateCoursePricing(id, {
+        creditCost: isFree ? 0 : creditCost,
+        isFree,
+        originalCreditCost: null,
+        pricingUpdatedAt: new Date(),
+      });
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      res.json(course);
+    } catch (error) {
+      console.error("Error updating course pricing:", error);
+      res.status(500).json({ error: "Failed to update course pricing" });
+    }
+  });
+
+  // ==================== PAYMENTS ROUTES ====================
+
+  // Vouchers
+  app.get("/api/vouchers", async (req, res) => {
+    try {
+      const allVouchers = await storage.getAllVouchers();
+      res.json(allVouchers);
+    } catch (error) {
+      console.error("Error fetching vouchers:", error);
+      res.status(500).json({ error: "Failed to fetch vouchers" });
+    }
+  });
+
+  app.post("/api/vouchers", async (req, res) => {
+    try {
+      const voucher = await storage.createVoucher(req.body);
+      res.status(201).json(voucher);
+    } catch (error) {
+      console.error("Error creating voucher:", error);
+      res.status(500).json({ error: "Failed to create voucher" });
+    }
+  });
+
+  app.delete("/api/vouchers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteVoucher(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting voucher:", error);
+      res.status(500).json({ error: "Failed to delete voucher" });
+    }
+  });
+
+  // Gift boxes
+  app.get("/api/gift-boxes", async (req, res) => {
+    try {
+      const boxes = await storage.getAllGiftBoxes();
+      res.json(boxes);
+    } catch (error) {
+      console.error("Error fetching gift boxes:", error);
+      res.status(500).json({ error: "Failed to fetch gift boxes" });
+    }
+  });
+
+  app.post("/api/gift-boxes", async (req, res) => {
+    try {
+      const box = await storage.createGiftBox(req.body);
+      res.status(201).json(box);
+    } catch (error) {
+      console.error("Error creating gift box:", error);
+      res.status(500).json({ error: "Failed to create gift box" });
+    }
+  });
+
+  app.delete("/api/gift-boxes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteGiftBox(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting gift box:", error);
+      res.status(500).json({ error: "Failed to delete gift box" });
+    }
+  });
+
+  // Payment gateways
+  app.get("/api/payment-gateways", async (req, res) => {
+    try {
+      const gateways = await storage.getAllPaymentGateways();
+      res.json(gateways);
+    } catch (error) {
+      console.error("Error fetching payment gateways:", error);
+      res.status(500).json({ error: "Failed to fetch payment gateways" });
+    }
+  });
+
+  app.post("/api/payment-gateways", async (req, res) => {
+    try {
+      const gateway = await storage.createPaymentGateway(req.body);
+      res.status(201).json(gateway);
+    } catch (error) {
+      console.error("Error creating payment gateway:", error);
+      res.status(500).json({ error: "Failed to create payment gateway" });
+    }
+  });
+
+  app.delete("/api/payment-gateways/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePaymentGateway(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting payment gateway:", error);
+      res.status(500).json({ error: "Failed to delete payment gateway" });
+    }
+  });
+
+  // UPI settings
+  app.get("/api/upi-settings", async (req, res) => {
+    try {
+      const settings = await storage.getAllUpiSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching UPI settings:", error);
+      res.status(500).json({ error: "Failed to fetch UPI settings" });
+    }
+  });
+
+  app.post("/api/upi-settings", async (req, res) => {
+    try {
+      const upi = await storage.createUpiSetting(req.body);
+      res.status(201).json(upi);
+    } catch (error) {
+      console.error("Error creating UPI setting:", error);
+      res.status(500).json({ error: "Failed to create UPI setting" });
+    }
+  });
+
+  app.delete("/api/upi-settings/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteUpiSetting(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting UPI setting:", error);
+      res.status(500).json({ error: "Failed to delete UPI setting" });
+    }
+  });
+
   // Register public API routes for Shishya integration
   registerPublicRoutes(app);
 

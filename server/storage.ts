@@ -48,6 +48,11 @@ import {
   practiceLabs,
   apiKeys,
   otpTokens,
+  creditPackages,
+  vouchers,
+  giftBoxes,
+  paymentGateways,
+  upiSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNull, sql, lt } from "drizzle-orm";
@@ -115,12 +120,14 @@ export interface IStorage {
   // Projects
   getProject(id: number): Promise<Project | undefined>;
   getProjectWithSkills(id: number): Promise<(Project & { skills: Skill[] }) | undefined>;
+  getAllProjects(): Promise<Project[]>;
   getProjectsByModule(moduleId: number): Promise<Project[]>;
   getProjectsByCourse(courseId: number): Promise<(Project & { skills: Skill[] })[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<void>;
   setProjectSkills(projectId: number, skillIds: number[]): Promise<void>;
+  linkProjectToCourse(projectId: number, courseId: number): Promise<Project | undefined>;
 
   // Project Steps
   getProjectSteps(projectId: number): Promise<ProjectStep[]>;
@@ -129,11 +136,13 @@ export interface IStorage {
   // Tests
   getTest(id: number): Promise<Test | undefined>;
   getTestWithQuestions(id: number): Promise<(Test & { questions: Question[] }) | undefined>;
+  getAllTests(): Promise<Test[]>;
   getTestsByModule(moduleId: number): Promise<Test[]>;
   getTestsByCourse(courseId: number): Promise<(Test & { questions: Question[]; moduleName?: string })[]>;
   createTest(test: InsertTest): Promise<Test>;
   updateTest(id: number, test: Partial<InsertTest>): Promise<Test | undefined>;
   deleteTest(id: number): Promise<void>;
+  linkTestToCourse(testId: number, courseId: number): Promise<Test | undefined>;
 
   // Questions
   getQuestion(id: number): Promise<Question | undefined>;
@@ -149,6 +158,42 @@ export interface IStorage {
   createCertificate(certificate: InsertCertificate): Promise<Certificate>;
   updateCertificate(id: number, certificate: Partial<InsertCertificate>): Promise<Certificate | undefined>;
   deleteCertificate(id: number): Promise<void>;
+  linkCertificateToCourse(certId: number, courseId: number): Promise<Certificate | undefined>;
+
+  // Credit Packages
+  getCreditPackage(id: number): Promise<any | undefined>;
+  getAllCreditPackages(): Promise<any[]>;
+  createCreditPackage(pkg: any): Promise<any>;
+  updateCreditPackage(id: number, pkg: any): Promise<any | undefined>;
+  deleteCreditPackage(id: number): Promise<void>;
+
+  // Vouchers
+  getVoucher(id: number): Promise<any | undefined>;
+  getAllVouchers(): Promise<any[]>;
+  createVoucher(voucher: any): Promise<any>;
+  updateVoucher(id: number, voucher: any): Promise<any | undefined>;
+  deleteVoucher(id: number): Promise<void>;
+
+  // Gift Boxes
+  getGiftBox(id: number): Promise<any | undefined>;
+  getAllGiftBoxes(): Promise<any[]>;
+  createGiftBox(giftBox: any): Promise<any>;
+  updateGiftBox(id: number, giftBox: any): Promise<any | undefined>;
+  deleteGiftBox(id: number): Promise<void>;
+
+  // Payment Gateways
+  getPaymentGateway(id: number): Promise<any | undefined>;
+  getAllPaymentGateways(): Promise<any[]>;
+  createPaymentGateway(gateway: any): Promise<any>;
+  updatePaymentGateway(id: number, gateway: any): Promise<any | undefined>;
+  deletePaymentGateway(id: number): Promise<void>;
+
+  // UPI Settings
+  getUpiSetting(id: number): Promise<any | undefined>;
+  getAllUpiSettings(): Promise<any[]>;
+  createUpiSetting(upi: any): Promise<any>;
+  updateUpiSetting(id: number, upi: any): Promise<any | undefined>;
+  deleteUpiSetting(id: number): Promise<void>;
 
   // Skills
   getSkill(id: number): Promise<Skill | undefined>;
@@ -163,11 +208,13 @@ export interface IStorage {
 
   // Practice Labs
   getPracticeLab(id: number): Promise<PracticeLab | undefined>;
+  getAllPracticeLabs(): Promise<PracticeLab[]>;
   getPracticeLabsByCourse(courseId: number): Promise<PracticeLab[]>;
   getPracticeLabsByModule(moduleId: number): Promise<PracticeLab[]>;
   createPracticeLab(lab: InsertPracticeLab): Promise<PracticeLab>;
   updatePracticeLab(id: number, lab: Partial<InsertPracticeLab>): Promise<PracticeLab | undefined>;
   deletePracticeLab(id: number): Promise<void>;
+  linkLabToCourse(labId: number, courseId: number): Promise<PracticeLab | undefined>;
 
   // API Keys
   getApiKey(id: number): Promise<ApiKey | undefined>;
@@ -971,6 +1018,159 @@ export class DatabaseStorage implements IStorage {
       .where(eq(certificates.courseId, courseId));
 
     return certificate;
+  }
+
+  // New getAllTests, getAllProjects, getAllPracticeLabs, link methods
+  async getAllTests(): Promise<Test[]> {
+    return db.select().from(tests).orderBy(desc(tests.createdAt));
+  }
+
+  async linkTestToCourse(testId: number, courseId: number): Promise<Test | undefined> {
+    const [updated] = await db.update(tests).set({ courseId }).where(eq(tests.id, testId)).returning();
+    return updated;
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return db.select().from(projects).orderBy(desc(projects.createdAt));
+  }
+
+  async linkProjectToCourse(projectId: number, courseId: number): Promise<Project | undefined> {
+    const [updated] = await db.update(projects).set({ courseId }).where(eq(projects.id, projectId)).returning();
+    return updated;
+  }
+
+  async getAllPracticeLabs(): Promise<PracticeLab[]> {
+    return db.select().from(practiceLabs).orderBy(desc(practiceLabs.createdAt));
+  }
+
+  async linkLabToCourse(labId: number, courseId: number): Promise<PracticeLab | undefined> {
+    const [updated] = await db.update(practiceLabs).set({ courseId }).where(eq(practiceLabs.id, labId)).returning();
+    return updated;
+  }
+
+  async linkCertificateToCourse(certId: number, courseId: number): Promise<Certificate | undefined> {
+    const [updated] = await db.update(certificates).set({ courseId }).where(eq(certificates.id, certId)).returning();
+    return updated;
+  }
+
+  // Credit Packages
+  async getCreditPackage(id: number) {
+    const [pkg] = await db.select().from(creditPackages).where(eq(creditPackages.id, id));
+    return pkg;
+  }
+
+  async getAllCreditPackages() {
+    return db.select().from(creditPackages).orderBy(desc(creditPackages.createdAt));
+  }
+
+  async createCreditPackage(pkg: any) {
+    const [created] = await db.insert(creditPackages).values(pkg).returning();
+    return created;
+  }
+
+  async updateCreditPackage(id: number, pkg: any) {
+    const [updated] = await db.update(creditPackages).set({ ...pkg, updatedAt: new Date() }).where(eq(creditPackages.id, id)).returning();
+    return updated;
+  }
+
+  async deleteCreditPackage(id: number) {
+    await db.delete(creditPackages).where(eq(creditPackages.id, id));
+  }
+
+  // Vouchers
+  async getVoucher(id: number) {
+    const [voucher] = await db.select().from(vouchers).where(eq(vouchers.id, id));
+    return voucher;
+  }
+
+  async getAllVouchers() {
+    return db.select().from(vouchers).orderBy(desc(vouchers.createdAt));
+  }
+
+  async createVoucher(voucher: any) {
+    const [created] = await db.insert(vouchers).values(voucher).returning();
+    return created;
+  }
+
+  async updateVoucher(id: number, voucher: any) {
+    const [updated] = await db.update(vouchers).set({ ...voucher, updatedAt: new Date() }).where(eq(vouchers.id, id)).returning();
+    return updated;
+  }
+
+  async deleteVoucher(id: number) {
+    await db.delete(vouchers).where(eq(vouchers.id, id));
+  }
+
+  // Gift Boxes
+  async getGiftBox(id: number) {
+    const [box] = await db.select().from(giftBoxes).where(eq(giftBoxes.id, id));
+    return box;
+  }
+
+  async getAllGiftBoxes() {
+    return db.select().from(giftBoxes).orderBy(desc(giftBoxes.createdAt));
+  }
+
+  async createGiftBox(giftBox: any) {
+    const [created] = await db.insert(giftBoxes).values(giftBox).returning();
+    return created;
+  }
+
+  async updateGiftBox(id: number, giftBox: any) {
+    const [updated] = await db.update(giftBoxes).set({ ...giftBox, updatedAt: new Date() }).where(eq(giftBoxes.id, id)).returning();
+    return updated;
+  }
+
+  async deleteGiftBox(id: number) {
+    await db.delete(giftBoxes).where(eq(giftBoxes.id, id));
+  }
+
+  // Payment Gateways
+  async getPaymentGateway(id: number) {
+    const [gateway] = await db.select().from(paymentGateways).where(eq(paymentGateways.id, id));
+    return gateway;
+  }
+
+  async getAllPaymentGateways() {
+    return db.select().from(paymentGateways).orderBy(paymentGateways.priority);
+  }
+
+  async createPaymentGateway(gateway: any) {
+    const [created] = await db.insert(paymentGateways).values(gateway).returning();
+    return created;
+  }
+
+  async updatePaymentGateway(id: number, gateway: any) {
+    const [updated] = await db.update(paymentGateways).set({ ...gateway, updatedAt: new Date() }).where(eq(paymentGateways.id, id)).returning();
+    return updated;
+  }
+
+  async deletePaymentGateway(id: number) {
+    await db.delete(paymentGateways).where(eq(paymentGateways.id, id));
+  }
+
+  // UPI Settings
+  async getUpiSetting(id: number) {
+    const [upi] = await db.select().from(upiSettings).where(eq(upiSettings.id, id));
+    return upi;
+  }
+
+  async getAllUpiSettings() {
+    return db.select().from(upiSettings).orderBy(desc(upiSettings.createdAt));
+  }
+
+  async createUpiSetting(upi: any) {
+    const [created] = await db.insert(upiSettings).values(upi).returning();
+    return created;
+  }
+
+  async updateUpiSetting(id: number, upi: any) {
+    const [updated] = await db.update(upiSettings).set({ ...upi, updatedAt: new Date() }).where(eq(upiSettings.id, id)).returning();
+    return updated;
+  }
+
+  async deleteUpiSetting(id: number) {
+    await db.delete(upiSettings).where(eq(upiSettings.id, id));
   }
 }
 

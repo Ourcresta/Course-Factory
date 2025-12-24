@@ -221,7 +221,7 @@ export type AiNote = typeof aiNotes.$inferSelect;
 // ==================== PROJECTS ====================
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
-  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").references(() => courses.id, { onDelete: "set null" }),
   moduleId: integer("module_id").references(() => modules.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   description: text("description"),
@@ -234,6 +234,8 @@ export const projects = pgTable("projects", {
   folderStructure: text("folder_structure"),
   evaluationChecklist: jsonb("evaluation_checklist").$type<string[]>(),
   difficulty: text("difficulty").default("intermediate"),
+  category: text("category"),
+  tags: jsonb("tags").$type<string[]>(),
   status: text("status").notNull().default("draft"),
   orderIndex: integer("order_index").notNull().default(0),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -302,17 +304,23 @@ export type ProjectStep = typeof projectSteps.$inferSelect;
 // ==================== TESTS ====================
 export const tests = pgTable("tests", {
   id: serial("id").primaryKey(),
-  moduleId: integer("module_id").notNull().references(() => modules.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").references(() => courses.id, { onDelete: "set null" }),
+  moduleId: integer("module_id").references(() => modules.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   description: text("description"),
   passingPercentage: integer("passing_percentage").default(70),
   isLocked: boolean("is_locked").default(false),
   timeLimit: integer("time_limit"),
+  difficulty: text("difficulty").default("medium"),
+  category: text("category"),
+  tags: jsonb("tags").$type<string[]>(),
+  status: text("status").notNull().default("draft"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export const testsRelations = relations(tests, ({ one, many }) => ({
+  course: one(courses, { fields: [tests.courseId], references: [courses.id] }),
   module: one(modules, { fields: [tests.moduleId], references: [modules.id] }),
   questions: many(questions),
 }));
@@ -355,8 +363,13 @@ export type Question = typeof questions.$inferSelect;
 // ==================== CERTIFICATES ====================
 export const certificates = pgTable("certificates", {
   id: serial("id").primaryKey(),
-  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").references(() => courses.id, { onDelete: "set null" }),
   name: text("name").notNull(),
+  description: text("description"),
+  templateId: text("template_id"),
+  category: text("category"),
+  tags: jsonb("tags").$type<string[]>(),
+  status: text("status").notNull().default("draft"),
   type: text("type").notNull().default("completion"),
   skillTags: jsonb("skill_tags").$type<string[]>(),
   level: text("level"),
@@ -461,9 +474,11 @@ export type PublishStatus = typeof publishStatus.$inferSelect;
 // ==================== PRACTICE LABS ====================
 export const practiceLabs = pgTable("practice_labs", {
   id: serial("id").primaryKey(),
-  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").references(() => courses.id, { onDelete: "set null" }),
   moduleId: integer("module_id").references(() => modules.id, { onDelete: "set null" }),
   lessonId: integer("lesson_id").references(() => lessons.id, { onDelete: "set null" }),
+  category: text("category"),
+  tags: jsonb("tags").$type<string[]>(),
   slug: text("slug").notNull(),
   title: text("title").notNull(),
   description: text("description"),
@@ -524,3 +539,125 @@ export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
 
 export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
 export type ApiKey = typeof apiKeys.$inferSelect;
+
+// ==================== CREDIT PACKAGES (for Shishya pricing) ====================
+export const creditPackages = pgTable("credit_packages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  credits: integer("credits").notNull(),
+  priceInr: integer("price_inr").notNull(),
+  priceUsd: integer("price_usd"),
+  discount: integer("discount").default(0),
+  isActive: boolean("is_active").default(true).notNull(),
+  isFeatured: boolean("is_featured").default(false),
+  validityDays: integer("validity_days"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertCreditPackageSchema = createInsertSchema(creditPackages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCreditPackage = z.infer<typeof insertCreditPackageSchema>;
+export type CreditPackage = typeof creditPackages.$inferSelect;
+
+// ==================== VOUCHERS ====================
+export const vouchers = pgTable("vouchers", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull().default("discount"),
+  discountType: text("discount_type").default("percentage"),
+  discountValue: integer("discount_value").notNull(),
+  creditBonus: integer("credit_bonus").default(0),
+  maxUses: integer("max_uses"),
+  usedCount: integer("used_count").default(0).notNull(),
+  minPurchase: integer("min_purchase").default(0),
+  isActive: boolean("is_active").default(true).notNull(),
+  startsAt: timestamp("starts_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertVoucherSchema = createInsertSchema(vouchers).omit({
+  id: true,
+  usedCount: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertVoucher = z.infer<typeof insertVoucherSchema>;
+export type Voucher = typeof vouchers.$inferSelect;
+
+// ==================== GIFT BOXES ====================
+export const giftBoxes = pgTable("gift_boxes", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  credits: integer("credits").notNull(),
+  priceInr: integer("price_inr").notNull(),
+  priceUsd: integer("price_usd"),
+  templateImage: text("template_image"),
+  customMessage: text("custom_message"),
+  isActive: boolean("is_active").default(true).notNull(),
+  expiryDays: integer("expiry_days").default(365),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertGiftBoxSchema = createInsertSchema(giftBoxes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertGiftBox = z.infer<typeof insertGiftBoxSchema>;
+export type GiftBox = typeof giftBoxes.$inferSelect;
+
+// ==================== PAYMENT GATEWAYS ====================
+export const paymentGateways = pgTable("payment_gateways", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  isActive: boolean("is_active").default(false).notNull(),
+  isTestMode: boolean("is_test_mode").default(true).notNull(),
+  config: jsonb("config").$type<Record<string, any>>(),
+  priority: integer("priority").default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertPaymentGatewaySchema = createInsertSchema(paymentGateways).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPaymentGateway = z.infer<typeof insertPaymentGatewaySchema>;
+export type PaymentGateway = typeof paymentGateways.$inferSelect;
+
+// ==================== UPI SETTINGS ====================
+export const upiSettings = pgTable("upi_settings", {
+  id: serial("id").primaryKey(),
+  upiId: text("upi_id").notNull(),
+  displayName: text("display_name").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  qrCodeImage: text("qr_code_image"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertUpiSettingSchema = createInsertSchema(upiSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertUpiSetting = z.infer<typeof insertUpiSettingSchema>;
+export type UpiSetting = typeof upiSettings.$inferSelect;
