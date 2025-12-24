@@ -39,6 +39,7 @@ import ShishyaUsers from "@/pages/shishya-users";
 import ShishyaActivity from "@/pages/shishya-activity";
 import ShishyaPayments from "@/pages/shishya-payments";
 import ShishyaEngagement from "@/pages/shishya-engagement";
+import Security from "@/pages/security";
 
 function Router() {
   return (
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/shishya/engagement" component={ShishyaEngagement} />
 
       {/* System */}
+      <Route path="/security" component={Security} />
       <Route path="/settings" component={Settings} />
 
       {/* Course-scoped routes */}
