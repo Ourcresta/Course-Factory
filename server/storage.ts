@@ -29,6 +29,10 @@ import {
   type InsertApiKey,
   type OtpToken,
   type InsertOtpToken,
+  type LoginAttempt,
+  type InsertLoginAttempt,
+  type AdminSession,
+  type InsertAdminSession,
   users,
   courses,
   modules,
@@ -48,6 +52,8 @@ import {
   practiceLabs,
   apiKeys,
   otpTokens,
+  loginAttempts,
+  adminSessions,
   creditPackages,
   vouchers,
   giftBoxes,
@@ -64,9 +70,26 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getAllAdmins(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUserLastLogin(id: string): Promise<void>;
   updateUserRole(id: string, role: string): Promise<void>;
+  updateUserStatus(id: string, isActive: boolean): Promise<void>;
+  updateUserInvitedBy(id: string, invitedBy: string): Promise<void>;
+  unlockUser(id: string): Promise<void>;
+  deleteUser(id: string): Promise<void>;
+
+  // Login Attempts
+  createLoginAttempt(attempt: InsertLoginAttempt): Promise<LoginAttempt>;
+  getLoginAttempts(options: { success?: boolean; limit?: number }): Promise<LoginAttempt[]>;
+
+  // Admin Sessions
+  createAdminSession(session: InsertAdminSession): Promise<AdminSession>;
+  getAllActiveSessions(): Promise<AdminSession[]>;
+  revokeSession(sessionId: string): Promise<void>;
+  revokeUserSessions(userId: string): Promise<void>;
+  revokeAllSessionsExcept(userId: string): Promise<void>;
+  getAllAuditLogs(options: { entityType?: string; limit?: number; offset?: number }): Promise<AuditLog[]>;
 
   // OTP Tokens
   createOtpToken(token: InsertOtpToken): Promise<OtpToken>;
@@ -264,6 +287,106 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserRole(id: string, role: string): Promise<void> {
     await db.update(users).set({ role }).where(eq(users.id, id));
+  }
+
+  async updateUserStatus(id: string, isActive: boolean): Promise<void> {
+    await db.update(users).set({ isActive }).where(eq(users.id, id));
+  }
+
+  async updateUserInvitedBy(id: string, invitedBy: string): Promise<void> {
+    await db.update(users).set({ invitedBy }).where(eq(users.id, id));
+  }
+
+  async unlockUser(id: string): Promise<void> {
+    await db.update(users).set({ 
+      lockedUntil: null, 
+      failedLoginAttempts: 0 
+    }).where(eq(users.id, id));
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async getAllAdmins(): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  // Login Attempts
+  async createLoginAttempt(attempt: InsertLoginAttempt): Promise<LoginAttempt> {
+    const [newAttempt] = await db.insert(loginAttempts).values(attempt).returning();
+    return newAttempt;
+  }
+
+  async getLoginAttempts(options: { success?: boolean; limit?: number }): Promise<LoginAttempt[]> {
+    const { success, limit = 100 } = options;
+    
+    if (success !== undefined) {
+      return db
+        .select()
+        .from(loginAttempts)
+        .where(eq(loginAttempts.success, success))
+        .orderBy(desc(loginAttempts.createdAt))
+        .limit(limit);
+    }
+    
+    return db
+      .select()
+      .from(loginAttempts)
+      .orderBy(desc(loginAttempts.createdAt))
+      .limit(limit);
+  }
+
+  // Admin Sessions
+  async createAdminSession(session: InsertAdminSession): Promise<AdminSession> {
+    const [newSession] = await db.insert(adminSessions).values(session).returning();
+    return newSession;
+  }
+
+  async getAllActiveSessions(): Promise<AdminSession[]> {
+    return db
+      .select()
+      .from(adminSessions)
+      .where(eq(adminSessions.isActive, true))
+      .orderBy(desc(adminSessions.lastActiveAt));
+  }
+
+  async revokeSession(sessionId: string): Promise<void> {
+    await db.update(adminSessions).set({ isActive: false }).where(eq(adminSessions.id, sessionId));
+  }
+
+  async revokeUserSessions(userId: string): Promise<void> {
+    await db.update(adminSessions).set({ isActive: false }).where(eq(adminSessions.userId, userId));
+  }
+
+  async revokeAllSessionsExcept(userId: string): Promise<void> {
+    await db.update(adminSessions).set({ isActive: false }).where(
+      and(
+        eq(adminSessions.isActive, true),
+        sql`${adminSessions.userId} != ${userId}`
+      )
+    );
+  }
+
+  async getAllAuditLogs(options: { entityType?: string; limit?: number; offset?: number }): Promise<AuditLog[]> {
+    const { entityType, limit = 100, offset = 0 } = options;
+    
+    if (entityType) {
+      return db
+        .select()
+        .from(auditLogs)
+        .where(eq(auditLogs.entityType, entityType))
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(limit)
+        .offset(offset);
+    }
+    
+    return db
+      .select()
+      .from(auditLogs)
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
   }
 
   // OTP Tokens

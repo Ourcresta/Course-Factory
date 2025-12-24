@@ -14,6 +14,7 @@ import {
 } from "./ai-service";
 import { registerPublicRoutes } from "./public-routes";
 import { registerAuthRoutes } from "./auth-routes";
+import { registerAdminRoutes } from "./admin-routes";
 import { apiRateLimiter } from "./auth-middleware";
 
 function handleValidationError(error: unknown, res: any) {
@@ -45,6 +46,9 @@ export async function registerRoutes(
 ): Promise<Server> {
   // Register authentication routes first
   registerAuthRoutes(app);
+  
+  // Register admin governance routes
+  registerAdminRoutes(app);
   
   // Apply rate limiting to API routes
   app.use('/api', apiRateLimiter);

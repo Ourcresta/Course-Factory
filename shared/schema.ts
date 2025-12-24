@@ -13,7 +13,12 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("admin"),
+  isActive: boolean("is_active").default(true).notNull(),
   isEmailVerified: boolean("is_email_verified").default(false).notNull(),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false).notNull(),
+  failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
+  lockedUntil: timestamp("locked_until"),
+  invitedBy: varchar("invited_by").references((): any => users.id),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
@@ -419,6 +424,59 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
 
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// ==================== LOGIN ATTEMPTS ====================
+export const loginAttempts = pgTable("login_attempts", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  userId: varchar("user_id").references(() => users.id),
+  success: boolean("success").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  location: text("location"),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const loginAttemptsRelations = relations(loginAttempts, ({ one }) => ({
+  user: one(users, { fields: [loginAttempts.userId], references: [users.id] }),
+}));
+
+export const insertLoginAttemptSchema = createInsertSchema(loginAttempts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertLoginAttempt = z.infer<typeof insertLoginAttemptSchema>;
+export type LoginAttempt = typeof loginAttempts.$inferSelect;
+
+// ==================== ADMIN SESSIONS ====================
+export const adminSessions = pgTable("admin_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull(),
+  device: text("device"),
+  browser: text("browser"),
+  ipAddress: text("ip_address"),
+  location: text("location"),
+  isActive: boolean("is_active").default(true).notNull(),
+  lastActiveAt: timestamp("last_active_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const adminSessionsRelations = relations(adminSessions, ({ one }) => ({
+  user: one(users, { fields: [adminSessions.userId], references: [users.id] }),
+}));
+
+export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
+  id: true,
+  createdAt: true,
+  lastActiveAt: true,
+});
+
+export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
+export type AdminSession = typeof adminSessions.$inferSelect;
 
 // ==================== AI GENERATION LOGS ====================
 export const aiGenerationLogs = pgTable("ai_generation_logs", {

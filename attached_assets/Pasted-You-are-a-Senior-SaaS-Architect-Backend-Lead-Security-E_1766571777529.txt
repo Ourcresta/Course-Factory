@@ -1,0 +1,259 @@
+You are a Senior SaaS Architect, Backend Lead, Security Engineer,
+and Platform Owner.
+
+Context:
+We are building GURU — the Admin Portal and Backend Control Plane
+for the OURSHIKSHA platform.
+
+There are TWO systems:
+1) GURU (Admin Portal + Backend APIs) → SINGLE SOURCE OF TRUTH
+2) SHISHYA (Student Portal) → READ-ONLY CONSUMER
+
+NON-NEGOTIABLE RULE:
+❗ ALL business logic lives in GURU
+❗ SHISHYA only consumes GURU APIs
+❗ No admin logic, pricing, coins, or rules in SHISHYA
+
+-------------------------------------------------
+GOAL
+-------------------------------------------------
+Generate the COMPLETE BACKEND API for GURU,
+covering governance, academics, monetization,
+Shishya control, dashboards, reports, and public APIs.
+
+This backend must be:
+- Secure
+- Role-based
+- Audit-ready
+- Scalable
+- Production-grade
+
+-------------------------------------------------
+TECH STACK (FIXED)
+-------------------------------------------------
+- Node.js + Express + TypeScript
+- PostgreSQL
+- Drizzle ORM
+- JWT authentication
+- API Key authentication (for public APIs)
+- Zod validation
+- Rate limiting
+- Centralized error handling
+
+-------------------------------------------------
+API STRUCTURE (MANDATORY)
+-------------------------------------------------
+
+/api
+ ├── admin
+ │    ├── auth
+ │    ├── admins
+ │    ├── courses
+ │    ├── labs
+ │    ├── tests
+ │    ├── projects
+ │    ├── certificates
+ │    ├── skills
+ │    ├── plans
+ │    ├── coins
+ │    ├── promotions
+ │    ├── shishya
+ │    ├── dashboard
+ │    ├── reports
+ │    ├── founder
+ │    ├── api-keys
+ │    └── settings
+ ├── public
+ └── health
+
+-------------------------------------------------
+1️⃣ ADMIN AUTH & GOVERNANCE
+-------------------------------------------------
+
+POST   /api/admin/auth/login
+POST   /api/admin/auth/logout
+GET    /api/admin/auth/me
+POST   /api/admin/auth/invite
+POST   /api/admin/auth/verify-invite
+
+GET    /api/admin/admins
+POST   /api/admin/admins
+PATCH  /api/admin/admins/:id/role
+PATCH  /api/admin/admins/:id/status
+DELETE /api/admin/admins/:id
+
+GET    /api/admin/audit-logs
+GET    /api/admin/login-logs
+POST   /api/admin/sessions/revoke
+
+-------------------------------------------------
+2️⃣ COURSE FACTORY & ACADEMICS
+-------------------------------------------------
+
+GET    /api/admin/courses
+POST   /api/admin/courses
+GET    /api/admin/courses/:id
+PATCH  /api/admin/courses/:id
+DELETE /api/admin/courses/:id
+POST   /api/admin/courses/:id/publish
+POST   /api/admin/courses/:id/unpublish
+
+POST   /api/admin/courses/generate
+POST   /api/admin/courses/:id/regenerate
+GET    /api/admin/courses/:id/ai-status
+
+POST   /api/admin/modules
+PATCH  /api/admin/modules/:id
+DELETE /api/admin/modules/:id
+
+POST   /api/admin/lessons
+PATCH  /api/admin/lessons/:id
+DELETE /api/admin/lessons/:id
+
+GET    /api/admin/labs
+POST   /api/admin/labs
+PATCH  /api/admin/labs/:id
+DELETE /api/admin/labs/:id
+
+GET    /api/admin/tests
+POST   /api/admin/tests
+PATCH  /api/admin/tests/:id
+DELETE /api/admin/tests/:id
+
+POST   /api/admin/tests/:id/questions
+PATCH  /api/admin/questions/:id
+DELETE /api/admin/questions/:id
+
+GET    /api/admin/projects
+POST   /api/admin/projects
+PATCH  /api/admin/projects/:id
+DELETE /api/admin/projects/:id
+
+-------------------------------------------------
+3️⃣ CERTIFICATES & SKILLS
+-------------------------------------------------
+
+GET    /api/admin/certificates/config
+POST   /api/admin/certificates/config
+POST   /api/admin/certificates/revoke
+POST   /api/admin/certificates/reissue
+
+GET    /api/admin/skills
+POST   /api/admin/skills
+PATCH  /api/admin/skills/:id
+DELETE /api/admin/skills/:id
+
+-------------------------------------------------
+4️⃣ PRICING, COINS & SUBSCRIPTIONS
+-------------------------------------------------
+
+GET    /api/admin/plans
+POST   /api/admin/plans
+PATCH  /api/admin/plans/:id
+PATCH  /api/admin/plans/:id/toggle
+
+GET    /api/admin/coins/config
+PATCH  /api/admin/coins/config
+GET    /api/admin/coins/ledger
+POST   /api/admin/coins/adjust
+
+GET    /api/admin/promotions
+POST   /api/admin/promotions
+PATCH  /api/admin/promotions/:id
+PATCH  /api/admin/promotions/:id/toggle
+
+-------------------------------------------------
+5️⃣ SHISHYA CONTROL PANEL
+-------------------------------------------------
+
+GET    /api/admin/shishya/overview
+GET    /api/admin/shishya/users
+GET    /api/admin/shishya/users/:id
+PATCH  /api/admin/shishya/users/:id/status
+
+GET    /api/admin/shishya/activity
+GET    /api/admin/shishya/engagement
+GET    /api/admin/shishya/payments
+GET    /api/admin/shishya/subscriptions
+
+-------------------------------------------------
+6️⃣ DASHBOARD & REPORTS
+-------------------------------------------------
+
+GET    /api/admin/dashboard/summary
+
+GET    /api/admin/reports/users
+GET    /api/admin/reports/revenue
+GET    /api/admin/reports/courses
+GET    /api/admin/reports/credits
+GET    /api/admin/reports/engagement
+
+-------------------------------------------------
+7️⃣ FOUNDER KPI (SUPER ADMIN ONLY)
+-------------------------------------------------
+
+GET    /api/admin/founder/kpis
+GET    /api/admin/founder/growth
+GET    /api/admin/founder/revenue
+GET    /api/admin/founder/credits
+GET    /api/admin/founder/retention
+GET    /api/admin/founder/alerts
+
+-------------------------------------------------
+8️⃣ PUBLIC APIs (FOR SHISHYA – READ ONLY)
+-------------------------------------------------
+
+GET    /api/public/courses
+GET    /api/public/courses/:id
+GET    /api/public/courses/:id/labs
+GET    /api/public/courses/:id/tests
+GET    /api/public/courses/:id/projects
+GET    /api/public/courses/:id/certificate
+
+GET    /api/public/plans
+GET    /api/public/features
+
+-------------------------------------------------
+9️⃣ SYSTEM & OPS
+-------------------------------------------------
+
+GET    /api/admin/api-keys
+POST   /api/admin/api-keys
+PATCH  /api/admin/api-keys/:id/rotate
+PATCH  /api/admin/api-keys/:id/revoke
+
+GET    /api/admin/settings
+PATCH  /api/admin/settings
+
+GET    /api/health
+GET    /api/metrics
+
+-------------------------------------------------
+SECURITY RULES (MANDATORY)
+-------------------------------------------------
+- JWT required for all /admin routes
+- Role-based access control
+- API keys for /public routes
+- Rate limiting
+- Input validation (Zod)
+- Centralized error handling
+- Full audit logging
+- Soft deletes for critical entities
+
+-------------------------------------------------
+OUTPUT EXPECTATION
+-------------------------------------------------
+Generate:
+1) Express route files (modular)
+2) Controllers & services
+3) RBAC middleware
+4) Drizzle schema
+5) Validation schemas
+6) Audit logging
+7) API documentation
+8) README explaining authority boundaries
+
+Think like a platform owner.
+Do not over-engineer.
+Do not miss any control surface.
+Deliver production-ready backend code.
