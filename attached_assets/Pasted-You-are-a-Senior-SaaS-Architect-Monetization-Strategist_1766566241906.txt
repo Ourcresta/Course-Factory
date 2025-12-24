@@ -1,0 +1,184 @@
+You are a Senior SaaS Architect, Monetization Strategist, Security Engineer,
+and Full-Stack Developer.
+
+Context:
+We are building OURSHIKSHA, an AI-powered education platform with:
+1) GURU – Admin Portal + Backend API (AWS EC2)
+2) SHISHYA – Student Portal
+3) MAIN SITE – Marketing & Pricing
+
+IMPORTANT RULE:
+❗ ALL subscription plans, pricing, coins, free offers, and promotions
+MUST be controlled ONLY from the GURU Admin Portal.
+Frontend must be READ-ONLY.
+
+------------------------------------
+GOAL
+------------------------------------
+Design and implement a FULLY ADMIN-CONTROLLED
+Subscription + Coins Management System where:
+
+- Admin can create / edit / enable / disable plans
+- Admin controls FREE signup coins (e.g., 500 coins)
+- Admin controls monthly coin allocation
+- Admin controls feature access per plan
+- Admin can run limited-time offers
+- Students can only VIEW plans and SUBSCRIBE
+- No pricing or coin logic is hardcoded in frontend
+
+------------------------------------
+SYSTEM ARCHITECTURE
+------------------------------------
+
+GURU (Admin EC2)
+→ Owns pricing, coins, plans, rules
+→ Exposes secure APIs
+
+SHISHYA + MAIN SITE
+→ Fetch plans dynamically
+→ Cannot modify anything
+
+------------------------------------
+DATABASE DESIGN (CORE)
+------------------------------------
+
+TABLE: plans
+- id (uuid)
+- name (FREE, BASIC, PRO, ELITE)
+- price_monthly
+- price_yearly
+- coins_per_month
+- signup_bonus_coins
+- features (json)
+- is_active (boolean)
+- created_at
+
+TABLE: subscriptions
+- id
+- user_id
+- plan_id
+- start_date
+- end_date
+- status (active, cancelled, expired)
+
+TABLE: coin_wallet
+- user_id
+- balance
+
+TABLE: coin_transactions
+- id
+- user_id
+- change (+/-)
+- reason
+- reference_id
+- created_at
+
+TABLE: promotions
+- id
+- title
+- bonus_coins
+- valid_from
+- valid_to
+- is_active
+
+------------------------------------
+ADMIN (GURU) UI REQUIREMENTS
+------------------------------------
+
+Create a full “Subscription & Coins Admin Panel” with:
+
+1) PLAN MANAGEMENT
+- Create / edit plans
+- Monthly & yearly price
+- Coins per month
+- Signup bonus coins
+- Feature toggles:
+  - AI Mithra
+  - Labs
+  - Tests
+  - Projects
+  - Certificates
+- Enable / Disable plan
+
+2) FREE SIGNUP OFFER CONTROL
+- Input: “Signup Bonus Coins”
+- Toggle: ON / OFF
+- Change anytime (no redeploy)
+
+3) PROMOTION MANAGER
+- Limited time offers
+- Extra coins (e.g., +1000 coins)
+- Validity dates
+- Plan-specific or global
+
+4) USER SUBSCRIPTION VIEW
+- See user plan
+- Coin balance
+- Transaction history
+
+------------------------------------
+BACKEND API (GURU EC2)
+------------------------------------
+
+ADMIN APIs (Protected):
+- POST   /api/admin/plans
+- PUT    /api/admin/plans/:id
+- PATCH  /api/admin/plans/:id/toggle
+- POST   /api/admin/promotions
+
+PUBLIC APIs (Read-Only):
+- GET /api/plans
+- GET /api/plans/active
+
+USER APIs:
+- POST /api/subscribe
+- GET  /api/coins/balance
+- GET  /api/coins/history
+
+RULES:
+- All coin credits/debits logged
+- Coins never go negative
+- Plan logic only on backend
+- JWT + role-based access
+
+------------------------------------
+FRONTEND BEHAVIOR
+------------------------------------
+
+MAIN SITE:
+- Fetch plans from /api/plans
+- Display pricing dynamically
+- Show “🎁 Get FREE X Coins” from API
+- No hardcoded prices or coins
+
+SHISHYA:
+- Show current plan
+- Show coin balance
+- Show usage cost per feature
+- Disable features if coins insufficient
+
+------------------------------------
+SECURITY & GOVERNANCE
+------------------------------------
+- Only GURU role can edit plans
+- Students cannot manipulate coins
+- All sensitive logic server-side
+- Audit-friendly transaction logs
+
+------------------------------------
+OUTPUT EXPECTATION
+------------------------------------
+Generate:
+1) SQL schema
+2) Backend APIs (Node.js)
+3) Admin UI screens (GURU)
+4) Pricing page UI (read-only)
+5) Coin engine logic
+6) Feature gating logic
+7) Folder structure
+8) README explaining admin control flow
+
+Think like a SaaS founder.
+Design for flexibility.
+Build for monetization.
+Deliver production-ready code.

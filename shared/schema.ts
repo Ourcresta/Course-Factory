@@ -702,3 +702,213 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit
 
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
+
+// ==================== SUBSCRIPTION PLANS ====================
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  priceMonthly: integer("price_monthly").default(0).notNull(),
+  priceYearly: integer("price_yearly").default(0).notNull(),
+  coinsPerMonth: integer("coins_per_month").default(0).notNull(),
+  signupBonusCoins: integer("signup_bonus_coins").default(0).notNull(),
+  features: jsonb("features").$type<{
+    aiMithra: boolean;
+    labs: boolean;
+    tests: boolean;
+    projects: boolean;
+    certificates: boolean;
+    prioritySupport: boolean;
+    maxCoursesAccess: number;
+  }>(),
+  isActive: boolean("is_active").default(true).notNull(),
+  isFeatured: boolean("is_featured").default(false).notNull(),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+
+// ==================== SHISHYA USERS (STUDENTS) ====================
+export const shishyaUsers = pgTable("shishya_users", {
+  id: serial("id").primaryKey(),
+  externalId: text("external_id").unique(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone"),
+  avatarUrl: text("avatar_url"),
+  status: text("status").default("active").notNull(),
+  lastActiveAt: timestamp("last_active_at"),
+  totalSpend: integer("total_spend").default(0).notNull(),
+  signupSource: text("signup_source"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertShishyaUserSchema = createInsertSchema(shishyaUsers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaUser = z.infer<typeof insertShishyaUserSchema>;
+export type ShishyaUser = typeof shishyaUsers.$inferSelect;
+
+// ==================== USER SUBSCRIPTIONS ====================
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  planId: integer("plan_id").notNull().references(() => subscriptionPlans.id),
+  status: text("status").default("active").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  billingCycle: text("billing_cycle").default("monthly"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [userSubscriptions.shishyaUserId], references: [shishyaUsers.id] }),
+  plan: one(subscriptionPlans, { fields: [userSubscriptions.planId], references: [subscriptionPlans.id] }),
+}));
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+
+// ==================== COIN WALLETS ====================
+export const coinWallets = pgTable("coin_wallets", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().unique().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  balance: integer("balance").default(0).notNull(),
+  lifetimeEarned: integer("lifetime_earned").default(0).notNull(),
+  lifetimeSpent: integer("lifetime_spent").default(0).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const coinWalletsRelations = relations(coinWallets, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [coinWallets.shishyaUserId], references: [shishyaUsers.id] }),
+}));
+
+export const insertCoinWalletSchema = createInsertSchema(coinWallets).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertCoinWallet = z.infer<typeof insertCoinWalletSchema>;
+export type CoinWallet = typeof coinWallets.$inferSelect;
+
+// ==================== COIN TRANSACTIONS ====================
+export const coinTransactions = pgTable("coin_transactions", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  amount: integer("amount").notNull(),
+  type: text("type").notNull(),
+  reason: text("reason"),
+  referenceId: text("reference_id"),
+  referenceType: text("reference_type"),
+  balanceAfter: integer("balance_after").notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const coinTransactionsRelations = relations(coinTransactions, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [coinTransactions.shishyaUserId], references: [shishyaUsers.id] }),
+}));
+
+export const insertCoinTransactionSchema = createInsertSchema(coinTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCoinTransaction = z.infer<typeof insertCoinTransactionSchema>;
+export type CoinTransaction = typeof coinTransactions.$inferSelect;
+
+// ==================== PROMOTIONS ====================
+export const promotions = pgTable("promotions", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  code: text("code").unique(),
+  type: text("type").default("bonus_coins").notNull(),
+  bonusCoins: integer("bonus_coins").default(0),
+  discountPercent: integer("discount_percent").default(0),
+  planId: integer("plan_id").references(() => subscriptionPlans.id),
+  isGlobal: boolean("is_global").default(true).notNull(),
+  validFrom: timestamp("valid_from").notNull(),
+  validTo: timestamp("valid_to").notNull(),
+  maxRedemptions: integer("max_redemptions"),
+  currentRedemptions: integer("current_redemptions").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertPromotionSchema = createInsertSchema(promotions).omit({
+  id: true,
+  currentRedemptions: true,
+  createdAt: true,
+});
+
+export type InsertPromotion = z.infer<typeof insertPromotionSchema>;
+export type Promotion = typeof promotions.$inferSelect;
+
+// ==================== SHISHYA PAYMENTS ====================
+export const shishyaPayments = pgTable("shishya_payments", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  amount: integer("amount").notNull(),
+  currency: text("currency").default("INR").notNull(),
+  status: text("status").default("pending").notNull(),
+  paymentMethod: text("payment_method"),
+  provider: text("provider"),
+  providerTransactionId: text("provider_transaction_id"),
+  subscriptionId: integer("subscription_id").references(() => userSubscriptions.id),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const shishyaPaymentsRelations = relations(shishyaPayments, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaPayments.shishyaUserId], references: [shishyaUsers.id] }),
+  subscription: one(userSubscriptions, { fields: [shishyaPayments.subscriptionId], references: [userSubscriptions.id] }),
+}));
+
+export const insertShishyaPaymentSchema = createInsertSchema(shishyaPayments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaPayment = z.infer<typeof insertShishyaPaymentSchema>;
+export type ShishyaPayment = typeof shishyaPayments.$inferSelect;
+
+// ==================== ACTIVITY LOGS ====================
+export const activityLogs = pgTable("activity_logs", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").references(() => shishyaUsers.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [activityLogs.shishyaUserId], references: [shishyaUsers.id] }),
+}));
+
+export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type ActivityLog = typeof activityLogs.$inferSelect;

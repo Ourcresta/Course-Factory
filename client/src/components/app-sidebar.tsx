@@ -12,6 +12,14 @@ import {
   CreditCard,
   Shield,
   BarChart3,
+  Users,
+  Activity,
+  Wallet,
+  LineChart,
+  Link2,
+  FileText,
+  Gift,
+  Percent,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,12 +35,20 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 
-const mainNavItems = [
+const mainItems = [
   {
     title: "Dashboard",
     url: "/",
     icon: LayoutDashboard,
   },
+  {
+    title: "Reports",
+    url: "/reports",
+    icon: BarChart3,
+  },
+];
+
+const academicsItems = [
   {
     title: "Courses",
     url: "/courses",
@@ -44,9 +60,6 @@ const mainNavItems = [
     icon: Sparkles,
     highlight: true,
   },
-];
-
-const practiceItems = [
   {
     title: "Practice Labs",
     url: "/labs",
@@ -62,9 +75,6 @@ const practiceItems = [
     url: "/projects",
     icon: FolderKanban,
   },
-];
-
-const configItems = [
   {
     title: "Certificates",
     url: "/certificates",
@@ -75,10 +85,56 @@ const configItems = [
     url: "/skills",
     icon: Tags,
   },
+];
+
+const businessItems = [
   {
     title: "Credits & Pricing",
     url: "/credits",
     icon: CreditCard,
+  },
+  {
+    title: "Plans & Subscriptions",
+    url: "/subscriptions",
+    icon: FileText,
+  },
+  {
+    title: "Payments",
+    url: "/payments",
+    icon: Wallet,
+  },
+  {
+    title: "Promotions",
+    url: "/promotions",
+    icon: Percent,
+  },
+];
+
+const shishyaItems = [
+  {
+    title: "Shishya Overview",
+    url: "/shishya",
+    icon: LineChart,
+  },
+  {
+    title: "Users",
+    url: "/shishya/users",
+    icon: Users,
+  },
+  {
+    title: "Activity",
+    url: "/shishya/activity",
+    icon: Activity,
+  },
+  {
+    title: "Payments",
+    url: "/shishya/payments",
+    icon: Wallet,
+  },
+  {
+    title: "Engagement",
+    url: "/shishya/engagement",
+    icon: Gift,
   },
 ];
 
@@ -89,9 +145,9 @@ const systemItems = [
     icon: Shield,
   },
   {
-    title: "Reports",
-    url: "/reports",
-    icon: BarChart3,
+    title: "Integrations",
+    url: "/integrations",
+    icon: Link2,
   },
   {
     title: "Settings",
@@ -113,6 +169,9 @@ export function AppSidebar() {
     if (url === "/courses/new") {
       return location === "/courses/new";
     }
+    if (url === "/shishya") {
+      return location === "/shishya";
+    }
     return location.startsWith(url);
   };
 
@@ -125,7 +184,7 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-semibold tracking-tight" data-testid="text-brand-name">Oushiksha</span>
-            <span className="text-xs text-muted-foreground">Guru</span>
+            <span className="text-xs text-muted-foreground">Guru Admin</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -135,7 +194,28 @@ export function AppSidebar() {
           <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
+              {mainItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                  >
+                    <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Academics</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {academicsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -158,10 +238,10 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Practice</SidebarGroupLabel>
+          <SidebarGroupLabel>Business</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {practiceItems.map((item) => (
+              {businessItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -179,10 +259,10 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Configuration</SidebarGroupLabel>
+          <SidebarGroupLabel>Shishya Control</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {configItems.map((item) => (
+              {shishyaItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -223,12 +303,10 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-4">
         <div className="rounded-md bg-muted p-3">
-          <p className="text-xs text-muted-foreground">
-            Oushiksha Guru v1.0
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Powered by AI
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-green-500" />
+            <span className="text-xs text-muted-foreground">System Online</span>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

@@ -1,0 +1,215 @@
+You are a Senior SaaS Architect, Data Platform Lead, UI/UX Director,
+and Security Engineer.
+
+Context:
+We are building OURSHIKSHA with:
+1) GURU – Admin Portal + Backend API (AWS EC2)
+2) SHISHYA – Student Portal
+3) MAIN SITE – Marketing & Pricing
+
+Current State:
+- Guru Admin exists with Courses, AI Course Factory, Credits & Pricing, Security
+- Shishya exists as student portal
+- Payments, subscriptions, and coins are backend-driven
+- Admin must have FULL VISIBILITY and CONTROL over Shishya
+
+Goal:
+Upgrade the GURU ADMIN PORTAL into a true **COMMAND CENTER**
+by adding:
+1) A new **Shishya Control Panel tab**
+2) Deep analytics on Shishya users, activity, and payments
+3) A redesigned executive-grade Dashboard UI
+4) A Reports tab that reuses the SAME dashboard components
+
+--------------------------------------------------
+PART 1 — NEW SIDEBAR STRUCTURE (GURU)
+--------------------------------------------------
+
+Redesign the left navigation as:
+
+MAIN
+- Dashboard
+- Reports
+
+ACADEMICS
+- Courses
+- AI Course Factory
+- Practice Labs
+- Tests
+- Projects
+- Certificates
+- Skills Library
+
+BUSINESS
+- Credits & Pricing
+- Payments
+- Subscriptions
+
+SHISHYA CONTROL
+- Shishya Overview
+- Users
+- Activity
+- Payments
+- Engagement
+
+SYSTEM
+- Security & Admins
+- Integrations
+- Audit Logs
+
+--------------------------------------------------
+PART 2 — SHISHYA CONTROL PANEL (CORE FEATURE)
+--------------------------------------------------
+
+Create a full **Shishya Control Panel** inside Guru.
+
+### Shishya Overview (Executive Summary)
+Show KPI cards:
+- Total Shishya Users
+- Active Users (last 7 / 30 days)
+- New Users (today / month)
+- Paid Users
+- Free Users
+- Total Revenue
+- Revenue (Today / Month)
+- Avg Coins Used per User
+
+### Shishya Users Table
+Columns:
+- User ID
+- Name
+- Email
+- Signup Date
+- Status (Active / Inactive)
+- Plan (Free / Basic / Pro / Elite)
+- Coin Balance
+- Last Active
+- Total Spend
+
+Actions:
+- View Profile
+- View Activity
+- View Payments
+- Suspend / Activate (admin only)
+
+### Shishya Activity Analytics
+Charts:
+- Daily Active Users (DAU)
+- Monthly Active Users (MAU)
+- Course enrollments
+- Labs attempted
+- Tests taken
+- Certificates issued
+
+### Payments & Subscriptions
+Tables and metrics:
+- Total payments count
+- Successful vs failed payments
+- Revenue by plan
+- Subscription renewals
+- Expiring subscriptions (next 7 days)
+
+--------------------------------------------------
+PART 3 — DASHBOARD UI REDESIGN (EXECUTIVE GRADE)
+--------------------------------------------------
+
+Redesign the GURU Dashboard to look like a **SaaS command center**:
+
+Dashboard Sections:
+1) System Snapshot (Courses, Labs, Tests, Projects)
+2) Academic Health (publish blockers, missing labs/tests/certs)
+3) Shishya Metrics (users, activity, revenue)
+4) Monetization Health (credits used, revenue, missing pricing)
+5) Security & Governance (admins, API keys, alerts)
+
+Design rules:
+- Clean cards
+- Color-coded alerts
+- Icons for quick scanning
+- No clutter
+- Mobile responsive
+
+--------------------------------------------------
+PART 4 — REPORTS TAB (REUSE DASHBOARD)
+--------------------------------------------------
+
+The **Reports tab must reuse the SAME dashboard components**
+but with:
+- Date range filters
+- Export to CSV / PDF
+- Comparison (Today vs Last Week / Month)
+
+Reports should include:
+- Academic reports
+- Shishya engagement reports
+- Revenue & payment reports
+- Credit usage reports
+
+No duplicate logic — shared components only.
+
+--------------------------------------------------
+PART 5 — BACKEND DATA MODELS
+--------------------------------------------------
+
+Ensure backend supports:
+
+TABLE: users
+- id, name, email, role, created_at, last_active
+
+TABLE: subscriptions
+- user_id, plan_id, status, start_date, end_date
+
+TABLE: payments
+- id, user_id, amount, status, provider, created_at
+
+TABLE: coin_wallet
+- user_id, balance
+
+TABLE: activity_logs
+- user_id, action, entity_type, created_at
+
+--------------------------------------------------
+PART 6 — BACKEND APIs (GURU EC2)
+--------------------------------------------------
+
+Admin APIs:
+- GET /api/admin/dashboard/summary
+- GET /api/admin/shishya/overview
+- GET /api/admin/shishya/users
+- GET /api/admin/shishya/activity
+- GET /api/admin/shishya/payments
+- GET /api/admin/reports
+
+Rules:
+- JWT + role-based access
+- Admin-only visibility
+- No direct DB access from frontend
+
+--------------------------------------------------
+PART 7 — SECURITY & GOVERNANCE
+--------------------------------------------------
+
+- Only Guru Admins can access Shishya Control Panel
+- All actions logged in audit logs
+- Sensitive fields masked where needed
+- Read-heavy, write-protected analytics
+
+--------------------------------------------------
+OUTPUT EXPECTATION
+--------------------------------------------------
+
+Generate:
+1) New sidebar layout
+2) Redesigned Dashboard UI
+3) Shishya Control Panel screens
+4) Reports tab with reused components
+5) Backend APIs
+6) SQL schemas
+7) Charts & tables (React)
+8) Folder structure
+9) README explaining admin analytics flow
+
+Think like a SaaS founder.
+Design like a CIO dashboard.
+Build secure, scalable, and clean.
+Deliver production-ready code.

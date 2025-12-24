@@ -31,24 +31,46 @@ import Projects from "@/pages/projects";
 import CertificatesList from "@/pages/certificates-list";
 import Credits from "@/pages/credits";
 import Payments from "@/pages/payments";
+import Reports from "@/pages/reports";
+import Subscriptions from "@/pages/subscriptions";
+import Promotions from "@/pages/promotions";
+import ShishyaOverview from "@/pages/shishya-overview";
+import ShishyaUsers from "@/pages/shishya-users";
+import ShishyaActivity from "@/pages/shishya-activity";
+import ShishyaPayments from "@/pages/shishya-payments";
+import ShishyaEngagement from "@/pages/shishya-engagement";
 
 function Router() {
   return (
     <Switch>
-      {/* Global routes */}
+      {/* Main */}
       <Route path="/" component={Dashboard} />
+      <Route path="/reports" component={Reports} />
+
+      {/* Academics */}
       <Route path="/courses" component={Courses} />
       <Route path="/courses/new" component={CreateCourse} />
-      <Route path="/skills" component={Skills} />
-      <Route path="/settings" component={Settings} />
-
-      {/* Independent content sections */}
-      <Route path="/tests" component={Tests} />
       <Route path="/labs" component={Labs} />
+      <Route path="/tests" component={Tests} />
       <Route path="/projects" component={Projects} />
       <Route path="/certificates" component={CertificatesList} />
+      <Route path="/skills" component={Skills} />
+
+      {/* Business */}
       <Route path="/credits" component={Credits} />
+      <Route path="/subscriptions" component={Subscriptions} />
       <Route path="/payments" component={Payments} />
+      <Route path="/promotions" component={Promotions} />
+
+      {/* Shishya Control */}
+      <Route path="/shishya" component={ShishyaOverview} />
+      <Route path="/shishya/users" component={ShishyaUsers} />
+      <Route path="/shishya/activity" component={ShishyaActivity} />
+      <Route path="/shishya/payments" component={ShishyaPayments} />
+      <Route path="/shishya/engagement" component={ShishyaEngagement} />
+
+      {/* System */}
+      <Route path="/settings" component={Settings} />
 
       {/* Course-scoped routes */}
       <Route path="/courses/:id" component={CourseDetail} />
