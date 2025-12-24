@@ -10,6 +10,30 @@ const MAX_OTP_ATTEMPTS = 3;
 const BCRYPT_ROUNDS = 12;
 const ADMIN_APPROVAL_EMAIL = 'ourcresta@gmail.com';
 
+interface PendingSignup {
+  username: string;
+  email: string;
+  hashedPassword: string;
+  otpHash: string;
+  expiresAt: Date;
+  attempts: number;
+  createdAt: Date;
+}
+
+const pendingSignups = new Map<string, PendingSignup>();
+
+function cleanupExpiredSignups() {
+  const now = new Date();
+  const entries = Array.from(pendingSignups.entries());
+  for (const [email, signup] of entries) {
+    if (now > signup.expiresAt) {
+      pendingSignups.delete(email);
+    }
+  }
+}
+
+setInterval(cleanupExpiredSignups, 60000);
+
 const loginSchema = z.object({
   email: z.string().email('Valid email required'),
   password: z.string().min(1, 'Password required'),
@@ -128,24 +152,21 @@ export function registerAuthRoutes(app: Express) {
       }
 
       const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
-      const newUser = await storage.createUser({
-        username,
-        email,
-        password: hashedPassword,
-        role: 'pending_admin',
-      });
-
       const otp = generateOTP();
+      const otpHash = await bcrypt.hash(otp, BCRYPT_ROUNDS);
       const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-      await storage.createOtpToken({
-        userId: newUser.id,
-        otp: await bcrypt.hash(otp, BCRYPT_ROUNDS),
+      pendingSignups.set(email.toLowerCase(), {
+        username,
+        email,
+        hashedPassword,
+        otpHash,
         expiresAt,
         attempts: 0,
-        isUsed: false,
+        createdAt: new Date(),
       });
+
+      console.log(`[Auth] Pending signup stored for ${email}, OTP: ${otp}`);
 
       const emailSent = await sendOTPEmail(
         ADMIN_APPROVAL_EMAIL, 
@@ -154,19 +175,12 @@ export function registerAuthRoutes(app: Express) {
       );
       
       if (!emailSent) {
+        pendingSignups.delete(email.toLowerCase());
         return res.status(500).json({ 
           error: 'Email delivery failed',
           message: 'Unable to send verification code. Please try again.'
         });
       }
-
-      await storage.createAuditLog({
-        userId: newUser.id,
-        action: 'SIGNUP_OTP_SENT',
-        entityType: 'AUTH',
-        entityId: null,
-        metadata: { email, username, approvalEmail: ADMIN_APPROVAL_EMAIL, ip: req.ip }
-      });
 
       res.json({ 
         success: true,
@@ -193,75 +207,63 @@ export function registerAuthRoutes(app: Express) {
       }
 
       const { email, otp } = validation.data;
+      const emailKey = email.toLowerCase();
 
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
+      const pendingSignup = pendingSignups.get(emailKey);
+      if (!pendingSignup) {
         return res.status(401).json({ 
-          error: 'Invalid request',
-          message: 'User not found'
+          error: 'No pending signup',
+          message: 'No pending signup found for this email. Please sign up again.'
         });
       }
 
-      if (user.role === 'admin') {
-        return res.status(400).json({ 
-          error: 'Already verified',
-          message: 'This account is already verified. Please sign in.'
-        });
-      }
-
-      const otpToken = await storage.getLatestOtpToken(user.id);
-      if (!otpToken) {
-        return res.status(401).json({ 
-          error: 'No OTP found',
-          message: 'Please request a new verification code'
-        });
-      }
-
-      if (otpToken.isUsed) {
-        return res.status(401).json({ 
-          error: 'OTP already used',
-          message: 'Please request a new verification code'
-        });
-      }
-
-      if (new Date() > new Date(otpToken.expiresAt)) {
+      if (new Date() > pendingSignup.expiresAt) {
+        pendingSignups.delete(emailKey);
         return res.status(401).json({ 
           error: 'OTP expired',
-          message: 'Please request a new verification code'
+          message: 'Verification code has expired. Please sign up again.'
         });
       }
 
-      if (otpToken.attempts >= MAX_OTP_ATTEMPTS) {
+      if (pendingSignup.attempts >= MAX_OTP_ATTEMPTS) {
+        pendingSignups.delete(emailKey);
         return res.status(429).json({ 
           error: 'Too many attempts',
-          message: 'Maximum verification attempts exceeded. Please request a new code.'
+          message: 'Maximum verification attempts exceeded. Please sign up again.'
         });
       }
 
-      const isOtpValid = await bcrypt.compare(otp, otpToken.otp);
+      const isOtpValid = await bcrypt.compare(otp, pendingSignup.otpHash);
       
       if (!isOtpValid) {
-        await storage.incrementOtpAttempts(otpToken.id);
-        const remainingAttempts = MAX_OTP_ATTEMPTS - otpToken.attempts - 1;
+        pendingSignup.attempts++;
+        const remainingAttempts = MAX_OTP_ATTEMPTS - pendingSignup.attempts;
         return res.status(401).json({ 
           error: 'Invalid OTP',
           message: `Incorrect code. ${remainingAttempts} attempts remaining.`
         });
       }
 
-      await storage.markOtpAsUsed(otpToken.id);
-      await storage.updateUserRole(user.id, 'admin');
-      await storage.updateUserLastLogin(user.id);
+      const newUser = await storage.createUser({
+        username: pendingSignup.username,
+        email: pendingSignup.email,
+        password: pendingSignup.hashedPassword,
+        role: 'admin',
+      });
+
+      pendingSignups.delete(emailKey);
+
+      await storage.updateUserLastLogin(newUser.id);
 
       const token = generateToken({
-        userId: user.id,
-        username: user.username,
-        email: user.email,
+        userId: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
         role: 'admin'
       });
 
       await storage.createAuditLog({
-        userId: user.id,
+        userId: newUser.id,
         action: 'SIGNUP_SUCCESS',
         entityType: 'AUTH',
         entityId: null,
@@ -270,12 +272,12 @@ export function registerAuthRoutes(app: Express) {
 
       res.json({
         success: true,
-        message: 'Account verified successfully',
+        message: 'Account created successfully',
         token,
         user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
           role: 'admin'
         }
       });
