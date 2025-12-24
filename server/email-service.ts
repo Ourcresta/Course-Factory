@@ -45,20 +45,27 @@ export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export async function sendOTPEmail(toEmail: string, otp: string): Promise<boolean> {
+export async function sendOTPEmail(toEmail: string, otp: string, customMessage?: string): Promise<boolean> {
   try {
     const { client, fromEmail } = await getResendClient();
+    
+    const subject = customMessage 
+      ? 'New Admin Signup Request - OurShiksha'
+      : 'OurShiksha Admin Verification Code';
+    
+    const headerText = customMessage || 'Admin Verification Code';
+    const contextText = customMessage 
+      ? `<p style="color: #444; font-size: 16px; line-height: 1.5; margin-bottom: 16px;">${customMessage}</p><p style="color: #444; font-size: 16px; line-height: 1.5;">Approval verification code:</p>`
+      : `<p style="color: #444; font-size: 16px; line-height: 1.5;">Your One-Time Verification Code is:</p>`;
     
     const result = await client.emails.send({
       from: fromEmail || 'OurShiksha Admin <admin@mail.dishabrooms.com>',
       to: toEmail,
-      subject: 'OurShiksha Admin Verification Code',
+      subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #1a1a1a; margin-bottom: 24px;">Admin Verification Code</h2>
-          <p style="color: #444; font-size: 16px; line-height: 1.5;">
-            Your One-Time Verification Code is:
-          </p>
+          <h2 style="color: #1a1a1a; margin-bottom: 24px;">${headerText}</h2>
+          ${contextText}
           <div style="background-color: #f5f5f5; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0;">
             <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1a1a1a;">${otp}</span>
           </div>
@@ -72,7 +79,7 @@ export async function sendOTPEmail(toEmail: string, otp: string): Promise<boolea
           </p>
         </div>
       `,
-      text: `Your One-Time Verification Code is: ${otp}\n\nThis code is valid for 5 minutes.\nDo not share this code with anyone.`
+      text: `${customMessage ? customMessage + '\n\n' : ''}Verification Code: ${otp}\n\nThis code is valid for 5 minutes.\nDo not share this code with anyone.`
     });
 
     console.log('[Email Service] OTP email sent successfully to:', toEmail);

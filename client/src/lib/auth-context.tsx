@@ -12,8 +12,9 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-  verifyOtp: (email: string, otp: string) => Promise<{ success: boolean; message: string; token?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message: string; token?: string }>;
+  signup: (username: string, email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  verifySignup: (email: string, otp: string) => Promise<{ success: boolean; message: string; token?: string }>;
   logout: () => void;
   pendingEmail: string | null;
   setPendingEmail: (email: string | null) => void;
@@ -75,7 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  async function login(email: string, password: string): Promise<{ success: boolean; message: string }> {
+  function setAuthData(authToken: string, authUser: User) {
+    localStorage.setItem(TOKEN_KEY, authToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+    setToken(authToken);
+    setUser(authUser);
+  }
+
+  async function login(email: string, password: string): Promise<{ success: boolean; message: string; token?: string }> {
     try {
       const response = await fetch('/api/admin/auth/login', {
         method: 'POST',
@@ -84,9 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       const data = await response.json();
       
-      if (data.success) {
-        setPendingEmail(email);
-        return { success: true, message: data.message };
+      if (data.success && data.token) {
+        setAuthData(data.token, data.user);
+        return { success: true, message: data.message, token: data.token };
       }
       
       return { success: false, message: data.message || data.error || 'Login failed' };
@@ -95,9 +103,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function verifyOtp(email: string, otp: string): Promise<{ success: boolean; message: string; token?: string }> {
+  async function signup(username: string, email: string, password: string): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch('/api/admin/auth/verify-otp', {
+      const response = await fetch('/api/admin/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setPendingEmail(email);
+        return { success: true, message: data.message };
+      }
+      
+      return { success: false, message: data.message || data.error || 'Signup failed' };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Signup failed' };
+    }
+  }
+
+  async function verifySignup(email: string, otp: string): Promise<{ success: boolean; message: string; token?: string }> {
+    try {
+      const response = await fetch('/api/admin/auth/verify-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp }),
@@ -105,10 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       
       if (data.success && data.token) {
-        localStorage.setItem(TOKEN_KEY, data.token);
-        localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-        setToken(data.token);
-        setUser(data.user);
+        setAuthData(data.token, data.user);
         setPendingEmail(null);
         return { success: true, message: data.message, token: data.token };
       }
@@ -131,7 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!token && !!user,
       isLoading,
       login,
-      verifyOtp,
+      signup,
+      verifySignup,
       logout,
       pendingEmail,
       setPendingEmail

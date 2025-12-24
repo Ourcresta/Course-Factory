@@ -82,15 +82,21 @@ Core entities include:
 
 ## Admin Authentication
 
-Production security implemented with OTP-based authentication:
+Production security implemented with separate Sign In and Sign Up flows:
 
-### Authentication Flow
+### Sign In Flow (Email + Password only)
 1. Admin enters email and password on login page
 2. Server validates credentials against bcrypt-hashed password (12 rounds)
-3. If valid, 6-digit OTP is generated and sent via Resend API
-4. OTP is stored in database with 5-minute expiry and max 3 attempts
-5. Admin enters OTP to complete verification
-6. JWT token issued with 12-hour expiry
+3. If valid, JWT token issued immediately with 12-hour expiry
+4. No OTP required for existing admin sign in
+
+### Sign Up Flow (Email + Password + OTP)
+1. New user enters username, email, and password
+2. Server creates user with `pending_admin` role
+3. 6-digit OTP is generated and sent to admin approval email (ourcresta@gmail.com) via Resend API
+4. OTP stored in database with 5-minute expiry and max 3 attempts
+5. New user enters OTP (obtained from admin)
+6. User role updated to `admin` and JWT token issued
 
 ### Security Features
 - **Password Hashing**: bcrypt with 12 rounds

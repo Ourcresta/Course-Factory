@@ -6,21 +6,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
-import { Mail, Lock, KeyRound, ArrowLeft, Loader2 } from 'lucide-react';
+import { Mail, Lock, KeyRound, ArrowLeft, Loader2, User } from 'lucide-react';
 
-type AuthStep = 'login' | 'otp';
+type AuthMode = 'signin' | 'signup';
+type AuthStep = 'form' | 'otp';
 
 export default function Login() {
-  const [step, setStep] = useState<AuthStep>('login');
+  const [mode, setMode] = useState<AuthMode>('signin');
+  const [step, setStep] = useState<AuthStep>('form');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, verifyOtp, pendingEmail } = useAuth();
+  const { login, signup, verifySignup, pendingEmail } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
 
@@ -29,13 +32,44 @@ export default function Login() {
       
       if (result.success) {
         toast({
-          title: 'Verification Code Sent',
+          title: 'Welcome!',
+          description: 'Login successful',
+        });
+        setLocation('/');
+      } else {
+        toast({
+          title: 'Login Failed',
           description: result.message,
+          variant: 'destructive',
+        });
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleSignUp(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const result = await signup(username, email, password);
+      
+      if (result.success) {
+        toast({
+          title: 'Verification Code Sent',
+          description: 'An OTP has been sent to the admin for approval',
         });
         setStep('otp');
       } else {
         toast({
-          title: 'Login Failed',
+          title: 'Sign Up Failed',
           description: result.message,
           variant: 'destructive',
         });
@@ -56,12 +90,12 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const result = await verifyOtp(pendingEmail || email, otp);
+      const result = await verifySignup(pendingEmail || email, otp);
       
       if (result.success) {
         toast({
           title: 'Welcome!',
-          description: 'Login successful',
+          description: 'Account verified successfully',
         });
         setLocation('/');
       } else {
@@ -82,8 +116,17 @@ export default function Login() {
     }
   }
 
-  function handleBackToLogin() {
-    setStep('login');
+  function handleBackToForm() {
+    setStep('form');
+    setOtp('');
+  }
+
+  function switchMode() {
+    setMode(mode === 'signin' ? 'signup' : 'signin');
+    setStep('form');
+    setUsername('');
+    setEmail('');
+    setPassword('');
     setOtp('');
   }
 
@@ -102,23 +145,27 @@ export default function Login() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={handleBackToLogin}
-                  data-testid="button-back-to-login"
+                  onClick={handleBackToForm}
+                  data-testid="button-back-to-form"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               )}
-              {step === 'login' ? 'Admin Login' : 'Verify OTP'}
+              {step === 'form' 
+                ? (mode === 'signin' ? 'Admin Sign In' : 'Admin Sign Up')
+                : 'Verify OTP'}
             </CardTitle>
             <CardDescription>
-              {step === 'login' 
-                ? 'Sign in with your admin credentials' 
-                : `Enter the verification code sent to ${pendingEmail || email}`}
+              {step === 'form' 
+                ? (mode === 'signin' 
+                    ? 'Sign in with your admin credentials' 
+                    : 'Create a new admin account')
+                : 'Enter the verification code sent to the admin'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 'login' ? (
-              <form onSubmit={handleLogin} className="space-y-4">
+            {step === 'form' && mode === 'signin' && (
+              <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -155,7 +202,7 @@ export default function Login() {
                   type="submit" 
                   className="w-full" 
                   disabled={isLoading}
-                  data-testid="button-login"
+                  data-testid="button-signin"
                 >
                   {isLoading ? (
                     <>
@@ -167,7 +214,78 @@ export default function Login() {
                   )}
                 </Button>
               </form>
-            ) : (
+            )}
+
+            {step === 'form' && mode === 'signup' && (
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="Enter username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="pl-10"
+                      required
+                      data-testid="input-username"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="admin@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10"
+                      required
+                      data-testid="input-email"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Min 8 characters"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10"
+                      minLength={8}
+                      required
+                      data-testid="input-password"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                  data-testid="button-signup"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing up...
+                    </>
+                  ) : (
+                    'Sign Up'
+                  )}
+                </Button>
+              </form>
+            )}
+
+            {step === 'otp' && (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="otp">Verification Code</Label>
@@ -187,7 +305,7 @@ export default function Login() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
-                    Code expires in 5 minutes
+                    Code expires in 5 minutes. Ask the admin for the OTP.
                   </p>
                 </div>
                 <Button 
@@ -206,6 +324,21 @@ export default function Login() {
                   )}
                 </Button>
               </form>
+            )}
+
+            {step === 'form' && (
+              <div className="mt-4 text-center">
+                <Button 
+                  variant="ghost" 
+                  onClick={switchMode}
+                  className="text-sm"
+                  data-testid="button-switch-mode"
+                >
+                  {mode === 'signin' 
+                    ? "Don't have an account? Sign Up" 
+                    : 'Already have an account? Sign In'}
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

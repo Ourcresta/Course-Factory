@@ -59,6 +59,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserLastLogin(id: string): Promise<void>;
+  updateUserRole(id: string, role: string): Promise<void>;
 
   // OTP Tokens
   createOtpToken(token: InsertOtpToken): Promise<OtpToken>;
@@ -210,6 +211,10 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserLastLogin(id: string): Promise<void> {
     await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, id));
+  }
+
+  async updateUserRole(id: string, role: string): Promise<void> {
+    await db.update(users).set({ role }).where(eq(users.id, id));
   }
 
   // OTP Tokens

@@ -8,10 +8,17 @@ import { generateToken, authRateLimiter, otpRateLimiter } from './auth-middlewar
 const OTP_EXPIRY_MINUTES = 5;
 const MAX_OTP_ATTEMPTS = 3;
 const BCRYPT_ROUNDS = 12;
+const ADMIN_APPROVAL_EMAIL = 'ourcresta@gmail.com';
 
 const loginSchema = z.object({
   email: z.string().email('Valid email required'),
   password: z.string().min(1, 'Password required'),
+});
+
+const signupSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Valid email required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 const verifyOtpSchema = z.object({
@@ -55,39 +62,33 @@ export function registerAuthRoutes(app: Express) {
         });
       }
 
-      const otp = generateOTP();
-      const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+      await storage.updateUserLastLogin(user.id);
 
-      await storage.invalidateUserOtps(user.id);
-
-      await storage.createOtpToken({
+      const token = generateToken({
         userId: user.id,
-        otp: await bcrypt.hash(otp, BCRYPT_ROUNDS),
-        expiresAt,
-        attempts: 0,
-        isUsed: false,
+        username: user.username,
+        email: user.email,
+        role: user.role
       });
-
-      const emailSent = await sendOTPEmail(email, otp);
-      if (!emailSent) {
-        return res.status(500).json({ 
-          error: 'Email delivery failed',
-          message: 'Unable to send verification code. Please try again.'
-        });
-      }
 
       await storage.createAuditLog({
         userId: user.id,
-        action: 'LOGIN_OTP_SENT',
+        action: 'LOGIN_SUCCESS',
         entityType: 'AUTH',
         entityId: null,
         metadata: { email, ip: req.ip }
       });
 
-      res.json({ 
+      res.json({
         success: true,
-        message: 'Verification code sent to your email',
-        email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3')
+        message: 'Login successful',
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role
+        }
       });
     } catch (error) {
       console.error('[Auth] Login error:', error);
@@ -98,7 +99,90 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  app.post('/api/admin/auth/verify-otp', otpRateLimiter, async (req: Request, res: Response) => {
+  app.post('/api/admin/auth/signup', authRateLimiter, async (req: Request, res: Response) => {
+    try {
+      const validation = signupSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: 'Validation failed',
+          details: validation.error.errors 
+        });
+      }
+
+      const { username, email, password } = validation.data;
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ 
+          error: 'Email already exists',
+          message: 'An account with this email already exists. Please sign in.'
+        });
+      }
+
+      const existingUsername = await storage.getUserByUsername(username);
+      if (existingUsername) {
+        return res.status(400).json({ 
+          error: 'Username already exists',
+          message: 'This username is already taken. Please choose another.'
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+      const newUser = await storage.createUser({
+        username,
+        email,
+        password: hashedPassword,
+        role: 'pending_admin',
+      });
+
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+      await storage.createOtpToken({
+        userId: newUser.id,
+        otp: await bcrypt.hash(otp, BCRYPT_ROUNDS),
+        expiresAt,
+        attempts: 0,
+        isUsed: false,
+      });
+
+      const emailSent = await sendOTPEmail(
+        ADMIN_APPROVAL_EMAIL, 
+        otp, 
+        `New admin signup request from ${username} (${email})`
+      );
+      
+      if (!emailSent) {
+        return res.status(500).json({ 
+          error: 'Email delivery failed',
+          message: 'Unable to send verification code. Please try again.'
+        });
+      }
+
+      await storage.createAuditLog({
+        userId: newUser.id,
+        action: 'SIGNUP_OTP_SENT',
+        entityType: 'AUTH',
+        entityId: null,
+        metadata: { email, username, approvalEmail: ADMIN_APPROVAL_EMAIL, ip: req.ip }
+      });
+
+      res.json({ 
+        success: true,
+        message: 'Verification code sent to admin for approval',
+        email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3')
+      });
+    } catch (error) {
+      console.error('[Auth] Signup error:', error);
+      res.status(500).json({ 
+        error: 'Signup failed',
+        message: 'An unexpected error occurred'
+      });
+    }
+  });
+
+  app.post('/api/admin/auth/verify-signup', otpRateLimiter, async (req: Request, res: Response) => {
     try {
       const validation = verifyOtpSchema.safeParse(req.body);
       if (!validation.success) {
@@ -115,6 +199,13 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ 
           error: 'Invalid request',
           message: 'User not found'
+        });
+      }
+
+      if (user.role === 'admin') {
+        return res.status(400).json({ 
+          error: 'Already verified',
+          message: 'This account is already verified. Please sign in.'
         });
       }
 
@@ -159,18 +250,19 @@ export function registerAuthRoutes(app: Express) {
       }
 
       await storage.markOtpAsUsed(otpToken.id);
+      await storage.updateUserRole(user.id, 'admin');
       await storage.updateUserLastLogin(user.id);
 
       const token = generateToken({
         userId: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: 'admin'
       });
 
       await storage.createAuditLog({
         userId: user.id,
-        action: 'LOGIN_SUCCESS',
+        action: 'SIGNUP_SUCCESS',
         entityType: 'AUTH',
         entityId: null,
         metadata: { email, ip: req.ip }
@@ -178,17 +270,17 @@ export function registerAuthRoutes(app: Express) {
 
       res.json({
         success: true,
-        message: 'Login successful',
+        message: 'Account verified successfully',
         token,
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
-          role: user.role
+          role: 'admin'
         }
       });
     } catch (error) {
-      console.error('[Auth] OTP verification error:', error);
+      console.error('[Auth] Signup verification error:', error);
       res.status(500).json({ 
         error: 'Verification failed',
         message: 'An unexpected error occurred'
