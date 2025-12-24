@@ -1,0 +1,176 @@
+You are a Senior DevOps Engineer, Backend Architect,
+and Production Readiness Reviewer.
+
+Context:
+We are deploying GURU — the Admin Portal + Backend API
+for the OURSHIKSHA platform.
+
+GURU is the SINGLE SOURCE OF TRUTH.
+This deployment must be secure, stable, and production-ready.
+
+Target:
+AWS EC2 (Ubuntu 22.04)
+Single instance initially (t3.micro or t3.small)
+
+------------------------------------
+DEPLOYMENT OBJECTIVES
+------------------------------------
+- Deploy Admin UI + Backend API
+- Secure admin routes
+- Expose public APIs safely for Shishya
+- Enable HTTPS
+- Enable logging & restart safety
+- Prepare for scale later (no Kubernetes now)
+
+------------------------------------
+STEP 1 — PRE-DEPLOY CHECKS (MANDATORY)
+------------------------------------
+Before deployment, verify:
+
+- Environment variables are NOT hardcoded
+- `.env.example` exists
+- Admin auth works locally
+- Public APIs are read-only
+- No test credentials in code
+- Database migrations are ready
+
+If any check fails → STOP and report.
+
+------------------------------------
+STEP 2 — EC2 SETUP
+------------------------------------
+- Launch EC2 (Ubuntu 22.04)
+- Instance type: t3.micro (free-tier friendly) or t3.small
+- Open ports:
+  - 22 (SSH – restricted)
+  - 80 (HTTP)
+  - 443 (HTTPS)
+
+Install:
+- Node.js (LTS)
+- npm
+- git
+- nginx
+- pm2
+
+------------------------------------
+STEP 3 — CODE DEPLOYMENT
+------------------------------------
+- Clone the GURU repository
+- Install dependencies
+- Build admin frontend
+- Build backend
+
+Ensure:
+- Backend runs independently
+- Admin UI serves correctly
+- API routes are reachable
+
+------------------------------------
+STEP 4 — ENVIRONMENT VARIABLES
+------------------------------------
+Configure production env:
+
+DATABASE_URL
+JWT_SECRET
+ADMIN_API_KEY
+OPENAI_API_KEY
+RESEND_API_KEY
+RAZORPAY_WEBHOOK_SECRET
+BASE_DOMAIN
+ENV=production
+
+Verify:
+- Secrets not logged
+- Correct DB connection
+
+------------------------------------
+STEP 5 — PROCESS MANAGEMENT
+------------------------------------
+- Run backend using PM2
+- Enable auto-restart on crash
+- Enable startup on reboot
+
+Commands:
+- pm2 start ecosystem.config.js
+- pm2 save
+- pm2 startup
+
+------------------------------------
+STEP 6 — NGINX REVERSE PROXY
+------------------------------------
+Configure Nginx:
+
+- Admin UI → /
+- Backend API → /api
+- Health check → /api/health
+
+Rules:
+- Admin routes protected
+- Public APIs rate-limited
+- No directory listing
+
+------------------------------------
+STEP 7 — HTTPS (REQUIRED)
+------------------------------------
+- Install Certbot
+- Enable HTTPS with Let’s Encrypt
+- Auto-renew certificates
+
+Domains:
+- guru.yourdomain.com
+- api.yourdomain.com (if separate)
+
+------------------------------------
+STEP 8 — SECURITY HARDENING
+------------------------------------
+- Disable password SSH (use key only)
+- Restrict SSH IP
+- Enable UFW firewall
+- Set admin rate limits
+- Hide server headers
+- Enable audit logs
+
+------------------------------------
+STEP 9 — POST-DEPLOY VALIDATION
+------------------------------------
+Verify:
+
+- Admin login works
+- Course creation works
+- Pricing changes reflect via API
+- Shishya public APIs respond correctly
+- Payments webhook reachable
+- Certificate generation works
+- Logs are clean
+
+------------------------------------
+STEP 10 — PRODUCTION SAFETY
+------------------------------------
+- Enable AWS billing alert ($5)
+- Enable DB backups
+- Enable log rotation
+- Document deployment steps
+
+------------------------------------
+OUTPUT EXPECTATION
+------------------------------------
+Provide:
+1) Exact shell commands
+2) Nginx config
+3) PM2 config
+4) Folder structure
+5) Common failure fixes
+6) Deployment checklist
+7) Rollback plan
+
+Do NOT:
+- Introduce Kubernetes
+- Change business logic
+- Modify database schema
+- Deploy Shishya here
+
+Deploy GURU only.
+Think production.
+Think security.
+Deliver step-by-step execution.

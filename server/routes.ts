@@ -53,6 +53,16 @@ export async function registerRoutes(
   // Apply rate limiting to API routes
   app.use('/api', apiRateLimiter);
   
+  // Health check endpoint (no auth required)
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+      uptime: process.uptime(),
+    });
+  });
+  
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {

@@ -2,7 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 
-const JWT_SECRET = process.env.SESSION_SECRET || 'fallback-secret-change-in-production';
+if (!process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET environment variable is required');
+}
+const JWT_SECRET: string = process.env.SESSION_SECRET;
 const JWT_EXPIRY = '12h';
 
 export interface AuthenticatedRequest extends Request {
