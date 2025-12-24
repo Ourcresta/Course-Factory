@@ -80,6 +80,43 @@ Core entities include:
 - **Production Build**: Custom build script using esbuild for server bundling and Vite for client
 - **Database Migrations**: Drizzle Kit with `npm run db:push`
 
+## Admin Authentication
+
+Production security implemented with OTP-based authentication:
+
+### Authentication Flow
+1. Admin enters email and password on login page
+2. Server validates credentials against bcrypt-hashed password (12 rounds)
+3. If valid, 6-digit OTP is generated and sent via Resend API
+4. OTP is stored in database with 5-minute expiry and max 3 attempts
+5. Admin enters OTP to complete verification
+6. JWT token issued with 12-hour expiry
+
+### Security Features
+- **Password Hashing**: bcrypt with 12 rounds
+- **OTP Delivery**: Resend API (from admin@admin.aisiksha.in)
+- **JWT Authentication**: 12-hour token expiry, Bearer token in Authorization header
+- **Rate Limiting**: Auth endpoints (10/15min), OTP (5/5min), General API (100/min)
+- **Security Headers**: Helmet.js for XSS, CSP, clickjacking protection
+- **CORS**: Configured for allowed domains
+
+### Admin Credentials (Development)
+- Email: admin@ourshiksha.ai
+- Password: AdminPassword123!
+- Seed script: `npx tsx server/seed-admin.ts`
+
+### Auth Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/auth/login` | POST | Submit email/password, receive OTP |
+| `/api/admin/auth/verify-otp` | POST | Submit OTP, receive JWT token |
+| `/api/admin/auth/me` | GET | Get current user (requires JWT) |
+| `/api/admin/auth/logout` | POST | Logout (client clears token) |
+
+### Environment Variables (Auth)
+- `SESSION_SECRET`: JWT signing secret
+- Resend API key configured via integration
+
 ## External Dependencies
 
 ### Database
