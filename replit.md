@@ -21,17 +21,39 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: React Hook Form with Zod validation
 - **Build Tool**: Vite with custom plugins for Replit integration
 
-The frontend follows a page-based structure with reusable components. Key pages include:
-- **Dashboard**: Overview with stats and quick actions
-- **Courses**: Listing with filters and status badges
-- **Course Detail**: Tabbed interface (Overview, Modules, Projects, Tests, Labs, Certificate, Publish)
-- **Module Editor**: Lessons management with AI generation
-- **Project Editor**: Comprehensive project configuration with skill mapping
-- **Test Editor**: Question management with MCQ and scenario types
-- **Lab Editor**: Practice lab configuration with code validation and hints
-- **Certificate Designer**: Certificate configuration with requirements
-- **Skills Library**: Global skill management for tagging
-- **Settings**: Application configuration
+The frontend follows a page-based structure with 5 sidebar sections:
+
+**MAIN Section**
+- **Dashboard** (`/`): Executive command center with KPI overview, revenue metrics, course stats
+- **Reports** (`/reports`): Analytics with revenue, course, and user engagement reports
+
+**ACADEMICS Section**
+- **Courses** (`/courses`): Listing with filters and status badges
+- **AI Course Factory** (`/courses/new`): AI-powered course generation from commands
+- **Practice Labs** (`/labs`): Lab management across all courses
+- **Tests** (`/tests`): Assessment management with questions
+- **Projects** (`/projects`): Project management with skill mapping
+- **Certificates** (`/certificates`): Certificate configuration
+- **Skills Library** (`/skills`): Global skill tagging system
+
+**BUSINESS Section**
+- **Credits & Pricing** (`/credits`): Course monetization (1 Credit = 1 INR)
+- **Plans & Subscriptions** (`/subscriptions`): Subscription plan management
+- **Payments** (`/payments`): Payment tracking and history
+- **Promotions** (`/promotions`): Discount codes and offers
+
+**SHISHYA CONTROL Section**
+- **Shishya Overview** (`/shishya`): Student portal analytics dashboard
+- **Users** (`/shishya/users`): Student management and activity
+- **Activity** (`/shishya/activity`): Learning activity logs
+- **Payments** (`/shishya/payments`): Student payment tracking
+- **Engagement** (`/shishya/engagement`): Gamification and streak analytics
+
+**SYSTEM Section**
+- **Security & Admins** (`/security`): Access control and admin management
+- **Settings** (`/settings`): API keys, bank accounts, theme, notifications
+
+**Course Detail** (`/courses/:id`): Tabbed interface (Overview, Modules, Projects, Tests, Labs, Certificate, Publish)
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express
