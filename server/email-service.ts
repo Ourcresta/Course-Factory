@@ -1,44 +1,30 @@
 import { Resend } from 'resend';
+import { createHash } from 'crypto';
 
-let connectionSettings: any;
+const DEFAULT_FROM_EMAIL = 'OurShiksha Admin <admin@mail.dishabrooms.com>';
 
-async function getCredentials() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
-
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM_EMAIL;
+  
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY not configured in environment secrets');
   }
-
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
-      }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
-
-  if (!connectionSettings || (!connectionSettings.settings.api_key)) {
-    throw new Error('Resend not connected');
-  }
+  
+  console.log('[Email Service] Using API key from environment (starts with):', apiKey.substring(0, 8) + '...');
+  
   return {
-    apiKey: connectionSettings.settings.api_key, 
-    fromEmail: connectionSettings.settings.from_email
+    client: new Resend(apiKey),
+    fromEmail
   };
 }
 
-async function getResendClient() {
-  const credentials = await getCredentials();
-  return {
-    client: new Resend(credentials.apiKey),
-    fromEmail: credentials.fromEmail
-  };
+export function hashOTP(otp: string): string {
+  return createHash('sha256').update(otp).digest('hex');
+}
+
+export function verifyOTPHash(otp: string, hash: string): boolean {
+  return hashOTP(otp) === hash;
 }
 
 export function generateOTP(): string {
@@ -47,7 +33,7 @@ export function generateOTP(): string {
 
 export async function sendOTPEmail(toEmail: string, otp: string, customMessage?: string): Promise<boolean> {
   try {
-    const { client, fromEmail } = await getResendClient();
+    const { client, fromEmail } = getResendClient();
     
     const subject = customMessage 
       ? 'New Admin Signup Request - OurShiksha'
