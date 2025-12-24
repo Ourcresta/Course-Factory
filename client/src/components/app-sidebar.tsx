@@ -16,7 +16,6 @@ import {
   Activity,
   Wallet,
   LineChart,
-  Link2,
   FileText,
   Gift,
   Percent,
@@ -143,11 +142,6 @@ const systemItems = [
     title: "Security & Admins",
     url: "/security",
     icon: Shield,
-  },
-  {
-    title: "Integrations",
-    url: "/integrations",
-    icon: Link2,
   },
   {
     title: "Settings",
