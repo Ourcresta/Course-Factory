@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { LogOut, Loader2 } from "lucide-react";
 import Login from "@/pages/login";
+import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Courses from "@/pages/courses";
 import CreateCourse from "@/pages/create-course";
@@ -81,7 +82,11 @@ function AuthenticatedApp() {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    const path = window.location.pathname;
+    if (path === '/login') {
+      return <Login />;
+    }
+    return <Landing />;
   }
 
   return (

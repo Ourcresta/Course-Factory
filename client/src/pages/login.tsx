@@ -1,18 +1,21 @@
-import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useState, useEffect } from 'react';
+import { useLocation, Link } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
-import { Mail, Lock, KeyRound, ArrowLeft, Loader2, User } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Mail, Lock, KeyRound, ArrowLeft, Loader2, User, Sparkles, Home } from 'lucide-react';
 
 type AuthMode = 'signin' | 'signup';
 type AuthStep = 'form' | 'otp';
 
 export default function Login() {
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialMode = urlParams.get('mode') === 'signup' ? 'signup' : 'signin';
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [step, setStep] = useState<AuthStep>('form');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -131,12 +134,31 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Oushiksha – Guru</h1>
-          <p className="text-muted-foreground mt-2">Admin Portal</p>
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="flex items-center justify-between gap-4 p-4 border-b">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <span className="font-semibold">Oushiksha</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/">
+            <Button variant="ghost" size="sm" data-testid="button-back-home">
+              <Home className="h-4 w-4 mr-1" />
+              Home
+            </Button>
+          </Link>
+          <ThemeToggle />
         </div>
+      </header>
+
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-foreground">Oushiksha – Guru</h1>
+            <p className="text-muted-foreground mt-2">Admin Portal</p>
+          </div>
 
         <Card>
           <CardHeader>
@@ -346,6 +368,7 @@ export default function Login() {
         <p className="text-center text-xs text-muted-foreground mt-6">
           Oushiksha Guru Admin Portal v1.0
         </p>
+        </div>
       </div>
     </div>
   );
