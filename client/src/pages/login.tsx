@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useLocation, Link } from 'wouter';
+import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth-context';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Mail, Lock, KeyRound, ArrowLeft, Loader2, User, Sparkles, Home } from 'lucide-react';
+
+function navigateTo(path: string) {
+  window.location.href = path;
+}
 
 type AuthMode = 'signin' | 'signup';
 type AuthStep = 'form' | 'otp';
@@ -136,19 +140,25 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="flex items-center justify-between gap-4 p-4 border-b">
-        <Link href="/" className="flex items-center gap-2">
+        <div 
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={() => navigateTo("/")}
+        >
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Sparkles className="h-4 w-4" />
           </div>
           <span className="font-semibold">Oushiksha</span>
-        </Link>
+        </div>
         <div className="flex items-center gap-2">
-          <Link href="/">
-            <Button variant="ghost" size="sm" data-testid="button-back-home">
-              <Home className="h-4 w-4 mr-1" />
-              Home
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigateTo("/")}
+            data-testid="button-back-home"
+          >
+            <Home className="h-4 w-4 mr-1" />
+            Home
+          </Button>
           <ThemeToggle />
         </div>
       </header>

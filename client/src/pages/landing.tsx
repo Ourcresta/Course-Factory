@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -12,6 +11,10 @@ import {
   Zap,
   Shield,
 } from "lucide-react";
+
+function navigateTo(path: string) {
+  window.location.href = path;
+}
 
 export default function Landing() {
   return (
@@ -33,17 +36,20 @@ export default function Landing() {
             
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <Link href="/login?mode=signin">
-                <Button variant="ghost" data-testid="button-signin">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/login?mode=signup">
-                <Button data-testid="button-signup">
-                  Sign Up
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                onClick={() => navigateTo("/login?mode=signin")}
+                data-testid="button-signin"
+              >
+                Sign In
+              </Button>
+              <Button 
+                onClick={() => navigateTo("/login?mode=signup")}
+                data-testid="button-signup"
+              >
+                Sign Up
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           </div>
         </div>
@@ -68,17 +74,24 @@ export default function Landing() {
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/login?mode=signup">
-                <Button size="lg" className="min-w-48" data-testid="button-get-started">
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  Get Started Free
-                </Button>
-              </Link>
-              <Link href="/login?mode=signin">
-                <Button size="lg" variant="outline" className="min-w-48" data-testid="button-signin-hero">
-                  Sign In to Dashboard
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="min-w-48" 
+                onClick={() => navigateTo("/login?mode=signup")}
+                data-testid="button-get-started"
+              >
+                <Sparkles className="h-5 w-5 mr-2" />
+                Get Started Free
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="min-w-48" 
+                onClick={() => navigateTo("/login?mode=signin")}
+                data-testid="button-signin-hero"
+              >
+                Sign In to Dashboard
+              </Button>
             </div>
           </div>
         </section>
@@ -164,12 +177,14 @@ export default function Landing() {
             <p className="text-muted-foreground mb-8">
               Join Oushiksha Guru and start building educational content with AI today.
             </p>
-            <Link href="/login?mode=signup">
-              <Button size="lg" data-testid="button-cta-signup">
-                <Sparkles className="h-5 w-5 mr-2" />
-                Create Free Account
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              onClick={() => navigateTo("/login?mode=signup")}
+              data-testid="button-cta-signup"
+            >
+              <Sparkles className="h-5 w-5 mr-2" />
+              Create Free Account
+            </Button>
           </div>
         </section>
       </main>
