@@ -8,6 +8,12 @@ import {
   Plus,
   Sparkles,
   ArrowRight,
+  FlaskConical,
+  ClipboardCheck,
+  FolderKanban,
+  Award,
+  Tags,
+  Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +22,14 @@ import { StatsCard } from "@/components/stats-card";
 import { CourseCard } from "@/components/course-card";
 import { EmptyState } from "@/components/empty-state";
 import { StatsCardSkeleton, CourseCardSkeleton } from "@/components/loading-skeleton";
+import {
+  CourseFactoryPanel,
+  AcademicHealthPanel,
+  PracticeQualityPanel,
+  CertificateSkillPanel,
+  CreditPanel,
+  SecurityPanel,
+} from "@/components/dashboard-panels";
 import type { Course } from "@shared/schema";
 
 interface DashboardStats {
@@ -23,6 +37,11 @@ interface DashboardStats {
   publishedCourses: number;
   draftCourses: number;
   generatingCourses: number;
+  totalModules: number;
+  totalLessons: number;
+  totalLabs: number;
+  totalTests: number;
+  totalProjects: number;
 }
 
 export default function Dashboard() {
@@ -34,124 +53,170 @@ export default function Dashboard() {
     queryKey: ["/api/courses"],
   });
 
-  // Limit to 6 most recent courses for display
-  const displayedCourses = recentCourses?.slice(0, 6);
+  const displayedCourses = recentCourses?.slice(0, 4);
 
   return (
-    <div className="flex flex-col gap-8 p-8 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-8 p-8">
       <PageHeader
         title="Dashboard"
-        description="Welcome to AISiksha Course Factory. Create, manage, and publish courses with AI."
+        description="Welcome to Oushiksha Guru. Create, manage, and publish courses with AI."
       >
         <Link href="/courses/new">
           <Button data-testid="button-create-course">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Course
+            <Brain className="h-4 w-4 mr-2" />
+            Generate Course (AI)
           </Button>
         </Link>
       </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statsLoading ? (
-          <>
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-          </>
-        ) : (
-          <>
-            <StatsCard
-              title="Total Courses"
-              value={stats?.totalCourses ?? 0}
-              icon={GraduationCap}
-              description="All courses created"
-            />
-            <StatsCard
-              title="Published"
-              value={stats?.publishedCourses ?? 0}
-              icon={CheckCircle}
-              description="Live on platforms"
-            />
-            <StatsCard
-              title="Drafts"
-              value={stats?.draftCourses ?? 0}
-              icon={BookOpen}
-              description="Awaiting review"
-            />
-            <StatsCard
-              title="Generating"
-              value={stats?.generatingCourses ?? 0}
-              icon={Loader2}
-              description="AI in progress"
-            />
-          </>
-        )}
-      </div>
+      {/* Section 1: System Snapshot KPIs */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4">System Snapshot</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+          {statsLoading ? (
+            <>
+              <StatsCardSkeleton />
+              <StatsCardSkeleton />
+              <StatsCardSkeleton />
+              <StatsCardSkeleton />
+              <StatsCardSkeleton />
+              <StatsCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatsCard
+                title="Total Courses"
+                value={stats?.totalCourses ?? 0}
+                icon={GraduationCap}
+                description={`${stats?.draftCourses ?? 0} Draft / ${stats?.publishedCourses ?? 0} Published`}
+              />
+              <StatsCard
+                title="Modules"
+                value={stats?.totalModules ?? 0}
+                icon={BookOpen}
+                description="Course sections"
+              />
+              <StatsCard
+                title="Lessons"
+                value={stats?.totalLessons ?? 0}
+                icon={CheckCircle}
+                description="Learning units"
+              />
+              <StatsCard
+                title="Practice Labs"
+                value={stats?.totalLabs ?? 0}
+                icon={FlaskConical}
+                description="Hands-on exercises"
+              />
+              <StatsCard
+                title="Tests"
+                value={stats?.totalTests ?? 0}
+                icon={ClipboardCheck}
+                description="Assessments"
+              />
+              <StatsCard
+                title="Projects"
+                value={stats?.totalProjects ?? 0}
+                icon={FolderKanban}
+                description="Capstone assignments"
+              />
+            </>
+          )}
+        </div>
+      </section>
 
-      <Card className="overflow-visible">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
-          <CardTitle className="text-xl">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Link href="/courses/new" className="block">
-              <div className="group flex items-center gap-4 p-4 rounded-lg border bg-gradient-to-br from-primary/5 to-primary/10 hover-elevate">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                  <Sparkles className="h-6 w-6" />
+      {/* Section 2: Action Command Center */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4">Action Command Center</h2>
+        <Card className="overflow-visible">
+          <CardContent className="pt-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+              <Link href="/courses/new" className="block">
+                <div className="group flex flex-col items-center gap-3 p-4 rounded-lg border bg-gradient-to-br from-primary/5 to-primary/10 hover-elevate text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                    <Brain className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Generate Course (AI)</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Preview / Publish modes</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold group-hover:text-primary transition-colors">
-                    AI Course Generator
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Create a complete course from one command
-                  </p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </Link>
+              </Link>
 
-            <Link href="/courses" className="block">
-              <div className="group flex items-center gap-4 p-4 rounded-lg border hover-elevate">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
-                  <GraduationCap className="h-6 w-6" />
+              <Link href="/courses" className="block">
+                <div className="group flex flex-col items-center gap-3 p-4 rounded-lg border hover-elevate text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
+                    <Plus className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Create Course (Manual)</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Step-by-step wizard</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold group-hover:text-primary transition-colors">
-                    View All Courses
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Browse and manage your courses
-                  </p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </Link>
+              </Link>
 
-            <Link href="/skills" className="block">
-              <div className="group flex items-center gap-4 p-4 rounded-lg border hover-elevate">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
-                  <BookOpen className="h-6 w-6" />
+              <Link href="/labs" className="block">
+                <div className="group flex flex-col items-center gap-3 p-4 rounded-lg border hover-elevate text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
+                    <FlaskConical className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Create Practice Lab</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Hands-on coding</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold group-hover:text-primary transition-colors">
-                    Manage Skills
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Configure skill tags and categories
-                  </p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+              </Link>
 
-      <div>
+              <Link href="/tests" className="block">
+                <div className="group flex flex-col items-center gap-3 p-4 rounded-lg border hover-elevate text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
+                    <ClipboardCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Create Test</h3>
+                    <p className="text-xs text-muted-foreground mt-1">MCQ & Scenarios</p>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href="/certificates" className="block">
+                <div className="group flex flex-col items-center gap-3 p-4 rounded-lg border hover-elevate text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
+                    <Award className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Configure Certificate</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Requirements & skills</p>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Section 3 & 4: AI Factory + Academic Health */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <CourseFactoryPanel />
+        <AcademicHealthPanel />
+      </section>
+
+      {/* Section 5 & 6: Practice Quality + Certificate/Skill */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <PracticeQualityPanel />
+        <CertificateSkillPanel />
+      </section>
+
+      {/* Section 7 & 8: Credit + Security */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <CreditPanel />
+        <SecurityPanel />
+      </section>
+
+      {/* Recent Courses */}
+      <section>
         <div className="flex items-center justify-between gap-4 mb-4">
-          <h2 className="text-xl font-semibold">Recent Courses</h2>
+          <h2 className="text-lg font-semibold">Recent Courses</h2>
           <Link href="/courses">
             <Button variant="ghost" size="sm" data-testid="link-view-all-courses">
               View All
@@ -161,13 +226,14 @@ export default function Dashboard() {
         </div>
 
         {coursesLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <CourseCardSkeleton />
             <CourseCardSkeleton />
             <CourseCardSkeleton />
             <CourseCardSkeleton />
           </div>
         ) : displayedCourses && displayedCourses.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {displayedCourses.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
@@ -183,7 +249,7 @@ export default function Dashboard() {
             />
           </Card>
         )}
-      </div>
+      </section>
     </div>
   );
 }

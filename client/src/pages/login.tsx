@@ -134,8 +134,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground">AISiksha Admin</h1>
-          <p className="text-muted-foreground mt-2">Guru Admin Portal</p>
+          <h1 className="text-3xl font-bold text-foreground">Oushiksha – Guru</h1>
+          <p className="text-muted-foreground mt-2">Admin Portal</p>
         </div>
 
         <Card>
@@ -344,7 +344,7 @@ export default function Login() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          OurShiksha Guru Admin Portal v1.0
+          Oushiksha Guru Admin Portal v1.0
         </p>
       </div>
     </div>

@@ -6,6 +6,12 @@ import {
   Settings,
   Sparkles,
   Tags,
+  FlaskConical,
+  ClipboardCheck,
+  FolderKanban,
+  CreditCard,
+  Shield,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,23 +39,59 @@ const mainNavItems = [
     icon: GraduationCap,
   },
   {
-    title: "Create Course AI",
+    title: "AI Course Factory",
     url: "/courses/new",
     icon: Sparkles,
     highlight: true,
   },
 ];
 
-const configItems = [
+const practiceItems = [
   {
-    title: "Skills",
-    url: "/skills",
-    icon: Tags,
+    title: "Practice Labs",
+    url: "/labs",
+    icon: FlaskConical,
   },
+  {
+    title: "Tests",
+    url: "/tests",
+    icon: ClipboardCheck,
+  },
+  {
+    title: "Projects",
+    url: "/projects",
+    icon: FolderKanban,
+  },
+];
+
+const configItems = [
   {
     title: "Certificates",
     url: "/certificates",
     icon: Award,
+  },
+  {
+    title: "Skills Library",
+    url: "/skills",
+    icon: Tags,
+  },
+  {
+    title: "Credits & Pricing",
+    url: "/credits",
+    icon: CreditCard,
+  },
+];
+
+const systemItems = [
+  {
+    title: "Security & Admins",
+    url: "/security",
+    icon: Shield,
+  },
+  {
+    title: "Reports",
+    url: "/reports",
+    icon: BarChart3,
   },
   {
     title: "Settings",
@@ -82,8 +124,8 @@ export function AppSidebar() {
             <Sparkles className="h-4 w-4" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-semibold tracking-tight" data-testid="text-brand-name">AISiksha</span>
-            <span className="text-xs text-muted-foreground">Course Factory</span>
+            <span className="text-lg font-semibold tracking-tight" data-testid="text-brand-name">Oushiksha</span>
+            <span className="text-xs text-muted-foreground">Guru</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -116,6 +158,27 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
+          <SidebarGroupLabel>Practice</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {practiceItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                  >
+                    <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
           <SidebarGroupLabel>Configuration</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -125,7 +188,28 @@ export function AppSidebar() {
                     asChild
                     isActive={isActive(item.url)}
                   >
-                    <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase()}`}>
+                    <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>System</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {systemItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                  >
+                    <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -140,7 +224,7 @@ export function AppSidebar() {
       <SidebarFooter className="p-4">
         <div className="rounded-md bg-muted p-3">
           <p className="text-xs text-muted-foreground">
-            Admin Portal v1.0
+            Oushiksha Guru v1.0
           </p>
           <p className="text-xs text-muted-foreground">
             Powered by AI
