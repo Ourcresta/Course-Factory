@@ -1,0 +1,247 @@
+You are a Senior Product Architect, LMS Platform Owner, and Security-First Full-Stack Engineer.
+
+You must build a PRODUCTION-GRADE Admin Dashboard for an AI-powered education platform.
+
+IMPORTANT:
+- Platform name MUST be exactly: "Oushiksha – Guru"
+- Do NOT use the name Aishiksha anywhere
+- This dashboard is the CONTROL TOWER of the entire system
+- UI-first with mock data, but STRICTLY aligned to backend schemas & APIs
+- Code must be scalable, readable, and API-ready
+
+====================================================
+SYSTEM CONTEXT (DO NOT IGNORE)
+====================================================
+This admin dashboard controls:
+- AI Course Factory (Preview & Publish modes)
+- Academic content lifecycle (Courses → Modules → Lessons)
+- Practice-first learning (Labs, Projects, Tests)
+- Certificate & Skill validation
+- Credit-based monetization (1 Credit = 1 INR)
+- Admin authentication & governance
+- Public API exposure to Shishya portal
+
+====================================================
+TECH STACK (MANDATORY)
+====================================================
+- Next.js (App Router)
+- React + TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Lucide-react icons
+- Recharts (for stats)
+- Mock data only (match documented schema)
+
+====================================================
+PROJECT STRUCTURE
+====================================================
+/app
+  /guru
+    /dashboard
+      page.tsx
+    /courses
+    /labs
+    /tests
+    /projects
+    /certificates
+    /skills
+    /ai-factory
+    /credits
+    /security
+    /reports
+/components
+  /layout
+    GuruLayout.tsx
+    Sidebar.tsx
+    Topbar.tsx
+  /cards
+    StatCard.tsx
+    ActionCard.tsx
+  /panels
+    CourseFactoryPanel.tsx
+    AcademicHealthPanel.tsx
+    PracticeQualityPanel.tsx
+    CertificateSkillPanel.tsx
+    CreditPanel.tsx
+    SecurityPanel.tsx
+/lib
+  mockData.ts
+  constants.ts
+/styles
+  globals.css
+
+====================================================
+GLOBAL LAYOUT RULES
+====================================================
+- All /guru/* routes MUST use GuruLayout
+- Fixed left sidebar
+- Fixed top authority bar
+- Main content scrollable
+- Desktop-first, professional UI
+
+====================================================
+TOP AUTHORITY BAR
+====================================================
+Left:
+- Text logo: "Oushiksha – Guru"
+
+Right:
+- Notifications (errors, approvals)
+- JWT session indicator (active)
+- Admin profile dropdown
+- Logout
+
+====================================================
+SIDEBAR NAVIGATION (PERMANENT)
+====================================================
+🏠 Dashboard
+📚 Courses
+🧠 AI Course Factory
+🧪 Practice Labs
+📝 Tests
+📦 Projects
+📜 Certificates
+🏷 Skills Library
+💳 Credits & Pricing
+🔐 Security & Admins
+📊 Reports
+⚙ Settings
+
+====================================================
+MAIN PAGE: /guru/dashboard
+====================================================
+
+--------------------------------
+SECTION 1: SYSTEM SNAPSHOT (KPIs)
+--------------------------------
+Stat cards MUST reflect real entities:
+
+1. Total Courses (Draft vs Published)
+2. AI Courses Generated Today (Preview / Publish)
+3. Academic Assets Count
+   - Modules
+   - Lessons
+   - Labs
+   - Tests
+   - Projects
+4. Certificates Configured vs Missing
+5. Skills Total vs Unmapped
+6. Credits Used Today (INR)
+
+Each card:
+- Icon
+- Primary value
+- Sub-status
+- Hover animation
+
+--------------------------------
+SECTION 2: ACTION COMMAND CENTER
+--------------------------------
+Primary admin actions (large buttons):
+
+- 🧠 Generate Course (AI)
+  - Mode selector: Preview / Publish
+  - Options: includeLabs, includeProjects, includeTests
+  - Credit cost preview
+
+- ➕ Create Course (Manual)
+- 🧪 Create Practice Lab
+- 📝 Create Test
+- 📜 Configure Certificate
+
+Click opens modal (UI placeholder only).
+
+--------------------------------
+SECTION 3: AI COURSE FACTORY STATUS
+--------------------------------
+CourseFactoryPanel shows:
+- Last AI run time
+- Mode used (Preview / Publish)
+- Generated entities count
+- Validation result (PASS / FAIL)
+- Error reason if failed
+
+Buttons:
+- Re-run AI
+- Regenerate content
+- View AI system role (placeholder)
+
+--------------------------------
+SECTION 4: ACADEMIC HEALTH PANEL
+--------------------------------
+Show course quality gates:
+- Courses without labs
+- Courses without tests
+- Courses without certificates
+- Courses without skill mapping
+
+Highlight BLOCKERS for publishing.
+
+--------------------------------
+SECTION 5: PRACTICE-FIRST QUALITY PANEL
+--------------------------------
+PracticeQualityPanel must show:
+- Labs missing validation logic
+- Labs missing hints
+- Labs not linked to certificates
+- Unlock mechanism coverage
+
+--------------------------------
+SECTION 6: CERTIFICATE & SKILL GOVERNANCE
+--------------------------------
+CertificateSkillPanel shows:
+- Certificates per course
+- Missing requirement mappings
+- Skill coverage per course
+- Platform-wide skill gaps
+
+--------------------------------
+SECTION 7: CREDIT & MONETIZATION PANEL
+--------------------------------
+CreditPanel shows:
+- Credit price per course
+- Courses with zero pricing (BLOCK publish)
+- AI generation credit usage
+- Credit usage trend
+
+--------------------------------
+SECTION 8: SECURITY & GOVERNANCE
+--------------------------------
+SecurityPanel includes:
+- Admin users list
+- Pending admin OTP approvals
+- API keys (masked + expiry)
+- Failed login attempts
+- Rate-limit health
+
+====================================================
+SECURITY RULES
+====================================================
+- Protect all /guru/* routes
+- If user not admin → redirect to login (placeholder)
+- Add TODOs for:
+  - JWT verification
+  - RBAC
+  - Audit logs
+  - Rate limiting
+
+====================================================
+DESIGN SYSTEM
+====================================================
+- Colors: Indigo, Teal, White
+- Font: Inter
+- University-grade, authoritative UI
+- No clutter, no cartoon styling
+
+====================================================
+FINAL REQUIREMENTS
+====================================================
+- App must run without errors
+- Dashboard must fully render
+- Naming MUST be "Oushiksha – Guru"
+- Structure MUST align with documented schema & APIs
+- Ready for backend + AI integration
+
+====================================================
+START BUILDING NOW
+====================================================
