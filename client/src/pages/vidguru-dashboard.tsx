@@ -415,7 +415,7 @@ export default function VidGuruDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="border-red-500/20 bg-gradient-to-br from-red-500/5 to-background">
+      <Card className="border-red-500/20 bg-gradient-to-br from-red-500/5 to-background" data-testid="card-youtube-reference-finder">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Youtube className="h-5 w-5 text-red-500" />
@@ -644,6 +644,64 @@ export default function VidGuruDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-background" data-testid="card-avatar-tutor-settings">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mic className="h-5 w-5 text-purple-500" />
+            Avatar Tutor Settings
+          </CardTitle>
+          <CardDescription>
+            Configure default avatar and voice settings for video generation
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm">Multi-Language Support</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Generate avatar videos in 8 Indian languages with native pronunciation and natural speech patterns.
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {["EN", "HI", "TA", "TE", "KN", "ML", "BN", "MR"].map((lang) => (
+                  <Badge key={lang} variant="outline" className="text-xs">
+                    {lang}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Video className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm">Avatar Styles</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Professional male and female avatars with realistic animations and expressions for engaging lessons.
+              </p>
+              <Badge variant="secondary" className="text-xs">
+                {stats?.activeAvatarConfigs || 0} Active Configs
+              </Badge>
+            </div>
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Mic className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm">Voice Settings</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Neural voice synthesis with adjustable speed, pitch, and natural pausing for clear explanations.
+              </p>
+              <Link href="/vidguru/videos">
+                <Button variant="outline" size="sm" className="mt-1">
+                  Configure Avatars
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
