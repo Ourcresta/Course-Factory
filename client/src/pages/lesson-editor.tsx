@@ -17,6 +17,9 @@ import {
   FileText,
   Lightbulb,
   Globe,
+  Youtube,
+  Play,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -30,7 +33,7 @@ import { PageHeader } from "@/components/page-header";
 import { FormSkeleton } from "@/components/loading-skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Module, Lesson, Course, AiNote } from "@shared/schema";
+import type { Module, Lesson, Course, AiNote, YouTubeReference } from "@shared/schema";
 
 interface LessonWithNotes extends Lesson {
   aiNotes?: AiNote[];
@@ -61,11 +64,14 @@ export default function LessonEditor() {
     objectives: [] as string[],
     keyConcepts: [] as string[],
     externalLinks: [] as string[],
+    youtubeReferences: [] as YouTubeReference[],
   });
 
   const [newObjective, setNewObjective] = useState("");
   const [newConcept, setNewConcept] = useState("");
   const [newLink, setNewLink] = useState("");
+  const [newYoutubeUrl, setNewYoutubeUrl] = useState("");
+  const [newYoutubeTitle, setNewYoutubeTitle] = useState("");
 
   const parsedCourseId = courseId ? parseInt(courseId) : undefined;
   const parsedModuleId = moduleId ? parseInt(moduleId) : undefined;
@@ -94,6 +100,7 @@ export default function LessonEditor() {
         objectives: lesson.objectives || [],
         keyConcepts: lesson.keyConceptS || [],
         externalLinks: lesson.externalLinks || [],
+        youtubeReferences: lesson.youtubeReferences || [],
       });
     }
   }, [lesson]);
@@ -138,6 +145,7 @@ export default function LessonEditor() {
       objectives: formData.objectives,
       keyConceptS: formData.keyConcepts,
       externalLinks: formData.externalLinks,
+      youtubeReferences: formData.youtubeReferences,
     });
   };
 
@@ -186,6 +194,37 @@ export default function LessonEditor() {
       "externalLinks",
       formData.externalLinks.filter((_, i) => i !== index)
     );
+  };
+
+  const addYoutubeReference = () => {
+    if (newYoutubeUrl.trim() && newYoutubeTitle.trim()) {
+      const youtubeUrlPattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+      if (!youtubeUrlPattern.test(newYoutubeUrl.trim())) {
+        toast({ title: "Please enter a valid YouTube URL", variant: "destructive" });
+        return;
+      }
+      handleFieldChange("youtubeReferences", [
+        ...formData.youtubeReferences,
+        { url: newYoutubeUrl.trim(), title: newYoutubeTitle.trim() },
+      ]);
+      setNewYoutubeUrl("");
+      setNewYoutubeTitle("");
+    }
+  };
+
+  const removeYoutubeReference = (index: number) => {
+    handleFieldChange(
+      "youtubeReferences",
+      formData.youtubeReferences.filter((_, i) => i !== index)
+    );
+  };
+
+  const getYoutubeThumbnail = (url: string): string => {
+    const videoIdMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (videoIdMatch && videoIdMatch[1]) {
+      return `https://img.youtube.com/vi/${videoIdMatch[1]}/mqdefault.jpg`;
+    }
+    return "";
   };
 
   if (
@@ -478,6 +517,116 @@ export default function LessonEditor() {
                   />
                   <Button variant="outline" onClick={addLink} data-testid="button-add-link">
                     <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Youtube className="h-5 w-5 text-red-600" />
+                YouTube References
+              </CardTitle>
+              <CardDescription>Related YouTube videos for supplementary learning</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {formData.youtubeReferences.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No YouTube references added yet. Add videos to help learners with additional resources.
+                </p>
+              )}
+              <div className="grid gap-3">
+                {formData.youtubeReferences.map((ref, index) => {
+                  const thumbnail = getYoutubeThumbnail(ref.url);
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 group"
+                      data-testid={`youtube-reference-${index}`}
+                    >
+                      <a
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative shrink-0 rounded-md overflow-hidden w-32 h-20 bg-muted"
+                      >
+                        {thumbnail ? (
+                          <img
+                            src={thumbnail}
+                            alt={ref.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Youtube className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
+                          <Play className="h-8 w-8 text-white" />
+                        </div>
+                      </a>
+                      <div className="flex-1 min-w-0">
+                        <a
+                          href={ref.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-sm hover:text-primary transition-colors line-clamp-2"
+                        >
+                          {ref.title}
+                        </a>
+                        <p className="text-xs text-muted-foreground mt-1 truncate">{ref.url}</p>
+                      </div>
+                      {!isPublished && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeYoutubeReference(index)}
+                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          data-testid={`button-remove-youtube-${index}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {!isPublished && (
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="youtube-title" className="text-xs">Video Title</Label>
+                      <Input
+                        id="youtube-title"
+                        placeholder="e.g., React Hooks Tutorial"
+                        value={newYoutubeTitle}
+                        onChange={(e) => setNewYoutubeTitle(e.target.value)}
+                        data-testid="input-youtube-title"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="youtube-url" className="text-xs">YouTube URL</Label>
+                      <Input
+                        id="youtube-url"
+                        placeholder="https://youtube.com/watch?v=..."
+                        value={newYoutubeUrl}
+                        onChange={(e) => setNewYoutubeUrl(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addYoutubeReference()}
+                        data-testid="input-youtube-url"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={addYoutubeReference}
+                    disabled={!newYoutubeUrl.trim() || !newYoutubeTitle.trim()}
+                    className="w-full"
+                    data-testid="button-add-youtube"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add YouTube Reference
                   </Button>
                 </div>
               )}
