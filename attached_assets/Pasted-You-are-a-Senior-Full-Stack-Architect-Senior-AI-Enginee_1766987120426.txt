@@ -1,0 +1,222 @@
+You are a Senior Full-Stack Architect, Senior AI Engineer, Senior Product Designer, and Startup CTO.
+
+Your task is to BUILD a production-ready internal tool called **VidGuru** as a MODULE INSIDE the **Guru (Admin) Portal** of the OurShiksha platform.
+
+==============================
+CORE PRODUCT CONTEXT
+==============================
+
+Platform: OurShiksha
+Admin Portal Name: Guru
+Module Name: VidGuru (AI Course & Video Intelligence Engine)
+
+VidGuru is NOT a separate app.
+VidGuru MUST live inside the Guru Admin Portal.
+Guru, VidGuru, and Shishya MUST use ONE SINGLE DATABASE.
+
+VidGuru is used ONLY by Admins / Creators to generate and manage AI-powered courses.
+Students NEVER access VidGuru directly.
+
+==============================
+PURPOSE OF VIDGURU
+==============================
+
+VidGuru helps admins and creators AUTO-CREATE complete courses using AI, including:
+
+- Course overview
+- Modules
+- Lessons
+- Lesson scripts
+- Video references
+- Practice labs
+- Tests & quizzes
+- Projects (mini + capstone)
+- Multilingual content
+- Certificate criteria
+
+ALL generated content MUST be saved as DRAFT by default.
+ONLY Admins can publish courses to the Shishya (Student) Portal.
+
+==============================
+ARCHITECTURE RULES (MANDATORY)
+==============================
+
+1. VidGuru is a module inside Guru (no separate repo, no separate app).
+2. Single shared database for Guru + VidGuru + Shishya.
+3. Role-Based Access Control (RBAC) is mandatory.
+4. Draft → Review → Publish workflow is mandatory.
+5. API-first design.
+6. Clean, modular, scalable code.
+
+==============================
+ROLES & PERMISSIONS
+==============================
+
+Roles:
+- SUPER_ADMIN
+- GURU_ADMIN
+- CREATOR
+
+Rules:
+- SUPER_ADMIN: full control
+- GURU_ADMIN: generate, edit, approve, publish
+- CREATOR: generate and edit drafts only
+- Shishya users must NEVER access VidGuru APIs or tables
+
+==============================
+REQUIRED FOLDER STRUCTURE
+==============================
+
+/apps/guru-admin
+ ├─ modules
+ │   └─ vidguru
+ │       ├─ pages
+ │       │   ├─ VidGuruDashboard.tsx
+ │       │   ├─ CourseGenerator.tsx
+ │       │   ├─ LessonEditor.tsx
+ │       │   ├─ VideoManager.tsx
+ │       │   ├─ LanguageManager.tsx
+ │       │   ├─ PreviewPublish.tsx
+ │       ├─ components
+ │       │   ├─ PromptBuilder.tsx
+ │       │   ├─ ScriptEditor.tsx
+ │       │   ├─ VideoEmbed.tsx
+ │       │   ├─ AvatarConfig.tsx
+ │       │   ├─ AIStatusBadge.tsx
+ │       ├─ services
+ │       │   ├─ vidguru.api.ts
+ │       │   ├─ ai.service.ts
+ │       ├─ types.ts
+ │       └─ routes.ts
+
+==============================
+CORE FEATURES TO IMPLEMENT
+==============================
+
+1) VIDGURU DASHBOARD
+- Show total courses generated
+- Draft vs Published count
+- AI usage logs
+- Buttons:
+  - Create New Course
+  - View Drafts
+  - Publish Queue
+
+2) AI COURSE GENERATOR (CORE FEATURE)
+Inputs:
+- Course Title
+- Category / Domain
+- Level (Beginner / Intermediate / Advanced)
+- Duration
+- Languages (English, Tamil, Hindi)
+- Teaching style (Theory / Practical / Hybrid)
+
+AI must generate:
+- Course description
+- Module structure
+- Lessons per module
+- Lesson objectives
+- Detailed lesson scripts
+- Practice labs
+- Test questions
+- Projects
+- Certificate completion rules
+
+All output MUST be stored as DRAFT.
+
+3) VIDEO INTELLIGENCE ENGINE
+Phase 1:
+- Accept YouTube URL
+- Embed video (NO downloading, NO logo removal)
+- Generate lesson summary and quiz from video context
+
+Phase 2 (placeholder support):
+- Script-based AI avatar video generation
+- Store avatar config and scripts (no real rendering required yet)
+
+4) MULTILINGUAL ENGINE
+- Each lesson supports multiple languages
+- Store translated scripts per language
+- Language selector per lesson
+
+5) MANUAL EDIT & REVIEW
+- Rich text editor for scripts, labs, projects
+- Admin comments
+- Version history
+
+6) PREVIEW & PUBLISH FLOW
+Before publishing:
+- Preview course exactly as student will see
+- Admin sets:
+  - Points
+  - Price
+  - Free / Paid
+  - Certificate rules
+Only Admin can publish to Shishya.
+
+==============================
+DATABASE TABLES (MINIMUM)
+==============================
+
+vidguru_courses
+vidguru_modules
+vidguru_lessons
+vidguru_scripts
+vidguru_videos
+vidguru_languages
+vidguru_projects
+vidguru_tests
+vidguru_ai_logs
+
+Each table MUST include:
+- id
+- status (draft | review | published)
+- created_by
+- approved_by
+- ai_generated (boolean)
+- timestamps
+
+==============================
+SECURITY REQUIREMENTS
+==============================
+
+- Protect all VidGuru routes with RBAC middleware
+- Audit log all AI actions
+- No student access to VidGuru APIs
+
+==============================
+DELIVERY PHASES
+==============================
+
+Phase 1 (MVP):
+- AI Course Generator
+- YouTube embed support
+- Draft → Publish workflow
+
+Phase 2:
+- AI avatar placeholders
+- Expanded multilingual support
+
+Phase 3:
+- Future SaaS extraction readiness
+
+==============================
+STRICT DO NOTs
+==============================
+
+- DO NOT create a separate VidGuru app
+- DO NOT duplicate databases
+- DO NOT allow auto-publish without admin approval
+- DO NOT expose VidGuru to students
+
+==============================
+FINAL EXPECTATION
+==============================
+
+At completion:
+- VidGuru appears as a menu item inside Guru Admin Portal
+- Admin can generate a full course in minutes
+- Courses flow cleanly to Shishya portal
+- Code is clean, scalable, and production-ready
+
+Follow these instructions STRICTLY and generate working, well-structured code with inline documentation.
