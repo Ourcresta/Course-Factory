@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Bot, Video, Languages, FileText, PlayCircle, Clock, CheckCircle, AlertCircle, Sparkles, Loader2, Film, Zap, Users, Send, RefreshCw, Lightbulb, TrendingUp, ArrowRight } from "lucide-react";
+import { Bot, Video, Languages, FileText, PlayCircle, Clock, CheckCircle, AlertCircle, Sparkles, Loader2, Film, Zap, Users, Send, RefreshCw, Lightbulb, TrendingUp, ArrowRight, Youtube, ExternalLink, Mic, Globe } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,14 +62,26 @@ interface CourseSuggestion {
   trending: boolean;
 }
 
+interface YouTubeRecommendation {
+  searchQuery: string;
+  title: string;
+  description: string;
+  channelSuggestions: string[];
+  keywords: string[];
+  durationHint: string;
+}
+
 export default function VidGuruDashboard() {
   const { toast } = useToast();
   const [command, setCommand] = useState("");
+  const [youtubeSearchTopic, setYoutubeSearchTopic] = useState("");
+  const [youtubeRecommendations, setYoutubeRecommendations] = useState<YouTubeRecommendation[]>([]);
   const [options, setOptions] = useState({
     includeVideos: true,
     includeLabs: true,
     includeProjects: true,
     includeTests: true,
+    includeYouTubeReferences: true,
     languages: ["en"],
   });
 
@@ -131,6 +143,42 @@ export default function VidGuruDashboard() {
     toast({
       title: "Topic Selected",
       description: `"${suggestion.title}" added to command. Click Generate Course to start.`,
+    });
+  };
+
+  const youtubeRecommendationsMutation = useMutation({
+    mutationFn: async (data: { lessonTitle: string; keyConcepts: string[]; courseLevel: string }) => {
+      return await apiRequest<{ success: boolean; count: number; recommendations: YouTubeRecommendation[] }>("POST", "/api/vidguru/youtube-recommendations", data);
+    },
+    onSuccess: (data) => {
+      setYoutubeRecommendations(data.recommendations);
+      toast({
+        title: "YouTube References Found",
+        description: `Found ${data.count} reference video suggestions.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to Get Recommendations",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleYoutubeSearch = () => {
+    if (!youtubeSearchTopic.trim()) {
+      toast({
+        title: "Topic Required",
+        description: "Enter a lesson topic to find YouTube references.",
+        variant: "destructive",
+      });
+      return;
+    }
+    youtubeRecommendationsMutation.mutate({
+      lessonTitle: youtubeSearchTopic,
+      keyConcepts: [],
+      courseLevel: "beginner",
     });
   };
 
@@ -245,6 +293,17 @@ export default function VidGuruDashboard() {
               />
               <Label htmlFor="includeTests" className="text-sm">Tests</Label>
             </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="includeYouTubeReferences"
+                checked={options.includeYouTubeReferences}
+                onCheckedChange={(checked) => setOptions({ ...options, includeYouTubeReferences: checked })}
+              />
+              <Label htmlFor="includeYouTubeReferences" className="text-sm flex items-center gap-1">
+                <Youtube className="h-3 w-3 text-red-500" />
+                YouTube Refs
+              </Label>
+            </div>
           </div>
 
           <Button
@@ -351,6 +410,80 @@ export default function VidGuruDashboard() {
               <Button variant="ghost" onClick={() => refetchSuggestions()} className="mt-2">
                 Try again
               </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-red-500/20 bg-gradient-to-br from-red-500/5 to-background">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Youtube className="h-5 w-5 text-red-500" />
+            YouTube Reference Finder
+          </CardTitle>
+          <CardDescription>
+            AI-powered search for supplementary YouTube videos for any lesson topic
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter lesson topic (e.g., 'React Hooks basics', 'Python functions')"
+              value={youtubeSearchTopic}
+              onChange={(e) => setYoutubeSearchTopic(e.target.value)}
+              className="flex-1"
+              data-testid="input-youtube-topic"
+            />
+            <Button
+              onClick={handleYoutubeSearch}
+              disabled={youtubeRecommendationsMutation.isPending || !youtubeSearchTopic.trim()}
+              data-testid="button-youtube-search"
+            >
+              {youtubeRecommendationsMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Youtube className="h-4 w-4 mr-2" />
+                  Find Videos
+                </>
+              )}
+            </Button>
+          </div>
+
+          {youtubeRecommendations.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-muted-foreground">Recommended Reference Videos</h4>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {youtubeRecommendations.map((rec, index) => (
+                  <div key={index} className="border rounded-lg p-3 space-y-2">
+                    <h5 className="font-medium text-sm">{rec.title}</h5>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{rec.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{rec.durationHint}</span>
+                    </div>
+                    {rec.channelSuggestions.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {rec.channelSuggestions.slice(0, 2).map((channel, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            {channel}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <a
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(rec.searchQuery)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-red-600 hover:underline"
+                      data-testid={`link-youtube-search-${index}`}
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      Search on YouTube
+                    </a>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>

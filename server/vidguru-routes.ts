@@ -512,8 +512,7 @@ export function registerVidGuruRoutes(app: Express) {
       const lessonId = parseInt(req.params.lessonId);
       const { courseLevel } = req.body;
 
-      const lessons = await storage.getAllLessons();
-      const lesson = lessons.find(l => l.id === lessonId);
+      const lesson = await storage.getLesson(lessonId);
 
       if (!lesson) {
         return res.status(404).json({ error: "Lesson not found" });
