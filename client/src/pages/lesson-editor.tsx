@@ -523,109 +523,141 @@ export default function LessonEditor() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Youtube className="h-5 w-5 text-red-600" />
-                YouTube References
-              </CardTitle>
-              <CardDescription>Related YouTube videos for supplementary learning</CardDescription>
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent border-b">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/20">
+                    <Youtube className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">YouTube References</CardTitle>
+                    <CardDescription>Supplementary video tutorials for enhanced learning</CardDescription>
+                  </div>
+                </div>
+                {formData.youtubeReferences.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {formData.youtubeReferences.length} video{formData.youtubeReferences.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {formData.youtubeReferences.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No YouTube references added yet. Add videos to help learners with additional resources.
-                </p>
-              )}
-              <div className="grid gap-3">
-                {formData.youtubeReferences.map((ref, index) => {
-                  const thumbnail = getYoutubeThumbnail(ref.url);
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 group"
-                      data-testid={`youtube-reference-${index}`}
-                    >
-                      <a
-                        href={ref.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="relative shrink-0 rounded-md overflow-hidden w-32 h-20 bg-muted"
+            <CardContent className="p-0">
+              {formData.youtubeReferences.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
+                    <Video className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h4 className="font-medium text-foreground mb-1">No videos added yet</h4>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    Add YouTube tutorials to give learners additional resources and perspectives on the topic.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {formData.youtubeReferences.map((ref, index) => {
+                    const thumbnail = getYoutubeThumbnail(ref.url);
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center gap-4 p-4 group transition-colors hover:bg-muted/50"
+                        data-testid={`youtube-reference-${index}`}
                       >
-                        {thumbnail ? (
-                          <img
-                            src={thumbnail}
-                            alt={ref.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Youtube className="h-8 w-8 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
-                          <Play className="h-8 w-8 text-white" />
-                        </div>
-                      </a>
-                      <div className="flex-1 min-w-0">
                         <a
                           href={ref.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-medium text-sm hover:text-primary transition-colors line-clamp-2"
+                          className="relative shrink-0 rounded-xl overflow-hidden w-36 h-20 bg-gradient-to-br from-muted to-muted/50 shadow-sm group/thumb"
                         >
-                          {ref.title}
+                          {thumbnail ? (
+                            <img
+                              src={thumbnail}
+                              alt={ref.title}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-600/10">
+                              <Youtube className="h-8 w-8 text-red-500/50" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/50 transition-all duration-300">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-600 shadow-lg opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300">
+                              <Play className="h-5 w-5 text-white ml-0.5" />
+                            </div>
+                          </div>
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-white text-xs font-medium opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+                            Watch
+                          </div>
                         </a>
-                        <p className="text-xs text-muted-foreground mt-1 truncate">{ref.url}</p>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <a
+                            href={ref.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-sm hover:text-red-600 dark:hover:text-red-400 transition-colors line-clamp-2 block"
+                          >
+                            {ref.title}
+                          </a>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Youtube className="h-3 w-3 text-red-500" />
+                            <span className="truncate max-w-xs">{ref.url}</span>
+                          </div>
+                        </div>
+                        {!isPublished && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeYoutubeReference(index)}
+                            className="shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-destructive/10"
+                            data-testid={`button-remove-youtube-${index}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
-                      {!isPublished && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeYoutubeReference(index)}
-                          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          data-testid={`button-remove-youtube-${index}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
               {!isPublished && (
-                <div className="space-y-3 pt-2 border-t">
+                <div className="p-4 bg-muted/30 border-t space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Plus className="h-4 w-4 text-muted-foreground" />
+                    Add New Video
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="youtube-title" className="text-xs">Video Title</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="youtube-title" className="text-xs font-medium">Video Title</Label>
                       <Input
                         id="youtube-title"
                         placeholder="e.g., React Hooks Tutorial"
                         value={newYoutubeTitle}
                         onChange={(e) => setNewYoutubeTitle(e.target.value)}
+                        className="bg-background"
                         data-testid="input-youtube-title"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="youtube-url" className="text-xs">YouTube URL</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="youtube-url" className="text-xs font-medium">YouTube URL</Label>
                       <Input
                         id="youtube-url"
                         placeholder="https://youtube.com/watch?v=..."
                         value={newYoutubeUrl}
                         onChange={(e) => setNewYoutubeUrl(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && addYoutubeReference()}
+                        className="bg-background"
                         data-testid="input-youtube-url"
                       />
                     </div>
                   </div>
                   <Button
-                    variant="outline"
                     onClick={addYoutubeReference}
                     disabled={!newYoutubeUrl.trim() || !newYoutubeTitle.trim()}
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/20"
                     data-testid="button-add-youtube"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Youtube className="h-4 w-4 mr-2" />
                     Add YouTube Reference
                   </Button>
                 </div>
