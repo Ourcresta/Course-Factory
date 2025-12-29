@@ -94,8 +94,7 @@ export default function VidGuruDashboard() {
 
   const generateMutation = useMutation({
     mutationFn: async (data: { command: string; options: typeof options }) => {
-      const res = await apiRequest("POST", "/api/vidguru/generate-course", data) as Response;
-      return res.json();
+      return await apiRequest<{ jobId: number; message: string; status: string }>("POST", "/api/vidguru/generate-course", data);
     },
     onSuccess: (data) => {
       toast({
