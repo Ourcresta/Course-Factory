@@ -1,29 +1,117 @@
-import { useQuery } from "@tanstack/react-query";
-import { Bot, Video, Languages, FileText, PlayCircle, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Bot, Video, Languages, FileText, PlayCircle, Clock, CheckCircle, AlertCircle, Sparkles, Loader2, Film, Zap, Users, Send, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface VidGuruStats {
   totalCourses: number;
   draftCourses: number;
   publishedCourses: number;
-  totalVideos: number;
+  totalAvatarVideos: number;
+  pendingVideos: number;
+  generatedVideos: number;
+  approvedVideos: number;
+  publishedVideos: number;
+  totalVideoMinutes: number;
   totalScripts: number;
+  draftScripts: number;
+  approvedScripts: number;
+  totalAvatarConfigs: number;
+  activeAvatarConfigs: number;
   aiGenerationsToday: number;
+  pendingJobs: number;
+  completedJobs: number;
+  languageCoverage: Record<string, number>;
   languages: string[];
 }
 
+interface GenerationJob {
+  id: number;
+  command: string;
+  status: string;
+  progress: number;
+  currentStep: string | null;
+  generatedModules: number;
+  generatedLessons: number;
+  generatedScripts: number;
+  generatedVideos: number;
+  generatedLabs: number;
+  generatedTests: number;
+  createdAt: string;
+}
+
 export default function VidGuruDashboard() {
-  const { data: stats, isLoading } = useQuery<VidGuruStats>({
-    queryKey: ["/api/vidguru/stats"],
+  const { toast } = useToast();
+  const [command, setCommand] = useState("");
+  const [options, setOptions] = useState({
+    includeVideos: true,
+    includeLabs: true,
+    includeProjects: true,
+    includeTests: true,
+    languages: ["en"],
   });
 
-  const { data: recentLogs, isLoading: logsLoading } = useQuery<any[]>({
-    queryKey: ["/api/vidguru/ai-logs", { limit: 5 }],
+  const { data: stats, isLoading } = useQuery<VidGuruStats>({
+    queryKey: ["/api/vidguru/stats"],
+    refetchInterval: 10000,
   });
+
+  const { data: jobs, isLoading: jobsLoading } = useQuery<GenerationJob[]>({
+    queryKey: ["/api/vidguru/jobs"],
+    refetchInterval: 3000,
+  });
+
+  const { data: recentLogs } = useQuery<any[]>({
+    queryKey: ["/api/vidguru/ai-logs"],
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async (data: { command: string; options: typeof options }) => {
+      const res = await apiRequest("POST", "/api/vidguru/generate-course", data) as Response;
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Course Generation Started",
+        description: `Job #${data.jobId} is now processing your request.`,
+      });
+      setCommand("");
+      queryClient.invalidateQueries({ queryKey: ["/api/vidguru/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/vidguru/stats"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Generation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGenerate = () => {
+    if (!command.trim()) {
+      toast({
+        title: "Command Required",
+        description: "Please enter a course topic or command.",
+        variant: "destructive",
+      });
+      return;
+    }
+    generateMutation.mutate({ command, options });
+  };
+
+  const activeJobs = jobs?.filter((j) => j.status === "pending" || j.status === "generating") || [];
 
   if (isLoading) {
     return (
@@ -31,12 +119,12 @@ export default function VidGuruDashboard() {
         <div className="flex items-center gap-3">
           <Bot className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">VidGuru Dashboard</h1>
-            <p className="text-muted-foreground">AI-powered video course intelligence</p>
+            <h1 className="text-2xl font-bold">VidGuru AI Course Factory</h1>
+            <p className="text-muted-foreground">Loading dashboard...</p>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <Skeleton className="h-4 w-24" />
@@ -52,35 +140,6 @@ export default function VidGuruDashboard() {
     );
   }
 
-  const statCards = [
-    {
-      title: "Total Courses",
-      value: stats?.totalCourses || 0,
-      icon: FileText,
-      description: "All generated courses",
-    },
-    {
-      title: "Drafts",
-      value: stats?.draftCourses || 0,
-      icon: Clock,
-      description: "Pending review",
-      variant: "warning" as const,
-    },
-    {
-      title: "Published",
-      value: stats?.publishedCourses || 0,
-      icon: CheckCircle,
-      description: "Live on Shishya",
-      variant: "success" as const,
-    },
-    {
-      title: "Videos Added",
-      value: stats?.totalVideos || 0,
-      icon: Video,
-      description: "YouTube embeds",
-    },
-  ];
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -89,128 +148,255 @@ export default function VidGuruDashboard() {
             <Bot className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">VidGuru Dashboard</h1>
-            <p className="text-muted-foreground">AI-powered video course intelligence engine</p>
+            <h1 className="text-2xl font-bold" data-testid="text-page-title">VidGuru AI Course Factory</h1>
+            <p className="text-muted-foreground">Generate complete avatar video courses with one command</p>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Link href="/courses/new">
-            <Button data-testid="button-create-course">
-              <Bot className="h-4 w-4 mr-2" />
-              Create New Course
-            </Button>
-          </Link>
           <Link href="/vidguru/videos">
             <Button variant="outline" data-testid="button-manage-videos">
-              <Video className="h-4 w-4 mr-2" />
-              Manage Videos
+              <Film className="h-4 w-4 mr-2" />
+              Avatar Videos
+            </Button>
+          </Link>
+          <Link href="/vidguru/languages">
+            <Button variant="outline" data-testid="button-languages">
+              <Languages className="h-4 w-4 mr-2" />
+              Languages
             </Button>
           </Link>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" data-testid={`stat-${stat.title.toLowerCase().replace(/\s+/g, "-")}`}>
-                {stat.value}
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            AI Course Factory
+          </CardTitle>
+          <CardDescription>
+            Enter a topic or command and VidGuru will generate a complete course with avatar teaching videos, scripts, labs, projects, and tests.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Textarea
+              placeholder='e.g., "Complete Python programming course for beginners with hands-on projects" or "Advanced React with TypeScript and testing"'
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              className="flex-1 min-h-[80px]"
+              data-testid="input-ai-command"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="includeVideos"
+                checked={options.includeVideos}
+                onCheckedChange={(checked) => setOptions({ ...options, includeVideos: checked })}
+              />
+              <Label htmlFor="includeVideos" className="text-sm">Avatar Videos</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="includeLabs"
+                checked={options.includeLabs}
+                onCheckedChange={(checked) => setOptions({ ...options, includeLabs: checked })}
+              />
+              <Label htmlFor="includeLabs" className="text-sm">Practice Labs</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="includeProjects"
+                checked={options.includeProjects}
+                onCheckedChange={(checked) => setOptions({ ...options, includeProjects: checked })}
+              />
+              <Label htmlFor="includeProjects" className="text-sm">Projects</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="includeTests"
+                checked={options.includeTests}
+                onCheckedChange={(checked) => setOptions({ ...options, includeTests: checked })}
+              />
+              <Label htmlFor="includeTests" className="text-sm">Tests</Label>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleGenerate}
+            disabled={generateMutation.isPending || !command.trim()}
+            className="w-full sm:w-auto"
+            data-testid="button-generate-course"
+          >
+            {generateMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Starting Generation...
+              </>
+            ) : (
+              <>
+                <Zap className="h-4 w-4 mr-2" />
+                Generate Course
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {activeJobs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              Active Generation Jobs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {activeJobs.map((job) => (
+              <div key={job.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="font-medium truncate max-w-md">{job.command}</div>
+                  <Badge variant={job.status === "generating" ? "default" : "secondary"}>
+                    {job.status}
+                  </Badge>
+                </div>
+                <Progress value={job.progress || 0} className="h-2" />
+                <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground flex-wrap">
+                  <span>{job.currentStep || "Waiting..."}</span>
+                  <div className="flex gap-3">
+                    <span>Modules: {job.generatedModules || 0}</span>
+                    <span>Lessons: {job.generatedLessons || 0}</span>
+                    <span>Scripts: {job.generatedScripts || 0}</span>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="stat-total-courses">{stats?.totalCourses || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats?.draftCourses || 0} drafts, {stats?.publishedCourses || 0} published
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avatar Videos</CardTitle>
+            <Film className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="stat-avatar-videos">{stats?.totalAvatarVideos || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats?.pendingVideos || 0} pending, {stats?.generatedVideos || 0} generated
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Teaching Scripts</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="stat-scripts">{stats?.totalScripts || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats?.draftScripts || 0} drafts, {stats?.approvedScripts || 0} approved
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">AI Generations Today</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="stat-ai-today">{stats?.aiGenerationsToday || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats?.completedJobs || 0} jobs completed
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PlayCircle className="h-5 w-5" />
-              Quick Actions
+              <Languages className="h-5 w-5" />
+              Language Coverage
             </CardTitle>
-            <CardDescription>Common VidGuru operations</CardDescription>
+            <CardDescription>Scripts available per language</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Link href="/courses/new" className="block">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-action-generate">
-                <Bot className="h-4 w-4 mr-3" />
-                Generate New Course with AI
-                <Badge variant="secondary" className="ml-auto">AI</Badge>
-              </Button>
-            </Link>
-            <Link href="/vidguru/videos" className="block">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-action-videos">
-                <Video className="h-4 w-4 mr-3" />
-                Add YouTube Videos to Lessons
-              </Button>
-            </Link>
-            <Link href="/vidguru/languages" className="block">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-action-languages">
-                <Languages className="h-4 w-4 mr-3" />
-                Manage Multilingual Scripts
-              </Button>
-            </Link>
-            <Link href="/courses" className="block">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-action-drafts">
-                <Clock className="h-4 w-4 mr-3" />
-                Review Draft Courses
-              </Button>
-            </Link>
+          <CardContent>
+            <div className="space-y-3">
+              {stats?.languages.map((lang) => {
+                const count = stats?.languageCoverage?.[lang] || 0;
+                const langNames: Record<string, string> = {
+                  en: "English",
+                  hi: "Hindi",
+                  ta: "Tamil",
+                  te: "Telugu",
+                  kn: "Kannada",
+                  ml: "Malayalam",
+                  bn: "Bengali",
+                  mr: "Marathi",
+                };
+                return (
+                  <div key={lang} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="uppercase">{lang}</Badge>
+                      <span className="text-sm">{langNames[lang] || lang}</span>
+                    </div>
+                    <span className="text-sm font-medium">{count} scripts</span>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
+              <Clock className="h-5 w-5" />
               Recent AI Activity
             </CardTitle>
-            <CardDescription>Latest AI generation logs</CardDescription>
+            <CardDescription>Latest AI generation events</CardDescription>
           </CardHeader>
           <CardContent>
-            {logsLoading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <Skeleton className="h-8 w-8 rounded" />
-                    <div className="flex-1 space-y-1">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-3 w-1/2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : recentLogs && recentLogs.length > 0 ? (
-              <div className="space-y-3">
-                {recentLogs.map((log: any) => (
-                  <div key={log.id} className="flex items-start gap-3 text-sm">
-                    <div className={`mt-0.5 h-2 w-2 rounded-full ${log.status === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{log.action}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {log.entityType} - {new Date(log.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    {log.tokensUsed && (
-                      <Badge variant="outline" className="text-xs shrink-0">
-                        {log.tokensUsed} tokens
-                      </Badge>
+            <div className="space-y-3">
+              {recentLogs?.slice(0, 5).map((log, i) => (
+                <div key={log.id || i} className="flex items-center justify-between gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    {log.status === "success" ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-red-500" />
                     )}
+                    <span className="truncate max-w-[200px]">{log.action}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No recent AI activity</p>
-                <p className="text-xs">Generate a course to see activity here</p>
-              </div>
-            )}
+                  <span className="text-muted-foreground">
+                    {new Date(log.createdAt).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+              {(!recentLogs || recentLogs.length === 0) && (
+                <p className="text-sm text-muted-foreground">No recent AI activity</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -218,18 +404,36 @@ export default function VidGuruDashboard() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Languages className="h-5 w-5" />
-            Supported Languages
+            <Bot className="h-5 w-5" />
+            Quick Actions
           </CardTitle>
-          <CardDescription>Languages available for multilingual content generation</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 flex-wrap">
-            {["English", "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam", "Bengali", "Marathi"].map((lang) => (
-              <Badge key={lang} variant="secondary" data-testid={`badge-lang-${lang.toLowerCase()}`}>
-                {lang}
-              </Badge>
-            ))}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Link href="/courses">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <FileText className="h-4 w-4" />
+                View All Courses
+              </Button>
+            </Link>
+            <Link href="/vidguru/videos">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <Film className="h-4 w-4" />
+                Manage Avatar Videos
+              </Button>
+            </Link>
+            <Link href="/vidguru/languages">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <Languages className="h-4 w-4" />
+                Language Scripts
+              </Button>
+            </Link>
+            <Link href="/labs">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <PlayCircle className="h-4 w-4" />
+                Practice Labs
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
