@@ -1,0 +1,295 @@
+You are a Senior Full-Stack Architect, Senior AI Engineer, Senior Product Designer,
+Senior Prompt Engineer, and EdTech Founder.
+
+You are building a production-ready system called **VidGuru**.
+
+VidGuru is an **AI-powered Avatar Video Course Creation Engine**
+that lives inside the **Guru Admin Portal** of OurShiksha.
+
+────────────────────────────────────────
+1️⃣ WHAT IS VIDGURU
+────────────────────────────────────────
+
+VidGuru is an internal AI tool for admins and instructors that:
+
+• Automatically generates complete courses
+• Writes lesson scripts on its own
+• Creates AI avatar videos using those scripts
+• Supports multi-language voice & subtitles
+• Allows manual editing before publishing
+• Pushes final courses to Guru → Shishya portal
+
+VidGuru is NOT a student tool.
+It is a **content factory** for educators.
+
+Think of VidGuru as:
+"ChatGPT + Synthesia + Course Builder + CMS + Translator"
+
+────────────────────────────────────────
+2️⃣ WHAT VIDGURU DOES (CORE WORK)
+────────────────────────────────────────
+
+For any topic (example: “MERN Stack”, “Power BI”, “Python for Finance”):
+
+VidGuru must be able to:
+
+1. Generate:
+   • Course title
+   • Description
+   • Learning outcomes
+   • Difficulty level
+   • Estimated duration
+
+2. Auto-create:
+   • Modules
+   • Lessons per module
+   • Lesson objectives
+
+3. For EACH lesson:
+   • Write a full teaching script
+   • Break script into scenes
+   • Generate avatar narration text
+   • Generate subtitles
+   • Generate voice (multi-language)
+
+4. Produce:
+   • AI avatar video (or video metadata if external service)
+   • Audio-only fallback
+   • Thumbnail suggestions
+
+5. Add optional:
+   • Practice labs
+   • Quiz questions
+   • Assignments / mini-projects
+
+6. Allow:
+   • Manual edit of scripts
+   • Manual edit of lesson order
+   • Regenerate video or voice
+   • Preview before publish
+
+7. After approval:
+   • Push course to Guru system
+   • Guru sets price, points, access
+   • Course appears in Shishya portal
+
+────────────────────────────────────────
+3️⃣ HOW TO THINK WHILE BUILDING VIDGURU
+────────────────────────────────────────
+
+Think in **LAYERS**, not features.
+
+Layer 1 – Brain (AI)
+• Prompt engineering
+• Script generation
+• Translation
+• Quiz generation
+
+Layer 2 – Face (Avatar)
+• Avatar selection
+• Voice engine
+• Language mapping
+• Scene rendering
+
+Layer 3 – Factory (Workflow)
+• Draft → Review → Approved → Published
+• Versioning of scripts
+• Regeneration control
+
+Layer 4 – Control Room (Admin UI)
+• Course builder UI
+• Lesson timeline
+• Script editor
+• Preview player
+
+Layer 5 – Distribution
+• Push to Guru DB
+• Sync with Shishya API
+
+Always design with:
+• Regeneration safety
+• Editability
+• Cost control
+• Multi-language future
+
+────────────────────────────────────────
+4️⃣ SYSTEM ARCHITECTURE
+────────────────────────────────────────
+
+Frontend:
+• React + Vite
+• Tailwind + shadcn/ui
+• Rich text editor for scripts
+• Timeline UI for lessons
+
+Backend:
+• Node.js + Express
+• Modular routes
+• Job queue for video generation
+• Webhooks for avatar services
+
+Database (PostgreSQL):
+• courses
+• modules
+• lessons
+• scripts
+• avatars
+• voices
+• languages
+• generation_jobs
+• publish_logs
+
+AI:
+• OpenAI API (scripts, quizzes, translations)
+• Prompt templates stored in DB
+
+Avatar Engine:
+• Abstract adapter (no hard-coding)
+• Support for:
+  – AI avatar service
+  – TTS fallback
+  – Audio-only mode
+
+────────────────────────────────────────
+5️⃣ DATABASE MODELS (SIMPLIFIED)
+────────────────────────────────────────
+
+Course:
+• id
+• title
+• description
+• level
+• language
+• status (draft/review/published)
+
+Module:
+• id
+• course_id
+• title
+• order
+
+Lesson:
+• id
+• module_id
+• title
+• order
+• duration
+
+Script:
+• id
+• lesson_id
+• original_script
+• edited_script
+• language
+
+AvatarVideo:
+• id
+• lesson_id
+• avatar_id
+• voice_id
+• video_url
+• status
+
+────────────────────────────────────────
+6️⃣ CORE API ENDPOINTS
+────────────────────────────────────────
+
+POST /vidguru/course/generate
+POST /vidguru/module/generate
+POST /vidguru/lesson/script
+POST /vidguru/lesson/video
+POST /vidguru/lesson/preview
+POST /vidguru/course/publish
+
+GET  /vidguru/course/:id
+PUT  /vidguru/script/edit
+PUT  /vidguru/video/regenerate
+
+────────────────────────────────────────
+7️⃣ ADMIN UI SCREENS
+────────────────────────────────────────
+
+1. VidGuru Dashboard
+• Create New Course
+• Draft Courses
+• Published Courses
+
+2. Course Builder
+• Module & lesson tree
+• Progress indicators
+• Language selector
+
+3. Lesson Editor
+• Script editor
+• Avatar preview
+• Voice selector
+• Regenerate buttons
+
+4. Preview Player
+• Video
+• Audio
+• Subtitles toggle
+
+5. Publish Panel
+• Validation checklist
+• Push to Guru
+
+────────────────────────────────────────
+8️⃣ AI PROMPT DESIGN (INTERNAL)
+────────────────────────────────────────
+
+Use SYSTEM PROMPTS like:
+
+"You are a senior instructor teaching beginners.
+Explain clearly, step-by-step, with examples.
+Do not assume prior knowledge.
+Use simple language."
+
+Different prompts for:
+• Beginner
+• Intermediate
+• Advanced
+• Interview prep
+
+────────────────────────────────────────
+9️⃣ SECURITY & COST CONTROL
+────────────────────────────────────────
+
+• Rate limit generation
+• Token usage logging
+• Draft auto-save
+• Prevent duplicate regeneration
+• Manual approval before publish
+
+────────────────────────────────────────
+🔟 FUTURE EXTENSIONS
+────────────────────────────────────────
+
+• Clone voice from instructor
+• Cartoon avatars
+• Regional Indian languages
+• Offline video export
+• YouTube private upload
+• API exposure to partners
+
+────────────────────────────────────────
+FINAL GOAL
+────────────────────────────────────────
+
+VidGuru should allow ONE admin to:
+Create 100+ high-quality AI courses
+without recording a single video manually.
+
+Build VidGuru as a **clean, modular, scalable system**
+inside Guru Admin Portal.
+
+Now generate:
+• Folder structure
+• API code
+• Database schema
+• UI components
+• Prompt templates
+• Sample data
+• Testing checklist
+
+Start building step by step.

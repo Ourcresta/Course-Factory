@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { insertLessonVideoSchema, insertLessonScriptSchema, insertAvatarConfigSchema, insertAvatarVideoSchema } from "@shared/schema";
-import { generateVidGuruCourse, generateAvatarScript, translateScript, generateCourseSuggestions } from "./vidguru-ai-service";
+import { generateVidGuruCourse, generateAvatarScript, translateScript, generateCourseSuggestions, generateYouTubeRecommendations, generateLessonYouTubeReferences, generateMultiLanguageAvatarVideo } from "./vidguru-ai-service";
 import { verifyToken, JWTPayload } from "./auth-middleware";
 
 interface AuthenticatedRequest extends Request {
@@ -469,6 +469,114 @@ export function registerVidGuruRoutes(app: Express) {
     } catch (error) {
       console.error("VidGuru delete reference video error:", error);
       res.status(500).json({ error: "Failed to delete reference video" });
+    }
+  });
+
+  // ========== AI YOUTUBE RECOMMENDATIONS ==========
+  app.post("/api/vidguru/youtube-recommendations", requireAuth, async (req, res) => {
+    try {
+      const { lessonTitle, keyConcepts, courseLevel } = req.body;
+
+      if (!lessonTitle) {
+        return res.status(400).json({ error: "Lesson title is required" });
+      }
+
+      const recommendations = await generateYouTubeRecommendations(
+        lessonTitle,
+        keyConcepts || [],
+        courseLevel || "beginner"
+      );
+
+      await storage.createVidguruAiLog({
+        action: "generate_youtube_recommendations",
+        entityType: "lesson",
+        inputPrompt: lessonTitle,
+        outputSummary: `Generated ${recommendations.length} YouTube recommendations`,
+        model: "gpt-4o",
+        status: "success",
+      });
+
+      res.json({
+        success: true,
+        count: recommendations.length,
+        recommendations,
+      });
+    } catch (error) {
+      console.error("VidGuru YouTube recommendations error:", error);
+      res.status(500).json({ error: "Failed to generate YouTube recommendations" });
+    }
+  });
+
+  app.post("/api/vidguru/lessons/:lessonId/youtube-references", requireAuth, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.lessonId);
+      const { courseLevel } = req.body;
+
+      const lessons = await storage.getAllLessons();
+      const lesson = lessons.find(l => l.id === lessonId);
+
+      if (!lesson) {
+        return res.status(404).json({ error: "Lesson not found" });
+      }
+
+      const result = await generateLessonYouTubeReferences(
+        lessonId,
+        lesson.title,
+        (lesson.keyConceptS as string[]) || [],
+        courseLevel || "beginner"
+      );
+
+      res.json(result);
+    } catch (error) {
+      console.error("VidGuru lesson YouTube references error:", error);
+      res.status(500).json({ error: "Failed to generate YouTube references for lesson" });
+    }
+  });
+
+  // ========== MULTI-LANGUAGE AVATAR VIDEO GENERATION ==========
+  app.post("/api/vidguru/lessons/:lessonId/multi-language-videos", requireAuth, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.lessonId);
+      const { scriptId, languages, avatarConfigId } = req.body;
+
+      if (!scriptId || !languages || !Array.isArray(languages) || languages.length === 0) {
+        return res.status(400).json({ error: "Script ID and languages array are required" });
+      }
+
+      const result = await generateMultiLanguageAvatarVideo(
+        lessonId,
+        scriptId,
+        languages,
+        avatarConfigId
+      );
+
+      await storage.createVidguruAiLog({
+        action: "create_multi_language_videos",
+        entityType: "avatar_video",
+        entityId: lessonId,
+        inputPrompt: `Languages: ${languages.join(", ")}`,
+        outputSummary: `Created ${result.videos.length} multi-language avatar videos`,
+        model: "gpt-4o",
+        status: result.success ? "success" : "error",
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("VidGuru multi-language videos error:", error);
+      res.status(500).json({ error: "Failed to create multi-language avatar videos" });
+    }
+  });
+
+  // ========== LESSON VIDEOS BY LESSON ==========
+  app.get("/api/vidguru/lessons/:lessonId/videos", requireAuth, async (req, res) => {
+    try {
+      const lessonId = parseInt(req.params.lessonId);
+      const allVideos = await storage.getAllLessonVideos();
+      const lessonVideos = allVideos.filter(v => v.lessonId === lessonId);
+      res.json(lessonVideos);
+    } catch (error) {
+      console.error("VidGuru lesson videos error:", error);
+      res.status(500).json({ error: "Failed to fetch lesson videos" });
     }
   });
 }

@@ -675,6 +675,160 @@ function getDefaultSuggestions(): CourseSuggestion[] {
   ];
 }
 
+// ==================== YOUTUBE REFERENCE RECOMMENDATIONS ====================
+
+interface YouTubeRecommendation {
+  searchQuery: string;
+  title: string;
+  description: string;
+  channelSuggestions: string[];
+  keywords: string[];
+  durationHint: string;
+}
+
+export async function generateYouTubeRecommendations(
+  lessonTitle: string,
+  keyConcepts: string[],
+  courseLevel: string = "beginner"
+): Promise<YouTubeRecommendation[]> {
+  const prompt = `For an educational lesson titled "${lessonTitle}" covering these concepts: ${keyConcepts.join(", ")}
+Level: ${courseLevel}
+
+Generate 2-3 YouTube video search recommendations that students can use as supplementary learning.
+
+For each recommendation, provide:
+1. searchQuery: An optimized YouTube search query
+2. title: What type of video to look for
+3. description: Why this video would be helpful
+4. channelSuggestions: Popular educational channels that might have this content
+5. keywords: Related search keywords
+6. durationHint: Recommended video length
+
+Respond with JSON array:
+[
+  {
+    "searchQuery": "topic tutorial for beginners 2024",
+    "title": "Video Topic Title",
+    "description": "Why this helps...",
+    "channelSuggestions": ["Channel1", "Channel2"],
+    "keywords": ["keyword1", "keyword2"],
+    "durationHint": "10-20 minutes"
+  }
+]`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an EdTech expert who curates the best educational content. Recommend YouTube searches that will lead to high-quality, beginner-friendly educational videos. Focus on well-known educators and channels. Respond with valid JSON only.",
+        },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
+    });
+
+    const responseText = completion.choices[0]?.message?.content || "[]";
+    const cleaned = responseText.replace(/```json\n?|\n?```/g, "").trim();
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error("Failed to generate YouTube recommendations:", error);
+    return [];
+  }
+}
+
+export async function generateYouTubeSearchQuery(
+  topic: string,
+  targetLevel: string = "beginner"
+): Promise<string> {
+  const levelModifiers: Record<string, string> = {
+    beginner: "tutorial for beginners",
+    intermediate: "complete guide",
+    advanced: "advanced concepts deep dive",
+  };
+  
+  const modifier = levelModifiers[targetLevel] || "tutorial";
+  return `${topic} ${modifier} ${new Date().getFullYear()}`;
+}
+
+export async function generateLessonYouTubeReferences(
+  lessonId: number,
+  lessonTitle: string,
+  keyConcepts: string[],
+  courseLevel: string
+): Promise<{ success: boolean; count: number; recommendations: YouTubeRecommendation[] }> {
+  try {
+    const recommendations = await generateYouTubeRecommendations(
+      lessonTitle,
+      keyConcepts,
+      courseLevel
+    );
+
+    // Store as lesson videos with type = 'youtube_reference'
+    for (let i = 0; i < recommendations.length; i++) {
+      const rec = recommendations[i];
+      const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(rec.searchQuery)}`;
+      
+      await storage.createLessonVideo({
+        lessonId,
+        type: "youtube_reference",
+        url: youtubeSearchUrl,
+        title: rec.title,
+        aiSummary: rec.description,
+        isReference: true,
+        status: "active",
+        orderIndex: i,
+      });
+    }
+
+    return { success: true, count: recommendations.length, recommendations };
+  } catch (error) {
+    console.error("Failed to generate lesson YouTube references:", error);
+    return { success: false, count: 0, recommendations: [] };
+  }
+}
+
+// ==================== AVATAR VIDEO ENHANCEMENT ====================
+
+interface AvatarTutorConfig {
+  language: string;
+  voiceStyle: string;
+  pace: string;
+  enableSubtitles: boolean;
+  subtitleLanguages: string[];
+}
+
+export async function generateMultiLanguageAvatarVideo(
+  lessonId: number,
+  scriptId: number,
+  languages: string[],
+  avatarConfigId?: number
+): Promise<{ success: boolean; videos: Array<{ language: string; videoId: number }> }> {
+  const videos: Array<{ language: string; videoId: number }> = [];
+
+  try {
+    for (const language of languages) {
+      const video = await storage.createAvatarVideo({
+        lessonId,
+        scriptId,
+        avatarConfigId,
+        language,
+        generationStatus: "pending",
+        status: "draft",
+        orderIndex: languages.indexOf(language),
+      });
+      videos.push({ language, videoId: video.id });
+    }
+
+    return { success: true, videos };
+  } catch (error) {
+    console.error("Failed to create multi-language avatar videos:", error);
+    return { success: false, videos };
+  }
+}
+
 export async function translateScript(
   script: string,
   sourceLanguage: string,
