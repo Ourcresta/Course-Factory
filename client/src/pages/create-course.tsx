@@ -17,6 +17,13 @@ import {
   Rocket,
   RefreshCw,
   Lightbulb,
+  Code,
+  Database,
+  Brain,
+  Cloud,
+  Award,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -304,49 +311,78 @@ export default function CreateCourse() {
                     )}
                   />
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Lightbulb className="h-4 w-4 text-amber-500" />
-                        <Label className="text-sm font-medium">AI Suggested Courses</Label>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                          <Lightbulb className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-semibold">Quick Start Ideas</Label>
+                          <p className="text-xs text-muted-foreground">Click any card to use as your course command</p>
+                        </div>
                       </div>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={fetchAiSuggestions}
                         disabled={isLoadingSuggestions}
                         data-testid="button-refresh-suggestions"
+                        className="gap-2"
                       >
                         {isLoadingSuggestions ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <RefreshCw className="h-4 w-4" />
+                          <Zap className="h-4 w-4 text-amber-500" />
                         )}
-                        <span className="ml-1 text-xs">
-                          {isLoadingSuggestions ? "Loading..." : "Get New Ideas"}
+                        <span className="text-xs">
+                          {isLoadingSuggestions ? "Generating..." : "Generate New Ideas"}
                         </span>
                       </Button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {aiSuggestions.map((suggestion, index) => (
-                        <Button
-                          key={index}
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="text-xs text-left h-auto py-2 px-3"
-                          onClick={() => handleExampleClick(suggestion)}
-                          disabled={isLoadingSuggestions}
-                          data-testid={`button-suggestion-${index}`}
-                        >
-                          {suggestion.length > 50 ? `${suggestion.slice(0, 50)}...` : suggestion}
-                        </Button>
-                      ))}
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {aiSuggestions.map((suggestion, index) => {
+                        const iconConfigs = [
+                          { icon: Code, gradient: "from-blue-500 to-indigo-600", label: "Development" },
+                          { icon: Award, gradient: "from-purple-500 to-pink-600", label: "Certification" },
+                          { icon: Database, gradient: "from-emerald-500 to-teal-600", label: "Data" },
+                          { icon: Brain, gradient: "from-rose-500 to-red-600", label: "AI/ML" },
+                          { icon: Cloud, gradient: "from-cyan-500 to-blue-600", label: "DevOps" },
+                        ];
+                        const config = iconConfigs[index % iconConfigs.length];
+                        const IconComponent = config.icon;
+                        
+                        return (
+                          <button
+                            key={index}
+                            type="button"
+                            className="group relative flex flex-col items-start gap-3 rounded-lg border bg-card p-4 text-left transition-all hover:border-primary/50 hover:shadow-md disabled:opacity-50"
+                            onClick={() => handleExampleClick(suggestion)}
+                            disabled={isLoadingSuggestions}
+                            data-testid={`button-suggestion-${index}`}
+                          >
+                            <div className="flex items-start gap-3 w-full">
+                              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${config.gradient} shadow-sm`}>
+                                <IconComponent className="h-5 w-5 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                                  {suggestion}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 w-full">
+                              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                                {config.label}
+                              </span>
+                              <TrendingUp className="h-3 w-3 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Click a suggestion to use it, or click "Get New Ideas" for AI-powered course recommendations.
-                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
