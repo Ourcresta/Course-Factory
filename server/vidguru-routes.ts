@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { insertLessonVideoSchema, insertLessonScriptSchema, insertAvatarConfigSchema, insertAvatarVideoSchema } from "@shared/schema";
-import { generateVidGuruCourse, generateAvatarScript, translateScript } from "./vidguru-ai-service";
+import { generateVidGuruCourse, generateAvatarScript, translateScript, generateCourseSuggestions } from "./vidguru-ai-service";
 
 function handleValidationError(error: unknown, res: any) {
   if (error instanceof z.ZodError) {
@@ -69,6 +69,19 @@ export function registerVidGuruRoutes(app: Express) {
     } catch (error) {
       console.error("VidGuru stats error:", error);
       res.status(500).json({ error: "Failed to fetch VidGuru stats" });
+    }
+  });
+
+  // ========== AI COURSE SUGGESTIONS ==========
+  app.get("/api/vidguru/suggestions", async (req, res) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const count = parseInt(req.query.count as string) || 6;
+      const suggestions = await generateCourseSuggestions(category, count);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("VidGuru suggestions error:", error);
+      res.status(500).json({ error: "Failed to generate suggestions" });
     }
   });
 

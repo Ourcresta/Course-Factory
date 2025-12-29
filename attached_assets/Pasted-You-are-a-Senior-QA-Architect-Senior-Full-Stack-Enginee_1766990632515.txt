@@ -1,0 +1,253 @@
+You are a Senior QA Architect, Senior Full-Stack Engineer, Senior Security Engineer, Senior Product Manager, and Startup CTO.
+
+Your task is to PERFORM A COMPLETE END-TO-END TESTING and VALIDATION of the **Guru (Admin) Portal**, including the **VidGuru (AI Avatar Engine)** module, for the OurShiksha platform.
+
+====================================================
+TESTING OBJECTIVE
+====================================================
+
+Validate that the Guru Admin Portal and VidGuru module are:
+- Functionally correct
+- Secure
+- Role-safe
+- End-to-end integrated
+- Production-ready
+
+The testing must cover:
+- Admin Portal core
+- VidGuru (Avatar-First)
+- Database integrity
+- API behavior
+- RBAC
+- Draft → Publish → Shishya handoff
+
+====================================================
+SYSTEM CONTEXT
+====================================================
+
+Platform: OurShiksha
+Admin Portal: Guru
+Core Module: VidGuru (AI Avatar Teacher Engine)
+
+Guru, VidGuru, and Shishya use:
+- ONE shared database
+- One authentication system
+- Role-based access control
+
+Students (Shishya users) must NEVER access Guru or VidGuru.
+
+====================================================
+ROLES TO TEST
+====================================================
+
+Create and test with the following users:
+
+1. SUPER_ADMIN
+2. GURU_ADMIN
+3. CREATOR
+4. SHISHYA (student – negative testing only)
+
+====================================================
+TEST PHASES (MANDATORY)
+====================================================
+
+----------------------------------------------------
+PHASE 1: AUTH & RBAC TESTING
+----------------------------------------------------
+
+- Verify login works for all roles
+- Verify role-based menu visibility
+- Ensure:
+  - VidGuru visible ONLY to Admin/Creator
+  - Publish actions ONLY visible to Admin
+  - Shishya cannot access Guru or VidGuru routes
+- Attempt unauthorized API access and confirm rejection
+
+----------------------------------------------------
+PHASE 2: ADMIN PORTAL CORE TESTING
+----------------------------------------------------
+
+Test the following Guru features:
+
+- Dashboard loads correctly
+- Course Manager CRUD operations
+- Pricing & Points configuration
+- Wallet / Voucher placeholders (if present)
+- Certificate rule configuration
+- User & role management (if enabled)
+
+Verify:
+- Data saves correctly
+- No cross-role privilege leaks
+- UI state reflects DB state
+
+----------------------------------------------------
+PHASE 3: VIDGURU CORE – AI AVATAR FIRST
+----------------------------------------------------
+
+Test VidGuru with CREATOR role:
+
+1. Create new course (DRAFT)
+2. Generate AI teaching script
+3. Edit script manually
+4. Save script versions
+5. Configure avatar:
+   - Persona
+   - Voice
+   - Language
+   - Teaching tone
+6. Generate avatar video (or placeholder)
+7. Verify:
+   - Script stored
+   - Avatar config stored
+   - Video record created
+   - Status = DRAFT
+
+Ensure:
+- Creator CANNOT publish
+- Creator CANNOT change pricing
+
+----------------------------------------------------
+PHASE 4: MULTI-LANGUAGE TESTING
+----------------------------------------------------
+
+- Add multiple languages to same lesson
+- Verify:
+  - Separate script per language
+  - Separate avatar config per language
+  - Separate video per language
+- Confirm no overwrite of base language
+
+----------------------------------------------------
+PHASE 5: ADMIN REVIEW & PUBLISH FLOW
+----------------------------------------------------
+
+Login as GURU_ADMIN:
+
+1. Open VidGuru draft course
+2. Review scripts and videos
+3. Edit if required
+4. Approve content
+5. Set:
+   - Price
+   - Points
+   - Free / Paid
+   - Certificate rules
+6. Publish course
+
+Verify:
+- Status changes to PUBLISHED
+- Approved_by field populated
+- Content locked after publish
+
+----------------------------------------------------
+PHASE 6: SHISHYA PORTAL INTEGRATION CHECK
+----------------------------------------------------
+
+Login as SHISHYA user:
+
+- Verify published course appears
+- Verify avatar video plays
+- Verify language selector works
+- Verify labs, tests, projects visible
+- Verify certificate rules applied
+
+Ensure:
+- No access to drafts
+- No access to VidGuru routes
+- No admin metadata visible
+
+----------------------------------------------------
+PHASE 7: DATABASE INTEGRITY TESTING
+----------------------------------------------------
+
+Validate tables:
+
+- vidguru_courses
+- vidguru_modules
+- vidguru_lessons
+- vidguru_scripts
+- vidguru_avatar_configs
+- vidguru_videos
+- vidguru_languages
+- vidguru_labs
+- vidguru_projects
+- vidguru_tests
+- vidguru_ai_logs
+
+Verify:
+- Status fields correct
+- created_by / approved_by correct
+- ai_generated flags accurate
+- No orphan records
+- No duplicate entries
+
+----------------------------------------------------
+PHASE 8: API & ERROR HANDLING
+----------------------------------------------------
+
+- Test all VidGuru APIs with:
+  - Valid data
+  - Invalid data
+  - Missing permissions
+- Verify:
+  - Proper HTTP status codes
+  - Clear error messages
+  - No sensitive data leaks
+
+----------------------------------------------------
+PHASE 9: SECURITY & NEGATIVE TESTING
+----------------------------------------------------
+
+- Try accessing admin APIs as Shishya
+- Try bypassing publish approval
+- Try editing published content
+- Try cross-user data access
+
+All attempts MUST FAIL securely.
+
+----------------------------------------------------
+PHASE 10: PERFORMANCE & UX SANITY
+----------------------------------------------------
+
+- Dashboard load time acceptable
+- VidGuru pages responsive
+- No blocking UI during AI actions
+- Proper loading and error states
+
+====================================================
+FINAL OUTPUT REQUIRED
+====================================================
+
+Generate a **FINAL TEST REPORT** containing:
+
+1. ✅ Passed tests
+2. ❌ Failed tests (if any)
+3. ⚠️ Risks & gaps
+4. 🔧 Fix recommendations
+5. 🚀 Production readiness verdict:
+   - READY
+   - READY WITH FIXES
+   - NOT READY
+
+====================================================
+STRICT RULES
+====================================================
+
+- Do NOT skip any phase
+- Do NOT assume features work without verification
+- Treat system as real production software
+- Be strict and unbiased
+
+====================================================
+FINAL GOAL
+====================================================
+
+Ensure the Guru Admin Portal and VidGuru module are:
+- Secure
+- Avatar-first
+- Role-safe
+- Fully integrated
+- Ready for real users
+
+Execute all tests thoroughly and report results clearly.

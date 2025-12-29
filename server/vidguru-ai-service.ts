@@ -543,6 +543,138 @@ Respond with JSON:
   return JSON.parse(cleanedResponse);
 }
 
+export interface CourseSuggestion {
+  topic: string;
+  title: string;
+  description: string;
+  level: string;
+  estimatedDuration: string;
+  targetAudience: string;
+  keySkills: string[];
+  trending: boolean;
+}
+
+export async function generateCourseSuggestions(
+  category?: string,
+  count: number = 6
+): Promise<CourseSuggestion[]> {
+  const categoryContext = category 
+    ? `Focus on ${category}-related topics.` 
+    : "Cover diverse technology, business, and creative skills.";
+
+  const prompt = `Generate ${count} trending and in-demand course topic suggestions for an AI-powered educational platform.
+
+${categoryContext}
+
+Consider:
+- Current industry trends and job market demands
+- Skills that are highly sought after in 2024-2025
+- Topics suitable for online video-based learning
+- Mix of beginner, intermediate, and advanced levels
+
+Return a JSON array with this structure:
+[
+  {
+    "topic": "A concise topic command (e.g., 'Complete Python programming for beginners')",
+    "title": "Full course title",
+    "description": "2-3 sentence course description",
+    "level": "Beginner" | "Intermediate" | "Advanced",
+    "estimatedDuration": "e.g., 8-10 hours",
+    "targetAudience": "Who this course is for",
+    "keySkills": ["skill1", "skill2", "skill3"],
+    "trending": true or false
+  }
+]
+
+Return ONLY valid JSON array, no markdown or explanations.`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are an educational content strategist who identifies trending course topics and skills in demand. Provide practical, actionable course suggestions that would appeal to learners." 
+        },
+        { role: "user", content: prompt },
+      ],
+      max_tokens: 2000,
+    });
+
+    const responseText = completion.choices[0]?.message?.content || "[]";
+    const cleanedResponse = responseText.replace(/```json\n?|\n?```/g, "").trim();
+    return JSON.parse(cleanedResponse);
+  } catch (error) {
+    console.error("Error generating course suggestions:", error);
+    return getDefaultSuggestions();
+  }
+}
+
+function getDefaultSuggestions(): CourseSuggestion[] {
+  return [
+    {
+      topic: "Complete Python programming for data science",
+      title: "Python for Data Science Masterclass",
+      description: "Learn Python from scratch and apply it to real-world data analysis, visualization, and machine learning projects.",
+      level: "Beginner",
+      estimatedDuration: "12-15 hours",
+      targetAudience: "Aspiring data scientists and analysts",
+      keySkills: ["Python", "Pandas", "NumPy", "Data Visualization"],
+      trending: true
+    },
+    {
+      topic: "Full-stack web development with React and Node.js",
+      title: "Modern Full-Stack Web Development",
+      description: "Build complete web applications using React, Node.js, Express, and PostgreSQL. Deploy to the cloud.",
+      level: "Intermediate",
+      estimatedDuration: "20-25 hours",
+      targetAudience: "Developers wanting full-stack skills",
+      keySkills: ["React", "Node.js", "PostgreSQL", "REST APIs"],
+      trending: true
+    },
+    {
+      topic: "AI and machine learning fundamentals with hands-on projects",
+      title: "Practical AI & Machine Learning",
+      description: "Understand core AI concepts and build real ML models. No PhD required - practical approach.",
+      level: "Intermediate",
+      estimatedDuration: "15-18 hours",
+      targetAudience: "Tech professionals entering AI field",
+      keySkills: ["Machine Learning", "Neural Networks", "TensorFlow", "scikit-learn"],
+      trending: true
+    },
+    {
+      topic: "Digital marketing strategy and social media mastery",
+      title: "Digital Marketing Complete Guide",
+      description: "Master SEO, social media marketing, content strategy, and paid advertising to grow any business online.",
+      level: "Beginner",
+      estimatedDuration: "10-12 hours",
+      targetAudience: "Entrepreneurs and marketing professionals",
+      keySkills: ["SEO", "Social Media", "Content Marketing", "Google Ads"],
+      trending: false
+    },
+    {
+      topic: "Cloud computing with AWS from beginner to certified",
+      title: "AWS Cloud Practitioner to Solutions Architect",
+      description: "Learn cloud computing concepts and AWS services. Prepare for AWS certification exams.",
+      level: "Beginner",
+      estimatedDuration: "18-22 hours",
+      targetAudience: "IT professionals moving to cloud",
+      keySkills: ["AWS", "Cloud Architecture", "EC2", "S3", "Lambda"],
+      trending: true
+    },
+    {
+      topic: "UX/UI design principles and Figma mastery",
+      title: "Complete UX/UI Design Bootcamp",
+      description: "Learn design thinking, user research, wireframing, and create stunning interfaces in Figma.",
+      level: "Beginner",
+      estimatedDuration: "14-16 hours",
+      targetAudience: "Designers and product managers",
+      keySkills: ["UX Design", "UI Design", "Figma", "Prototyping"],
+      trending: false
+    }
+  ];
+}
+
 export async function translateScript(
   script: string,
   sourceLanguage: string,
