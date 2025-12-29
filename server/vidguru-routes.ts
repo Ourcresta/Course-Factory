@@ -1,9 +1,32 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { insertLessonVideoSchema, insertLessonScriptSchema, insertAvatarConfigSchema, insertAvatarVideoSchema } from "@shared/schema";
 import { generateVidGuruCourse, generateAvatarScript, translateScript, generateCourseSuggestions } from "./vidguru-ai-service";
+import { verifyToken, JWTPayload } from "./auth-middleware";
+
+interface AuthenticatedRequest extends Request {
+  user?: JWTPayload;
+}
+
+function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const payload = verifyToken(token);
+
+  if (!payload) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  req.user = payload;
+  next();
+}
 
 function handleValidationError(error: unknown, res: any) {
   if (error instanceof z.ZodError) {
@@ -18,7 +41,7 @@ function handleValidationError(error: unknown, res: any) {
 
 export function registerVidGuruRoutes(app: Express) {
   // ========== ENHANCED STATS ==========
-  app.get("/api/vidguru/stats", async (req, res) => {
+  app.get("/api/vidguru/stats", requireAuth, async (req, res) => {
     try {
       const courses = await storage.getAllCourses();
       const avatarVideos = await storage.getAllAvatarVideos();
@@ -73,7 +96,7 @@ export function registerVidGuruRoutes(app: Express) {
   });
 
   // ========== AI COURSE SUGGESTIONS ==========
-  app.get("/api/vidguru/suggestions", async (req, res) => {
+  app.get("/api/vidguru/suggestions", requireAuth, async (req, res) => {
     try {
       const category = req.query.category as string | undefined;
       const count = parseInt(req.query.count as string) || 6;
@@ -86,7 +109,7 @@ export function registerVidGuruRoutes(app: Express) {
   });
 
   // ========== AI COURSE FACTORY ==========
-  app.post("/api/vidguru/generate-course", async (req, res) => {
+  app.post("/api/vidguru/generate-course", requireAuth, async (req, res) => {
     try {
       const { command, options } = req.body;
 
@@ -116,7 +139,7 @@ export function registerVidGuruRoutes(app: Express) {
   });
 
   // ========== GENERATION JOBS ==========
-  app.get("/api/vidguru/jobs", async (req, res) => {
+  app.get("/api/vidguru/jobs", requireAuth, async (req, res) => {
     try {
       const jobs = await storage.getAllGenerationJobs();
       res.json(jobs);
@@ -126,7 +149,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.get("/api/vidguru/jobs/:id", async (req, res) => {
+  app.get("/api/vidguru/jobs/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const job = await storage.getGenerationJob(id);
@@ -141,7 +164,7 @@ export function registerVidGuruRoutes(app: Express) {
   });
 
   // ========== AI LOGS ==========
-  app.get("/api/vidguru/ai-logs", async (req, res) => {
+  app.get("/api/vidguru/ai-logs", requireAuth, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const logs = await storage.getVidguruAiLogs({ limit });
@@ -153,7 +176,7 @@ export function registerVidGuruRoutes(app: Express) {
   });
 
   // ========== AVATAR CONFIGS ==========
-  app.get("/api/vidguru/avatar-configs", async (req, res) => {
+  app.get("/api/vidguru/avatar-configs", requireAuth, async (req, res) => {
     try {
       const configs = await storage.getAllAvatarConfigs();
       res.json(configs);
@@ -163,7 +186,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.post("/api/vidguru/avatar-configs", async (req, res) => {
+  app.post("/api/vidguru/avatar-configs", requireAuth, async (req, res) => {
     try {
       const data = insertAvatarConfigSchema.parse(req.body);
       const config = await storage.createAvatarConfig(data);
@@ -175,7 +198,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/vidguru/avatar-configs/:id", async (req, res) => {
+  app.patch("/api/vidguru/avatar-configs/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.updateAvatarConfig(id, req.body);
@@ -186,7 +209,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/vidguru/avatar-configs/:id", async (req, res) => {
+  app.delete("/api/vidguru/avatar-configs/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteAvatarConfig(id);
@@ -198,7 +221,7 @@ export function registerVidGuruRoutes(app: Express) {
   });
 
   // ========== AVATAR VIDEOS ==========
-  app.get("/api/vidguru/avatar-videos", async (req, res) => {
+  app.get("/api/vidguru/avatar-videos", requireAuth, async (req, res) => {
     try {
       const videos = await storage.getAllAvatarVideos();
       res.json(videos);
@@ -208,7 +231,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.get("/api/vidguru/avatar-videos/:id", async (req, res) => {
+  app.get("/api/vidguru/avatar-videos/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const video = await storage.getAvatarVideo(id);
@@ -222,7 +245,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.post("/api/vidguru/avatar-videos", async (req, res) => {
+  app.post("/api/vidguru/avatar-videos", requireAuth, async (req, res) => {
     try {
       const data = insertAvatarVideoSchema.parse(req.body);
       const video = await storage.createAvatarVideo(data);
@@ -234,7 +257,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/vidguru/avatar-videos/:id", async (req, res) => {
+  app.patch("/api/vidguru/avatar-videos/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.updateAvatarVideo(id, req.body);
@@ -245,7 +268,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/vidguru/avatar-videos/:id/approve", async (req, res) => {
+  app.patch("/api/vidguru/avatar-videos/:id/approve", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.updateAvatarVideo(id, {
@@ -259,7 +282,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/vidguru/avatar-videos/:id/publish", async (req, res) => {
+  app.patch("/api/vidguru/avatar-videos/:id/publish", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.updateAvatarVideo(id, {
@@ -273,7 +296,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/vidguru/avatar-videos/:id", async (req, res) => {
+  app.delete("/api/vidguru/avatar-videos/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteAvatarVideo(id);
@@ -285,7 +308,7 @@ export function registerVidGuruRoutes(app: Express) {
   });
 
   // ========== SCRIPTS ==========
-  app.get("/api/vidguru/scripts", async (req, res) => {
+  app.get("/api/vidguru/scripts", requireAuth, async (req, res) => {
     try {
       const scripts = await storage.getAllLessonScripts();
       res.json(scripts);
@@ -295,7 +318,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.get("/api/vidguru/scripts/:id", async (req, res) => {
+  app.get("/api/vidguru/scripts/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const script = await storage.getLessonScript(id);
@@ -309,7 +332,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.post("/api/vidguru/scripts", async (req, res) => {
+  app.post("/api/vidguru/scripts", requireAuth, async (req, res) => {
     try {
       const data = insertLessonScriptSchema.parse(req.body);
       const script = await storage.createLessonScript(data);
@@ -321,7 +344,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.post("/api/vidguru/scripts/generate", async (req, res) => {
+  app.post("/api/vidguru/scripts/generate", requireAuth, async (req, res) => {
     try {
       const { topic, language, durationMinutes } = req.body;
 
@@ -337,7 +360,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/vidguru/scripts/:id", async (req, res) => {
+  app.patch("/api/vidguru/scripts/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.updateLessonScript(id, req.body);
@@ -348,7 +371,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/vidguru/scripts/:id/approve", async (req, res) => {
+  app.patch("/api/vidguru/scripts/:id/approve", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.updateLessonScript(id, {
@@ -362,7 +385,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.post("/api/vidguru/scripts/:id/translate", async (req, res) => {
+  app.post("/api/vidguru/scripts/:id/translate", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { targetLanguage } = req.body;
@@ -404,7 +427,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/vidguru/scripts/:id", async (req, res) => {
+  app.delete("/api/vidguru/scripts/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteLessonScript(id);
@@ -416,7 +439,7 @@ export function registerVidGuruRoutes(app: Express) {
   });
 
   // ========== YOUTUBE REFERENCE VIDEOS (OPTIONAL) ==========
-  app.get("/api/vidguru/reference-videos", async (req, res) => {
+  app.get("/api/vidguru/reference-videos", requireAuth, async (req, res) => {
     try {
       const videos = await storage.getAllLessonVideos();
       res.json(videos);
@@ -426,7 +449,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.post("/api/vidguru/reference-videos", async (req, res) => {
+  app.post("/api/vidguru/reference-videos", requireAuth, async (req, res) => {
     try {
       const data = insertLessonVideoSchema.parse(req.body);
       const video = await storage.createLessonVideo({ ...data, isReference: true });
@@ -438,7 +461,7 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/vidguru/reference-videos/:id", async (req, res) => {
+  app.delete("/api/vidguru/reference-videos/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteLessonVideo(id);
