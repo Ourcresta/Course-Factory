@@ -167,6 +167,13 @@ export const insertModuleSchema = createInsertSchema(modules).omit({
 export type InsertModule = z.infer<typeof insertModuleSchema>;
 export type Module = typeof modules.$inferSelect;
 
+// YouTube Reference type for lessons
+export interface YouTubeReference {
+  url: string;
+  title: string;
+  description?: string;
+}
+
 // ==================== LESSONS ====================
 export const lessons = pgTable("lessons", {
   id: serial("id").primaryKey(),
@@ -177,6 +184,7 @@ export const lessons = pgTable("lessons", {
   keyConceptS: jsonb("key_concepts").$type<string[]>(),
   videoUrl: text("video_url"),
   externalLinks: jsonb("external_links").$type<string[]>(),
+  youtubeReferences: jsonb("youtube_references").$type<YouTubeReference[]>(),
   orderIndex: integer("order_index").notNull().default(0),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
