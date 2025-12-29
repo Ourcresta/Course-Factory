@@ -2,12 +2,8 @@ import type { Express } from "express";
 import { storage } from "./storage";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { insertLessonVideoSchema, insertLessonScriptSchema, insertVidguruAiLogSchema } from "@shared/schema";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { insertLessonVideoSchema, insertLessonScriptSchema, insertAvatarConfigSchema, insertAvatarVideoSchema } from "@shared/schema";
+import { generateVidGuruCourse, generateAvatarScript, translateScript } from "./vidguru-ai-service";
 
 function handleValidationError(error: unknown, res: any) {
   if (error instanceof z.ZodError) {
@@ -21,12 +17,14 @@ function handleValidationError(error: unknown, res: any) {
 }
 
 export function registerVidGuruRoutes(app: Express) {
-  // ========== STATS ==========
+  // ========== ENHANCED STATS ==========
   app.get("/api/vidguru/stats", async (req, res) => {
     try {
       const courses = await storage.getAllCourses();
-      const videos = await storage.getAllLessonVideos();
+      const avatarVideos = await storage.getAllAvatarVideos();
       const scripts = await storage.getAllLessonScripts();
+      const avatarConfigs = await storage.getAllAvatarConfigs();
+      const jobs = await storage.getAllGenerationJobs();
       const aiLogs = await storage.getVidguruAiLogs({ limit: 100 });
 
       const today = new Date();
@@ -35,18 +33,97 @@ export function registerVidGuruRoutes(app: Express) {
         (log) => new Date(log.createdAt) >= today
       ).length;
 
+      const totalVideoMinutes = avatarVideos.reduce((sum, v) => {
+        return sum + (v.durationSeconds || 0) / 60;
+      }, 0);
+
+      const languageCoverage: Record<string, number> = {};
+      scripts.forEach((s) => {
+        languageCoverage[s.language] = (languageCoverage[s.language] || 0) + 1;
+      });
+
+      const pendingJobs = jobs.filter((j) => j.status === "pending" || j.status === "generating");
+      const completedJobs = jobs.filter((j) => j.status === "completed");
+
       res.json({
         totalCourses: courses.length,
         draftCourses: courses.filter((c) => c.status === "draft").length,
         publishedCourses: courses.filter((c) => c.status === "published").length,
-        totalVideos: videos.length,
+        totalAvatarVideos: avatarVideos.length,
+        pendingVideos: avatarVideos.filter((v) => v.generationStatus === "pending").length,
+        generatedVideos: avatarVideos.filter((v) => v.generationStatus === "completed").length,
+        approvedVideos: avatarVideos.filter((v) => v.status === "approved").length,
+        publishedVideos: avatarVideos.filter((v) => v.status === "published").length,
+        totalVideoMinutes: Math.round(totalVideoMinutes * 10) / 10,
         totalScripts: scripts.length,
+        draftScripts: scripts.filter((s) => s.status === "draft").length,
+        approvedScripts: scripts.filter((s) => s.status === "approved").length,
+        totalAvatarConfigs: avatarConfigs.length,
+        activeAvatarConfigs: avatarConfigs.filter((c) => c.isActive).length,
         aiGenerationsToday,
+        pendingJobs: pendingJobs.length,
+        completedJobs: completedJobs.length,
+        languageCoverage,
         languages: ["en", "hi", "ta", "te", "kn", "ml", "bn", "mr"],
       });
     } catch (error) {
       console.error("VidGuru stats error:", error);
       res.status(500).json({ error: "Failed to fetch VidGuru stats" });
+    }
+  });
+
+  // ========== AI COURSE FACTORY ==========
+  app.post("/api/vidguru/generate-course", async (req, res) => {
+    try {
+      const { command, options } = req.body;
+
+      if (!command || typeof command !== "string") {
+        return res.status(400).json({ error: "Command is required" });
+      }
+
+      const job = await storage.createGenerationJob({
+        command,
+        status: "pending",
+        options: options || {},
+      });
+
+      generateVidGuruCourse(command, options || {}, job.id)
+        .then(() => console.log(`VidGuru course generation job ${job.id} completed`))
+        .catch((err) => console.error(`VidGuru course generation job ${job.id} failed:`, err));
+
+      res.status(202).json({
+        jobId: job.id,
+        message: "Course generation started",
+        status: "pending",
+      });
+    } catch (error) {
+      console.error("VidGuru generate course error:", error);
+      res.status(500).json({ error: "Failed to start course generation" });
+    }
+  });
+
+  // ========== GENERATION JOBS ==========
+  app.get("/api/vidguru/jobs", async (req, res) => {
+    try {
+      const jobs = await storage.getAllGenerationJobs();
+      res.json(jobs);
+    } catch (error) {
+      console.error("VidGuru jobs error:", error);
+      res.status(500).json({ error: "Failed to fetch jobs" });
+    }
+  });
+
+  app.get("/api/vidguru/jobs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const job = await storage.getGenerationJob(id);
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      res.json(job);
+    } catch (error) {
+      console.error("VidGuru job error:", error);
+      res.status(500).json({ error: "Failed to fetch job" });
     }
   });
 
@@ -62,105 +139,135 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  // ========== VIDEOS ==========
-  app.get("/api/vidguru/videos", async (req, res) => {
+  // ========== AVATAR CONFIGS ==========
+  app.get("/api/vidguru/avatar-configs", async (req, res) => {
     try {
-      const videos = await storage.getAllLessonVideos();
-      res.json(videos);
+      const configs = await storage.getAllAvatarConfigs();
+      res.json(configs);
     } catch (error) {
-      console.error("VidGuru videos error:", error);
-      res.status(500).json({ error: "Failed to fetch videos" });
+      console.error("VidGuru avatar configs error:", error);
+      res.status(500).json({ error: "Failed to fetch avatar configs" });
     }
   });
 
-  app.post("/api/vidguru/videos", async (req, res) => {
+  app.post("/api/vidguru/avatar-configs", async (req, res) => {
     try {
-      const data = insertLessonVideoSchema.parse(req.body);
-      const video = await storage.createLessonVideo(data);
-      
-      await storage.createVidguruAiLog({
-        action: "video_added",
-        entityType: "lesson_video",
-        entityId: video.id,
-        status: "success",
-      });
-      
-      res.status(201).json(video);
+      const data = insertAvatarConfigSchema.parse(req.body);
+      const config = await storage.createAvatarConfig(data);
+      res.status(201).json(config);
     } catch (error) {
       handleValidationError(error, res);
-      console.error("VidGuru add video error:", error);
-      res.status(500).json({ error: "Failed to add video" });
+      console.error("VidGuru create avatar config error:", error);
+      res.status(500).json({ error: "Failed to create avatar config" });
     }
   });
 
-  app.delete("/api/vidguru/videos/:id", async (req, res) => {
+  app.patch("/api/vidguru/avatar-configs/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      await storage.deleteLessonVideo(id);
+      await storage.updateAvatarConfig(id, req.body);
       res.json({ success: true });
     } catch (error) {
-      console.error("VidGuru delete video error:", error);
-      res.status(500).json({ error: "Failed to delete video" });
+      console.error("VidGuru update avatar config error:", error);
+      res.status(500).json({ error: "Failed to update avatar config" });
     }
   });
 
-  app.post("/api/vidguru/videos/:id/generate-summary", async (req, res) => {
+  app.delete("/api/vidguru/avatar-configs/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const video = await storage.getLessonVideo(id);
-      
+      await storage.deleteAvatarConfig(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("VidGuru delete avatar config error:", error);
+      res.status(500).json({ error: "Failed to delete avatar config" });
+    }
+  });
+
+  // ========== AVATAR VIDEOS ==========
+  app.get("/api/vidguru/avatar-videos", async (req, res) => {
+    try {
+      const videos = await storage.getAllAvatarVideos();
+      res.json(videos);
+    } catch (error) {
+      console.error("VidGuru avatar videos error:", error);
+      res.status(500).json({ error: "Failed to fetch avatar videos" });
+    }
+  });
+
+  app.get("/api/vidguru/avatar-videos/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const video = await storage.getAvatarVideo(id);
       if (!video) {
         return res.status(404).json({ error: "Video not found" });
       }
-
-      const startTime = Date.now();
-      
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant that summarizes educational video content. Based on the video URL and title, generate a concise summary of what the video likely covers.",
-          },
-          {
-            role: "user",
-            content: `Generate a brief summary for this educational video:\nTitle: ${video.title || "Untitled"}\nURL: ${video.url}\n\nProvide a 2-3 sentence summary describing the likely content and learning objectives.`,
-          },
-        ],
-        max_tokens: 200,
-      });
-
-      const summary = completion.choices[0]?.message?.content || "No summary available.";
-      const tokensUsed = completion.usage?.total_tokens || 0;
-      const durationMs = Date.now() - startTime;
-
-      await storage.updateLessonVideo(id, { aiSummary: summary });
-      
-      await storage.createVidguruAiLog({
-        action: "generate_video_summary",
-        entityType: "lesson_video",
-        entityId: id,
-        inputPrompt: video.url,
-        outputSummary: summary.substring(0, 200),
-        tokensUsed,
-        model: "gpt-4o",
-        durationMs,
-        status: "success",
-      });
-
-      res.json({ summary });
+      res.json(video);
     } catch (error) {
-      console.error("VidGuru generate summary error:", error);
-      
-      await storage.createVidguruAiLog({
-        action: "generate_video_summary",
-        entityType: "lesson_video",
-        entityId: parseInt(req.params.id),
-        status: "error",
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
+      console.error("VidGuru avatar video error:", error);
+      res.status(500).json({ error: "Failed to fetch avatar video" });
+    }
+  });
+
+  app.post("/api/vidguru/avatar-videos", async (req, res) => {
+    try {
+      const data = insertAvatarVideoSchema.parse(req.body);
+      const video = await storage.createAvatarVideo(data);
+      res.status(201).json(video);
+    } catch (error) {
+      handleValidationError(error, res);
+      console.error("VidGuru create avatar video error:", error);
+      res.status(500).json({ error: "Failed to create avatar video" });
+    }
+  });
+
+  app.patch("/api/vidguru/avatar-videos/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.updateAvatarVideo(id, req.body);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("VidGuru update avatar video error:", error);
+      res.status(500).json({ error: "Failed to update avatar video" });
+    }
+  });
+
+  app.patch("/api/vidguru/avatar-videos/:id/approve", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.updateAvatarVideo(id, {
+        status: "approved",
+        approvedAt: new Date(),
       });
-      
-      res.status(500).json({ error: "Failed to generate summary" });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("VidGuru approve video error:", error);
+      res.status(500).json({ error: "Failed to approve video" });
+    }
+  });
+
+  app.patch("/api/vidguru/avatar-videos/:id/publish", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.updateAvatarVideo(id, {
+        status: "published",
+        publishedAt: new Date(),
+      });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("VidGuru publish video error:", error);
+      res.status(500).json({ error: "Failed to publish video" });
+    }
+  });
+
+  app.delete("/api/vidguru/avatar-videos/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAvatarVideo(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("VidGuru delete avatar video error:", error);
+      res.status(500).json({ error: "Failed to delete avatar video" });
     }
   });
 
@@ -175,35 +282,112 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
+  app.get("/api/vidguru/scripts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const script = await storage.getLessonScript(id);
+      if (!script) {
+        return res.status(404).json({ error: "Script not found" });
+      }
+      res.json(script);
+    } catch (error) {
+      console.error("VidGuru script error:", error);
+      res.status(500).json({ error: "Failed to fetch script" });
+    }
+  });
+
   app.post("/api/vidguru/scripts", async (req, res) => {
     try {
       const data = insertLessonScriptSchema.parse(req.body);
       const script = await storage.createLessonScript(data);
-      
-      await storage.createVidguruAiLog({
-        action: "script_created",
-        entityType: "lesson_script",
-        entityId: script.id,
-        status: "success",
-      });
-      
       res.status(201).json(script);
     } catch (error) {
       handleValidationError(error, res);
-      console.error("VidGuru add script error:", error);
-      res.status(500).json({ error: "Failed to add script" });
+      console.error("VidGuru create script error:", error);
+      res.status(500).json({ error: "Failed to create script" });
+    }
+  });
+
+  app.post("/api/vidguru/scripts/generate", async (req, res) => {
+    try {
+      const { topic, language, durationMinutes } = req.body;
+
+      if (!topic) {
+        return res.status(400).json({ error: "Topic is required" });
+      }
+
+      const script = await generateAvatarScript(topic, language || "en", durationMinutes || 5);
+      res.json(script);
+    } catch (error) {
+      console.error("VidGuru generate script error:", error);
+      res.status(500).json({ error: "Failed to generate script" });
     }
   });
 
   app.patch("/api/vidguru/scripts/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { script, title } = req.body;
-      await storage.updateLessonScript(id, { script, title });
+      await storage.updateLessonScript(id, req.body);
       res.json({ success: true });
     } catch (error) {
       console.error("VidGuru update script error:", error);
       res.status(500).json({ error: "Failed to update script" });
+    }
+  });
+
+  app.patch("/api/vidguru/scripts/:id/approve", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.updateLessonScript(id, {
+        status: "approved",
+        approvedAt: new Date(),
+      });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("VidGuru approve script error:", error);
+      res.status(500).json({ error: "Failed to approve script" });
+    }
+  });
+
+  app.post("/api/vidguru/scripts/:id/translate", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { targetLanguage } = req.body;
+
+      const script = await storage.getLessonScript(id);
+      if (!script) {
+        return res.status(404).json({ error: "Script not found" });
+      }
+
+      const translatedText = await translateScript(
+        script.script,
+        script.language,
+        targetLanguage
+      );
+
+      const newScript = await storage.createLessonScript({
+        lessonId: script.lessonId,
+        language: targetLanguage,
+        title: script.title,
+        script: translatedText,
+        aiGenerated: true,
+        status: "draft",
+      });
+
+      await storage.createVidguruAiLog({
+        action: "translate_script",
+        entityType: "lesson_script",
+        entityId: newScript.id,
+        inputPrompt: `Translate from ${script.language} to ${targetLanguage}`,
+        outputSummary: translatedText.substring(0, 200),
+        model: "gpt-4o",
+        status: "success",
+      });
+
+      res.json(newScript);
+    } catch (error) {
+      console.error("VidGuru translate script error:", error);
+      res.status(500).json({ error: "Failed to translate script" });
     }
   });
 
@@ -218,83 +402,37 @@ export function registerVidGuruRoutes(app: Express) {
     }
   });
 
-  app.post("/api/vidguru/scripts/:id/translate", async (req, res) => {
+  // ========== YOUTUBE REFERENCE VIDEOS (OPTIONAL) ==========
+  app.get("/api/vidguru/reference-videos", async (req, res) => {
+    try {
+      const videos = await storage.getAllLessonVideos();
+      res.json(videos);
+    } catch (error) {
+      console.error("VidGuru reference videos error:", error);
+      res.status(500).json({ error: "Failed to fetch reference videos" });
+    }
+  });
+
+  app.post("/api/vidguru/reference-videos", async (req, res) => {
+    try {
+      const data = insertLessonVideoSchema.parse(req.body);
+      const video = await storage.createLessonVideo({ ...data, isReference: true });
+      res.status(201).json(video);
+    } catch (error) {
+      handleValidationError(error, res);
+      console.error("VidGuru add reference video error:", error);
+      res.status(500).json({ error: "Failed to add reference video" });
+    }
+  });
+
+  app.delete("/api/vidguru/reference-videos/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { targetLanguage } = req.body;
-      
-      const script = await storage.getLessonScript(id);
-      if (!script) {
-        return res.status(404).json({ error: "Script not found" });
-      }
-
-      const languageNames: Record<string, string> = {
-        en: "English",
-        hi: "Hindi",
-        ta: "Tamil",
-        te: "Telugu",
-        kn: "Kannada",
-        ml: "Malayalam",
-        bn: "Bengali",
-        mr: "Marathi",
-      };
-
-      const targetLangName = languageNames[targetLanguage] || targetLanguage;
-      const startTime = Date.now();
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are a professional translator specializing in educational content. Translate the following lesson script to ${targetLangName}. Maintain the educational tone and clarity. Only output the translated text, no explanations.`,
-          },
-          {
-            role: "user",
-            content: script.script,
-          },
-        ],
-        max_tokens: 2000,
-      });
-
-      const translatedText = completion.choices[0]?.message?.content || "";
-      const tokensUsed = completion.usage?.total_tokens || 0;
-      const durationMs = Date.now() - startTime;
-
-      const newScript = await storage.createLessonScript({
-        lessonId: script.lessonId,
-        language: targetLanguage,
-        script: translatedText,
-        title: script.title ? `${script.title} (${targetLangName})` : undefined,
-        aiGenerated: true,
-        status: "draft",
-      });
-
-      await storage.createVidguruAiLog({
-        action: "translate_script",
-        entityType: "lesson_script",
-        entityId: newScript.id,
-        inputPrompt: `Translate to ${targetLangName}`,
-        outputSummary: translatedText.substring(0, 200),
-        tokensUsed,
-        model: "gpt-4o",
-        durationMs,
-        status: "success",
-      });
-
-      res.json(newScript);
+      await storage.deleteLessonVideo(id);
+      res.json({ success: true });
     } catch (error) {
-      console.error("VidGuru translate script error:", error);
-      
-      await storage.createVidguruAiLog({
-        action: "translate_script",
-        entityType: "lesson_script",
-        entityId: parseInt(req.params.id),
-        status: "error",
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-      });
-      
-      res.status(500).json({ error: "Failed to translate script" });
+      console.error("VidGuru delete reference video error:", error);
+      res.status(500).json({ error: "Failed to delete reference video" });
     }
   });
 }

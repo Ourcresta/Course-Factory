@@ -57,15 +57,21 @@ import {
   lessonScripts,
   lessonVideos,
   avatarConfigs,
+  avatarVideos,
   vidguruAiLogs,
+  vidguruGenerationJobs,
   type LessonScript,
   type InsertLessonScript,
   type LessonVideo,
   type InsertLessonVideo,
   type AvatarConfig,
   type InsertAvatarConfig,
+  type AvatarVideo,
+  type InsertAvatarVideo,
   type VidguruAiLog,
   type InsertVidguruAiLog,
+  type VidguruGenerationJob,
+  type InsertVidguruGenerationJob,
   creditPackages,
   vouchers,
   giftBoxes,
@@ -120,6 +126,28 @@ export interface IStorage {
   // VidGuru: AI Logs
   getVidguruAiLogs(options: { limit?: number }): Promise<VidguruAiLog[]>;
   createVidguruAiLog(log: InsertVidguruAiLog): Promise<VidguruAiLog>;
+
+  // VidGuru: Avatar Videos
+  getAllAvatarVideos(): Promise<AvatarVideo[]>;
+  getAvatarVideo(id: number): Promise<AvatarVideo | undefined>;
+  getAvatarVideosByLesson(lessonId: number): Promise<AvatarVideo[]>;
+  createAvatarVideo(video: InsertAvatarVideo): Promise<AvatarVideo>;
+  updateAvatarVideo(id: number, video: Partial<InsertAvatarVideo>): Promise<void>;
+  deleteAvatarVideo(id: number): Promise<void>;
+
+  // VidGuru: Avatar Configs
+  getAllAvatarConfigs(): Promise<AvatarConfig[]>;
+  getAvatarConfig(id: number): Promise<AvatarConfig | undefined>;
+  getDefaultAvatarConfig(): Promise<AvatarConfig | undefined>;
+  createAvatarConfig(config: InsertAvatarConfig): Promise<AvatarConfig>;
+  updateAvatarConfig(id: number, config: Partial<InsertAvatarConfig>): Promise<void>;
+  deleteAvatarConfig(id: number): Promise<void>;
+
+  // VidGuru: Generation Jobs
+  getAllGenerationJobs(): Promise<VidguruGenerationJob[]>;
+  getGenerationJob(id: number): Promise<VidguruGenerationJob | undefined>;
+  createGenerationJob(job: InsertVidguruGenerationJob): Promise<VidguruGenerationJob>;
+  updateGenerationJob(id: number, job: Partial<InsertVidguruGenerationJob>): Promise<void>;
 
   // OTP Tokens
   createOtpToken(token: InsertOtpToken): Promise<OtpToken>;
@@ -1433,6 +1461,80 @@ export class DatabaseStorage implements IStorage {
   async createVidguruAiLog(log: InsertVidguruAiLog): Promise<VidguruAiLog> {
     const [created] = await db.insert(vidguruAiLogs).values(log).returning();
     return created;
+  }
+
+  // VidGuru: Avatar Videos
+  async getAllAvatarVideos(): Promise<AvatarVideo[]> {
+    return db.select().from(avatarVideos).orderBy(desc(avatarVideos.createdAt));
+  }
+
+  async getAvatarVideo(id: number): Promise<AvatarVideo | undefined> {
+    const [video] = await db.select().from(avatarVideos).where(eq(avatarVideos.id, id));
+    return video;
+  }
+
+  async getAvatarVideosByLesson(lessonId: number): Promise<AvatarVideo[]> {
+    return db.select().from(avatarVideos).where(eq(avatarVideos.lessonId, lessonId)).orderBy(avatarVideos.orderIndex);
+  }
+
+  async createAvatarVideo(video: InsertAvatarVideo): Promise<AvatarVideo> {
+    const [created] = await db.insert(avatarVideos).values(video).returning();
+    return created;
+  }
+
+  async updateAvatarVideo(id: number, video: Partial<InsertAvatarVideo>): Promise<void> {
+    await db.update(avatarVideos).set({ ...video, updatedAt: new Date() }).where(eq(avatarVideos.id, id));
+  }
+
+  async deleteAvatarVideo(id: number): Promise<void> {
+    await db.delete(avatarVideos).where(eq(avatarVideos.id, id));
+  }
+
+  // VidGuru: Avatar Configs
+  async getAllAvatarConfigs(): Promise<AvatarConfig[]> {
+    return db.select().from(avatarConfigs).orderBy(desc(avatarConfigs.createdAt));
+  }
+
+  async getAvatarConfig(id: number): Promise<AvatarConfig | undefined> {
+    const [config] = await db.select().from(avatarConfigs).where(eq(avatarConfigs.id, id));
+    return config;
+  }
+
+  async getDefaultAvatarConfig(): Promise<AvatarConfig | undefined> {
+    const [config] = await db.select().from(avatarConfigs).where(eq(avatarConfigs.isDefault, true));
+    return config;
+  }
+
+  async createAvatarConfig(config: InsertAvatarConfig): Promise<AvatarConfig> {
+    const [created] = await db.insert(avatarConfigs).values(config).returning();
+    return created;
+  }
+
+  async updateAvatarConfig(id: number, config: Partial<InsertAvatarConfig>): Promise<void> {
+    await db.update(avatarConfigs).set({ ...config, updatedAt: new Date() }).where(eq(avatarConfigs.id, id));
+  }
+
+  async deleteAvatarConfig(id: number): Promise<void> {
+    await db.delete(avatarConfigs).where(eq(avatarConfigs.id, id));
+  }
+
+  // VidGuru: Generation Jobs
+  async getAllGenerationJobs(): Promise<VidguruGenerationJob[]> {
+    return db.select().from(vidguruGenerationJobs).orderBy(desc(vidguruGenerationJobs.createdAt));
+  }
+
+  async getGenerationJob(id: number): Promise<VidguruGenerationJob | undefined> {
+    const [job] = await db.select().from(vidguruGenerationJobs).where(eq(vidguruGenerationJobs.id, id));
+    return job;
+  }
+
+  async createGenerationJob(job: InsertVidguruGenerationJob): Promise<VidguruGenerationJob> {
+    const [created] = await db.insert(vidguruGenerationJobs).values(job).returning();
+    return created;
+  }
+
+  async updateGenerationJob(id: number, job: Partial<InsertVidguruGenerationJob>): Promise<void> {
+    await db.update(vidguruGenerationJobs).set(job).where(eq(vidguruGenerationJobs.id, id));
   }
 }
 

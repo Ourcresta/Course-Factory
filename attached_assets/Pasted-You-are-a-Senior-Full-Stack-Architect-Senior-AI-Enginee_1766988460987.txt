@@ -1,0 +1,258 @@
+You are a Senior Full-Stack Architect, Senior AI Engineer, Senior Video/Avatar Systems Designer, Senior Product Designer, and Startup CTO.
+
+Your task is to BUILD a production-ready internal tool called **VidGuru** as a MODULE INSIDE the **Guru (Admin) Portal** of the OurShiksha platform.
+
+VidGuru is an **AI AVATAR TEACHER ENGINE**.
+Course creation exists ONLY to support avatar-based teaching.
+
+====================================================
+CORE PRODUCT CONTEXT
+====================================================
+
+Platform Name: OurShiksha
+Admin Portal: Guru
+Module Name: VidGuru
+
+VidGuru is NOT a separate app.
+VidGuru MUST live inside the Guru Admin Portal.
+Guru, VidGuru, and Shishya MUST use ONE SINGLE DATABASE.
+
+VidGuru is used ONLY by Admins and Creators to generate AI-powered avatar teaching videos and organize them into courses.
+Students NEVER access VidGuru directly.
+
+====================================================
+CORE PHILOSOPHY (NON-NEGOTIABLE)
+====================================================
+
+VidGuru is NOT a text-based course generator.
+
+VidGuru is:
+→ AI Script Writer
+→ AI Avatar Teacher
+→ AI Video Generator
+→ Multi-language Teaching Engine
+
+The PRIMARY OUTPUT of VidGuru is:
+✅ AI Avatar Video (MP4)
+✅ Teaching Script (Owned Content)
+
+Everything else (courses, modules, tests, labs) is SECONDARY.
+
+====================================================
+PRIMARY FEATURE — AI AVATAR VIDEO ENGINE (CORE)
+====================================================
+
+VidGuru MUST be built with the AI Avatar Video Engine as the CENTER.
+
+Mandatory flow:
+
+Topic
+→ AI Teaching Script
+→ Admin Review/Edit
+→ Avatar Configuration
+→ AI Avatar Video Generation
+→ Lesson
+→ Course
+
+----------------------------------------------------
+AI SCRIPT GENERATOR
+----------------------------------------------------
+
+The system MUST generate ORIGINAL, teaching-quality scripts.
+
+Script structure:
+- Opening hook
+- Concept explanation
+- Example or demo explanation
+- Summary / recap
+
+Script features:
+- Editable before video generation
+- Versioned
+- Language-specific
+- Stored permanently in DB
+- Marked as AI-generated or manually edited
+
+----------------------------------------------------
+AI AVATAR CONFIGURATION
+----------------------------------------------------
+
+Admin MUST be able to configure:
+- Avatar persona (male / female / neutral)
+- Teaching tone (calm / energetic / professional)
+- Voice style
+- Language (English / Tamil / Hindi)
+- Speed and clarity (basic controls)
+
+Avatar configuration MUST be stored per lesson per language.
+
+----------------------------------------------------
+AI AVATAR VIDEO GENERATION
+----------------------------------------------------
+
+- Generate MP4 video per lesson
+- Each language generates a separate video
+- Video linked to:
+  - Script
+  - Avatar configuration
+  - Lesson
+- Video status:
+  - draft
+  - approved
+  - published
+
+NO external video ownership.
+ALL avatar videos are owned by OurShiksha.
+
+Phase 1: Avatar video placeholder + architecture
+Phase 2: Real avatar rendering integration ready
+
+====================================================
+SECONDARY FEATURES (SUPPORTING THE CORE)
+====================================================
+
+----------------------------------------------------
+COURSE & LESSON STRUCTURE
+----------------------------------------------------
+
+Courses exist ONLY to organize avatar videos.
+
+Hierarchy:
+- Course
+  - Module
+    - Lesson
+      - Avatar Video (mandatory)
+      - Script
+      - Labs
+      - Tests
+
+----------------------------------------------------
+MULTI-LANGUAGE ENGINE
+----------------------------------------------------
+
+- Same lesson supports multiple languages
+- Each language has:
+  - Separate script
+  - Separate avatar voice
+  - Separate video
+- Language selection handled in Shishya
+- No regeneration unless admin approves
+
+----------------------------------------------------
+PRACTICE LABS & PROJECTS
+----------------------------------------------------
+
+- Generated AFTER avatar script
+- Must align exactly with what avatar teaches
+- Mini labs per lesson
+- Mini project per module
+- Capstone project per course
+
+----------------------------------------------------
+TEST & ASSESSMENT ENGINE
+----------------------------------------------------
+
+- Questions generated from avatar script
+- MCQ / True-False / Short Answer
+- Pass criteria configurable
+- Linked to certificate eligibility
+
+----------------------------------------------------
+OPTIONAL YOUTUBE (REFERENCE ONLY)
+----------------------------------------------------
+
+- YouTube allowed ONLY as optional reference
+- Always embedded
+- Never downloaded
+- Never replaces avatar video
+- No logo removal
+
+====================================================
+ACCESS CONTROL & SECURITY
+====================================================
+
+Roles:
+- SUPER_ADMIN
+- GURU_ADMIN
+- CREATOR
+
+Rules:
+- CREATOR: generate scripts, videos, drafts
+- GURU_ADMIN: approve, publish, monetize
+- SUPER_ADMIN: full control
+- Students MUST NEVER access VidGuru APIs or tables
+
+====================================================
+WORKFLOW (MANDATORY)
+====================================================
+
+1. Generate AI script
+2. Review/edit script
+3. Configure avatar
+4. Generate avatar video
+5. Attach to lesson
+6. Preview as student
+7. Admin approval
+8. Publish to Shishya
+
+NO auto-publish allowed.
+
+====================================================
+DATABASE TABLES (MINIMUM)
+====================================================
+
+vidguru_courses
+vidguru_modules
+vidguru_lessons
+vidguru_scripts
+vidguru_avatar_configs
+vidguru_videos
+vidguru_languages
+vidguru_labs
+vidguru_projects
+vidguru_tests
+vidguru_ai_logs
+
+Each table MUST include:
+- id
+- status (draft | review | published)
+- ai_generated (boolean)
+- created_by
+- approved_by
+- timestamps
+
+====================================================
+DASHBOARD REQUIREMENTS
+====================================================
+
+VidGuru Dashboard MUST show:
+- Total avatar videos generated
+- Minutes of AI video created
+- Language coverage
+- Draft vs published
+- Creator activity
+- Publish queue
+
+====================================================
+STRICT DO NOTs
+====================================================
+
+- DO NOT create a separate VidGuru app
+- DO NOT use multiple databases
+- DO NOT allow students into VidGuru
+- DO NOT auto-publish
+- DO NOT rely on YouTube as main content
+- DO NOT allow unowned videos
+
+====================================================
+FINAL EXPECTATION
+====================================================
+
+At completion:
+- VidGuru is a menu item inside Guru Admin Portal
+- Admin can generate AI avatar teaching videos in minutes
+- Courses are built around avatar videos
+- Content flows cleanly to Shishya portal
+- Code is modular, scalable, and future SaaS-ready
+
+Follow these instructions STRICTLY and generate production-quality, well-documented code.

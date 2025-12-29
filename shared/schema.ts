@@ -971,19 +971,26 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 
-// ==================== VIDGURU: LESSON SCRIPTS ====================
+// ==================== VIDGURU: LESSON SCRIPTS (ENHANCED) ====================
 export const lessonScripts = pgTable("lesson_scripts", {
   id: serial("id").primaryKey(),
   lessonId: integer("lesson_id").notNull().references(() => lessons.id, { onDelete: "cascade" }),
   language: text("language").notNull().default("en"),
   title: text("title"),
   script: text("script").notNull(),
+  hookSection: text("hook_section"),
+  explanationSection: text("explanation_section"),
+  examplesSection: text("examples_section"),
+  summarySection: text("summary_section"),
   summary: text("summary"),
   duration: text("duration"),
+  estimatedSeconds: integer("estimated_seconds"),
+  version: integer("version").notNull().default(1),
   aiGenerated: boolean("ai_generated").default(false).notNull(),
   status: text("status").notNull().default("draft"),
   createdBy: varchar("created_by").references(() => users.id),
   approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
@@ -1003,7 +1010,85 @@ export const insertLessonScriptSchema = createInsertSchema(lessonScripts).omit({
 export type InsertLessonScript = z.infer<typeof insertLessonScriptSchema>;
 export type LessonScript = typeof lessonScripts.$inferSelect;
 
-// ==================== VIDGURU: LESSON VIDEOS ====================
+// ==================== VIDGURU: AVATAR CONFIGS (ENHANCED) ====================
+export const avatarConfigs = pgTable("avatar_configs", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  avatarType: text("avatar_type").notNull().default("ai"),
+  persona: text("persona").default("professional"),
+  tone: text("tone").default("calm"),
+  voiceId: text("voice_id"),
+  voiceStyle: text("voice_style").default("natural"),
+  language: text("language").default("en"),
+  speed: text("speed").default("normal"),
+  clarity: text("clarity").default("high"),
+  style: jsonb("style").$type<{ background?: string; clothing?: string; accent?: string; gender?: string }>(),
+  isDefault: boolean("is_default").default(false).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const avatarConfigsRelations = relations(avatarConfigs, ({ one }) => ({
+  creator: one(users, { fields: [avatarConfigs.createdBy], references: [users.id] }),
+}));
+
+export const insertAvatarConfigSchema = createInsertSchema(avatarConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAvatarConfig = z.infer<typeof insertAvatarConfigSchema>;
+export type AvatarConfig = typeof avatarConfigs.$inferSelect;
+
+// ==================== VIDGURU: AI AVATAR VIDEOS ====================
+export const avatarVideos = pgTable("avatar_videos", {
+  id: serial("id").primaryKey(),
+  lessonId: integer("lesson_id").notNull().references(() => lessons.id, { onDelete: "cascade" }),
+  scriptId: integer("script_id").references(() => lessonScripts.id, { onDelete: "set null" }),
+  avatarConfigId: integer("avatar_config_id").references(() => avatarConfigs.id, { onDelete: "set null" }),
+  language: text("language").notNull().default("en"),
+  title: text("title"),
+  videoUrl: text("video_url"),
+  thumbnailUrl: text("thumbnail_url"),
+  duration: text("duration"),
+  durationSeconds: integer("duration_seconds"),
+  fileSize: integer("file_size"),
+  resolution: text("resolution").default("1080p"),
+  format: text("format").default("mp4"),
+  generationStatus: text("generation_status").notNull().default("pending"),
+  generationProgress: integer("generation_progress").default(0),
+  generationError: text("generation_error"),
+  status: text("status").notNull().default("draft"),
+  orderIndex: integer("order_index").notNull().default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const avatarVideosRelations = relations(avatarVideos, ({ one }) => ({
+  lesson: one(lessons, { fields: [avatarVideos.lessonId], references: [lessons.id] }),
+  script: one(lessonScripts, { fields: [avatarVideos.scriptId], references: [lessonScripts.id] }),
+  avatarConfig: one(avatarConfigs, { fields: [avatarVideos.avatarConfigId], references: [avatarConfigs.id] }),
+  creator: one(users, { fields: [avatarVideos.createdBy], references: [users.id] }),
+  approver: one(users, { fields: [avatarVideos.approvedBy], references: [users.id] }),
+}));
+
+export const insertAvatarVideoSchema = createInsertSchema(avatarVideos).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAvatarVideo = z.infer<typeof insertAvatarVideoSchema>;
+export type AvatarVideo = typeof avatarVideos.$inferSelect;
+
+// ==================== VIDGURU: LESSON VIDEOS (YOUTUBE REFERENCE) ====================
 export const lessonVideos = pgTable("lesson_videos", {
   id: serial("id").primaryKey(),
   lessonId: integer("lesson_id").notNull().references(() => lessons.id, { onDelete: "cascade" }),
@@ -1014,6 +1099,7 @@ export const lessonVideos = pgTable("lesson_videos", {
   duration: text("duration"),
   aiSummary: text("ai_summary"),
   aiQuiz: jsonb("ai_quiz").$type<{ question: string; options: string[]; answer: number }[]>(),
+  isReference: boolean("is_reference").default(true).notNull(),
   status: text("status").notNull().default("draft"),
   orderIndex: integer("order_index").notNull().default(0),
   createdBy: varchar("created_by").references(() => users.id),
@@ -1035,38 +1121,56 @@ export const insertLessonVideoSchema = createInsertSchema(lessonVideos).omit({
 export type InsertLessonVideo = z.infer<typeof insertLessonVideoSchema>;
 export type LessonVideo = typeof lessonVideos.$inferSelect;
 
-// ==================== VIDGURU: AVATAR CONFIGS ====================
-export const avatarConfigs = pgTable("avatar_configs", {
+// ==================== VIDGURU: COURSE GENERATION JOBS ====================
+export const vidguruGenerationJobs = pgTable("vidguru_generation_jobs", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  avatarType: text("avatar_type").notNull().default("ai"),
-  voiceId: text("voice_id"),
-  language: text("language").default("en"),
-  style: jsonb("style").$type<{ background?: string; clothing?: string; accent?: string }>(),
-  isDefault: boolean("is_default").default(false).notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
+  courseId: integer("course_id").references(() => courses.id, { onDelete: "cascade" }),
+  command: text("command").notNull(),
+  status: text("status").notNull().default("pending"),
+  progress: integer("progress").default(0),
+  currentStep: text("current_step"),
+  totalSteps: integer("total_steps"),
+  generatedModules: integer("generated_modules").default(0),
+  generatedLessons: integer("generated_lessons").default(0),
+  generatedScripts: integer("generated_scripts").default(0),
+  generatedVideos: integer("generated_videos").default(0),
+  generatedLabs: integer("generated_labs").default(0),
+  generatedProjects: integer("generated_projects").default(0),
+  generatedTests: integer("generated_tests").default(0),
+  totalTokensUsed: integer("total_tokens_used").default(0),
+  errorMessage: text("error_message"),
+  options: jsonb("options").$type<{
+    includeVideos?: boolean;
+    includeLabs?: boolean;
+    includeProjects?: boolean;
+    includeTests?: boolean;
+    languages?: string[];
+    avatarConfigId?: number;
+  }>(),
   createdBy: varchar("created_by").references(() => users.id),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
-export const avatarConfigsRelations = relations(avatarConfigs, ({ one }) => ({
-  creator: one(users, { fields: [avatarConfigs.createdBy], references: [users.id] }),
+export const vidguruGenerationJobsRelations = relations(vidguruGenerationJobs, ({ one }) => ({
+  course: one(courses, { fields: [vidguruGenerationJobs.courseId], references: [courses.id] }),
+  creator: one(users, { fields: [vidguruGenerationJobs.createdBy], references: [users.id] }),
 }));
 
-export const insertAvatarConfigSchema = createInsertSchema(avatarConfigs).omit({
+export const insertVidguruGenerationJobSchema = createInsertSchema(vidguruGenerationJobs).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
 });
 
-export type InsertAvatarConfig = z.infer<typeof insertAvatarConfigSchema>;
-export type AvatarConfig = typeof avatarConfigs.$inferSelect;
+export type InsertVidguruGenerationJob = z.infer<typeof insertVidguruGenerationJobSchema>;
+export type VidguruGenerationJob = typeof vidguruGenerationJobs.$inferSelect;
 
 // ==================== VIDGURU: AI GENERATION LOGS (ENHANCED) ====================
 export const vidguruAiLogs = pgTable("vidguru_ai_logs", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id),
+  jobId: integer("job_id").references(() => vidguruGenerationJobs.id, { onDelete: "set null" }),
   action: text("action").notNull(),
   entityType: text("entity_type").notNull(),
   entityId: integer("entity_id"),
@@ -1082,6 +1186,7 @@ export const vidguruAiLogs = pgTable("vidguru_ai_logs", {
 
 export const vidguruAiLogsRelations = relations(vidguruAiLogs, ({ one }) => ({
   user: one(users, { fields: [vidguruAiLogs.userId], references: [users.id] }),
+  job: one(vidguruGenerationJobs, { fields: [vidguruAiLogs.jobId], references: [vidguruGenerationJobs.id] }),
 }));
 
 export const insertVidguruAiLogSchema = createInsertSchema(vidguruAiLogs).omit({
