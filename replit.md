@@ -1,7 +1,7 @@
 # Oushiksha Guru - Admin Course Factory
 
 ## Overview
-Oushiksha Guru is an AI-powered platform for administrators to create comprehensive educational courses from simple instructions. It generates full syllabi, modules, lessons, projects, and tests, adopting a modern SaaS admin interface design for clarity and efficient workflow. The platform integrates with the OurShiksha Shishya (student portal) via a secure REST API. A key ambition is the "VidGuru AI Avatar Course Factory" for generating courses with AI avatar teaching videos.
+Oushiksha Guru is an AI-powered platform for administrators to create comprehensive educational courses from simple instructions. It generates full syllabi, modules, lessons, projects, and tests, adopting a modern SaaS admin interface design for clarity and efficient workflow. The platform integrates with the OurShiksha Shishya (student portal) via a secure REST API.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -18,9 +18,8 @@ Preferred communication style: Simple, everyday language.
 
 **Key Sections**:
 -   **Dashboard**: KPIs, revenue, course stats.
--   **Academics**: Course, AI Course Factory, Labs, Tests, Projects, Certificates, Skills Library.
--   **VidGuru (AI Avatar Course Factory)**: One-click course generation, avatar video management, multilingual script generation (8 Indian languages), job tracking.
--   **Business**: Credit, pricing, subscriptions, payments, promotions.
+-   **Academics**: Courses, AI Course Factory, Labs, Tests, Projects, Certificates, Skills Library.
+-   **Business**: Credits, pricing, subscriptions, payments, promotions.
 -   **Shishya Control**: Student portal analytics, user management, activity, payments, engagement.
 -   **System**: Security, admin management, settings.
 -   **Course Detail**: Tabbed interface for managing course content.
@@ -43,7 +42,6 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Model
 Core entities include Users, Courses, Modules, Lessons, Projects, Tests, Questions, Practice Labs, Certificates, Skills, and Audit Logs.
-VidGuru entities include Lesson Videos, Lesson Scripts (multilingual), Avatar Configs, VidGuru AI Logs, and VidGuru Generation Jobs.
 
 ### Publish Workflow
 Courses are managed as `draft` or `published`. Published courses are read-only; unpublishing is required for edits. Validation checks content minimums before publishing.
@@ -52,13 +50,6 @@ Courses are managed as `draft` or `published`. Published courses are read-only; 
 -   **Sign In**: Email/password, JWT (12-hour expiry).
 -   **Sign Up**: Email/password, OTP verification (via Resend API) for new users with `pending_admin` role, then upgraded to `admin`.
 -   **Security**: bcrypt hashing (12 rounds), JWT, rate limiting, Helmet.js for security headers, CORS.
-
-### VidGuru AI Avatar Course Factory
-Generates full courses with AI avatar teaching videos from a single topic command.
--   **Workflow**: Topic Command → AI Generation (structure, scripts, videos, labs, projects, tests) → Script Review → Avatar Video Generation → Approval.
--   **Teaching Script Structure**: Hook, Explanation, Examples, Summary sections.
--   **Status Workflow**: Scripts (`draft` → `review` → `approved`), Avatar Videos (`pending` → `generating` → `completed` → `approved` → `published`), Courses (`draft` → `published`).
--   **Multi-Language**: Supports 8 Indian languages (English, Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Marathi) with AI translation.
 
 ## External Dependencies
 
