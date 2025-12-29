@@ -43,6 +43,13 @@ Preferred communication style: Simple, everyday language.
 ### Data Model
 Core entities include Users, Courses, Modules, Lessons, Projects, Tests, Questions, Practice Labs, Certificates, Skills, and Audit Logs.
 
+### Lesson YouTube References
+Lessons can have YouTube video references attached for supplementary learning:
+- **Schema**: `youtubeReferences` field stores array of `{url, title, description?}`
+- **UI**: Lesson editor has "YouTube References" section with add/remove functionality
+- **Features**: Auto-extracts thumbnails from YouTube URLs, clickable video cards
+- **Location**: `/courses/:id/modules/:moduleId/lessons/:lessonId` editor page
+
 ### Publish Workflow
 Courses are managed as `draft` or `published`. Published courses are read-only; unpublishing is required for edits. Validation checks content minimums before publishing.
 
