@@ -21,7 +21,7 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: React Hook Form with Zod validation
 - **Build Tool**: Vite with custom plugins for Replit integration
 
-The frontend follows a page-based structure with 5 sidebar sections:
+The frontend follows a page-based structure with 6 sidebar sections:
 
 **MAIN Section**
 - **Dashboard** (`/`): Executive command center with KPI overview, revenue metrics, course stats
@@ -35,6 +35,11 @@ The frontend follows a page-based structure with 5 sidebar sections:
 - **Projects** (`/projects`): Project management with skill mapping
 - **Certificates** (`/certificates`): Certificate configuration
 - **Skills Library** (`/skills`): Global skill tagging system
+
+**VIDGURU Section** (AI-Powered Video Course Intelligence)
+- **Dashboard** (`/vidguru`): VidGuru stats, AI generation tracking, quick actions
+- **Video Manager** (`/vidguru/videos`): YouTube video embeds per lesson with AI summary generation
+- **Language Manager** (`/vidguru/languages`): Multilingual script management with AI translation (8 Indian languages: English, Hindi, Tamil, Telugu, Kannada, Malayalam, Bengali, Marathi)
 
 **BUSINESS Section**
 - **Credits & Pricing** (`/credits`): Course monetization (1 Credit = 1 INR)
@@ -92,6 +97,12 @@ Core entities include:
 - **Certificates**: Course completion/achievement certificates with skill tags, test requirements, project completion requirements, and lab completion requirements
 - **Skills**: Global tagging system for courses and projects
 - **Audit Logs**: Activity tracking for admin actions (course publish/unpublish, test/question/project CRUD)
+
+VidGuru entities:
+- **Lesson Videos**: YouTube video embeds per lesson with AI-generated summaries, titles, and metadata
+- **Lesson Scripts**: Multilingual lesson scripts (8 languages: en, hi, ta, te, kn, ml, bn, mr) with AI translation support
+- **VidGuru AI Logs**: Tracks all AI operations (video summaries, script translations) with token usage, duration, and status
+- **Avatar Configs**: Phase 2 placeholder for AI avatar customization
 
 ### Publish Workflow
 - **Draft vs Published**: Courses start as drafts and can be published when ready

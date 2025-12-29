@@ -40,6 +40,9 @@ import ShishyaActivity from "@/pages/shishya-activity";
 import ShishyaPayments from "@/pages/shishya-payments";
 import ShishyaEngagement from "@/pages/shishya-engagement";
 import Security from "@/pages/security";
+import VidGuruDashboard from "@/pages/vidguru-dashboard";
+import VidGuruVideos from "@/pages/vidguru-videos";
+import VidGuruLanguages from "@/pages/vidguru-languages";
 
 function Router() {
   return (
@@ -69,6 +72,11 @@ function Router() {
       <Route path="/shishya/activity" component={ShishyaActivity} />
       <Route path="/shishya/payments" component={ShishyaPayments} />
       <Route path="/shishya/engagement" component={ShishyaEngagement} />
+
+      {/* VidGuru */}
+      <Route path="/vidguru" component={VidGuruDashboard} />
+      <Route path="/vidguru/videos" component={VidGuruVideos} />
+      <Route path="/vidguru/languages" component={VidGuruLanguages} />
 
       {/* System */}
       <Route path="/security" component={Security} />

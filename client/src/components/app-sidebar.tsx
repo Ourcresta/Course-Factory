@@ -19,6 +19,9 @@ import {
   FileText,
   Gift,
   Percent,
+  Video,
+  Languages,
+  Bot,
 } from "lucide-react";
 import {
   Sidebar,
@@ -137,6 +140,25 @@ const shishyaItems = [
   },
 ];
 
+const vidguruItems = [
+  {
+    title: "VidGuru Dashboard",
+    url: "/vidguru",
+    icon: Bot,
+    highlight: true,
+  },
+  {
+    title: "Video Manager",
+    url: "/vidguru/videos",
+    icon: Video,
+  },
+  {
+    title: "Language Manager",
+    url: "/vidguru/languages",
+    icon: Languages,
+  },
+];
+
 const systemItems = [
   {
     title: "Security & Admins",
@@ -165,6 +187,9 @@ export function AppSidebar() {
     }
     if (url === "/shishya") {
       return location === "/shishya";
+    }
+    if (url === "/vidguru") {
+      return location === "/vidguru";
     }
     return location.startsWith(url);
   };
@@ -265,6 +290,32 @@ export function AppSidebar() {
                     <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>VidGuru</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {vidguruItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                  >
+                    <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                      {item.highlight && (
+                        <Badge variant="secondary" className="ml-auto text-xs">
+                          AI
+                        </Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

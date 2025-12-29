@@ -54,6 +54,18 @@ import {
   otpTokens,
   loginAttempts,
   adminSessions,
+  lessonScripts,
+  lessonVideos,
+  avatarConfigs,
+  vidguruAiLogs,
+  type LessonScript,
+  type InsertLessonScript,
+  type LessonVideo,
+  type InsertLessonVideo,
+  type AvatarConfig,
+  type InsertAvatarConfig,
+  type VidguruAiLog,
+  type InsertVidguruAiLog,
   creditPackages,
   vouchers,
   giftBoxes,
@@ -90,6 +102,24 @@ export interface IStorage {
   revokeUserSessions(userId: string): Promise<void>;
   revokeAllSessionsExcept(userId: string): Promise<void>;
   getAllAuditLogs(options: { entityType?: string; limit?: number; offset?: number }): Promise<AuditLog[]>;
+
+  // VidGuru: Lesson Videos
+  getAllLessonVideos(): Promise<LessonVideo[]>;
+  getLessonVideo(id: number): Promise<LessonVideo | undefined>;
+  createLessonVideo(video: InsertLessonVideo): Promise<LessonVideo>;
+  updateLessonVideo(id: number, video: Partial<InsertLessonVideo>): Promise<void>;
+  deleteLessonVideo(id: number): Promise<void>;
+
+  // VidGuru: Lesson Scripts
+  getAllLessonScripts(): Promise<LessonScript[]>;
+  getLessonScript(id: number): Promise<LessonScript | undefined>;
+  createLessonScript(script: InsertLessonScript): Promise<LessonScript>;
+  updateLessonScript(id: number, script: Partial<InsertLessonScript>): Promise<void>;
+  deleteLessonScript(id: number): Promise<void>;
+
+  // VidGuru: AI Logs
+  getVidguruAiLogs(options: { limit?: number }): Promise<VidguruAiLog[]>;
+  createVidguruAiLog(log: InsertVidguruAiLog): Promise<VidguruAiLog>;
 
   // OTP Tokens
   createOtpToken(token: InsertOtpToken): Promise<OtpToken>;
@@ -1346,6 +1376,63 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // VidGuru: Lesson Videos
+  async getAllLessonVideos(): Promise<LessonVideo[]> {
+    return db.select().from(lessonVideos).orderBy(desc(lessonVideos.createdAt));
+  }
+
+  async getLessonVideo(id: number): Promise<LessonVideo | undefined> {
+    const [video] = await db.select().from(lessonVideos).where(eq(lessonVideos.id, id));
+    return video;
+  }
+
+  async createLessonVideo(video: InsertLessonVideo): Promise<LessonVideo> {
+    const [created] = await db.insert(lessonVideos).values(video).returning();
+    return created;
+  }
+
+  async updateLessonVideo(id: number, video: Partial<InsertLessonVideo>): Promise<void> {
+    await db.update(lessonVideos).set({ ...video, updatedAt: new Date() }).where(eq(lessonVideos.id, id));
+  }
+
+  async deleteLessonVideo(id: number): Promise<void> {
+    await db.delete(lessonVideos).where(eq(lessonVideos.id, id));
+  }
+
+  // VidGuru: Lesson Scripts
+  async getAllLessonScripts(): Promise<LessonScript[]> {
+    return db.select().from(lessonScripts).orderBy(desc(lessonScripts.createdAt));
+  }
+
+  async getLessonScript(id: number): Promise<LessonScript | undefined> {
+    const [script] = await db.select().from(lessonScripts).where(eq(lessonScripts.id, id));
+    return script;
+  }
+
+  async createLessonScript(script: InsertLessonScript): Promise<LessonScript> {
+    const [created] = await db.insert(lessonScripts).values(script).returning();
+    return created;
+  }
+
+  async updateLessonScript(id: number, script: Partial<InsertLessonScript>): Promise<void> {
+    await db.update(lessonScripts).set({ ...script, updatedAt: new Date() }).where(eq(lessonScripts.id, id));
+  }
+
+  async deleteLessonScript(id: number): Promise<void> {
+    await db.delete(lessonScripts).where(eq(lessonScripts.id, id));
+  }
+
+  // VidGuru: AI Logs
+  async getVidguruAiLogs(options: { limit?: number }): Promise<VidguruAiLog[]> {
+    const { limit = 50 } = options;
+    return db.select().from(vidguruAiLogs).orderBy(desc(vidguruAiLogs.createdAt)).limit(limit);
+  }
+
+  async createVidguruAiLog(log: InsertVidguruAiLog): Promise<VidguruAiLog> {
+    const [created] = await db.insert(vidguruAiLogs).values(log).returning();
+    return created;
   }
 }
 
