@@ -39,6 +39,19 @@ Preferred communication style: Simple, everyday language.
 -   **Practice-First Design**: Labs with starter code, hints, and automatic validation.
 -   **Methodology**: PLAN → STRUCTURE → GENERATE → VALIDATE.
 -   **Self-Validation**: AI checks progression logic, coverage, content weight, job relevance.
+-   **Auto-Generated Content**: Pricing (level-based ₹1,999-9,999), reward coins, achievement cards, motivational cards, and scholarship configs.
+
+### JSON Import Feature
+-   **Location**: AI Course Factory → JSON Import tab
+-   **Endpoint**: POST `/api/courses/import`
+-   **Features**:
+    -   Upload JSON file or paste JSON content directly
+    -   Real-time validation with error messages
+    -   Preview of parsed course structure before import
+    -   Downloadable JSON template for reference
+    -   Default pricing based on level if not specified
+-   **Supported Fields**: name, description, level, modules (with lessons), labs, projects, tests, rewards, achievementCards, motivationalCards, pricing, scholarship, certificateRules
+-   **Default Pricing**: Beginner ₹1,999, Intermediate ₹3,999, Advanced ₹5,999 (auto-applied if not specified)
 
 ### Data Model
 Core entities include Users, Courses, Modules, Lessons, Projects, Tests, Questions, Practice Labs, Certificates, Skills, and Audit Logs.

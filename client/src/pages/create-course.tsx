@@ -24,6 +24,12 @@ import {
   Award,
   TrendingUp,
   Zap,
+  Upload,
+  FileJson,
+  Copy,
+  CheckCircle2,
+  AlertCircle,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +99,9 @@ export default function CreateCourse() {
   const [generationMode, setGenerationMode] = useState<"preview" | "publish">("preview");
   const [aiSuggestions, setAiSuggestions] = useState<string[]>(exampleCommands);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [jsonInput, setJsonInput] = useState("");
+  const [jsonErrors, setJsonErrors] = useState<string[]>([]);
+  const [jsonPreview, setJsonPreview] = useState<any>(null);
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -159,6 +168,150 @@ export default function CreateCourse() {
       });
     },
   });
+
+  const importFromJSON = useMutation({
+    mutationFn: async (jsonData: any): Promise<{ id: number; name: string; message: string }> => {
+      const response = await apiRequest("POST", "/api/courses/import", jsonData);
+      return response as { id: number; name: string; message: string };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Course imported",
+        description: data.message,
+      });
+      navigate(`/courses/${data.id}`);
+    },
+    onError: (error: any) => {
+      const errorData = error?.response?.data;
+      if (errorData?.errors) {
+        setJsonErrors(errorData.errors);
+      }
+      toast({
+        title: "Import failed",
+        description: errorData?.message || "Failed to import course. Check the JSON format.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const validateAndPreviewJSON = (input: string) => {
+    setJsonErrors([]);
+    setJsonPreview(null);
+    
+    if (!input.trim()) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(input);
+      const errors: string[] = [];
+      
+      if (!parsed.name) errors.push("Course name is required");
+      if (!parsed.modules || !Array.isArray(parsed.modules) || parsed.modules.length === 0) {
+        errors.push("At least one module is required");
+      } else {
+        parsed.modules.forEach((mod: any, idx: number) => {
+          if (!mod.title) errors.push(`Module ${idx + 1}: title is required`);
+          if (!mod.lessons || mod.lessons.length === 0) {
+            errors.push(`Module ${idx + 1}: at least one lesson is required`);
+          }
+        });
+      }
+
+      if (errors.length > 0) {
+        setJsonErrors(errors);
+      } else {
+        setJsonPreview(parsed);
+      }
+    } catch (e: any) {
+      setJsonErrors([`Invalid JSON: ${e.message}`]);
+    }
+  };
+
+  const handleImportJSON = () => {
+    if (!jsonPreview) {
+      toast({
+        title: "No valid JSON",
+        description: "Please paste or upload valid course JSON first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    importFromJSON.mutate(jsonPreview);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setJsonInput(content);
+      validateAndPreviewJSON(content);
+    };
+    reader.readAsText(file);
+  };
+
+  const downloadSampleJSON = () => {
+    const sampleJSON = {
+      name: "Sample Course Name",
+      description: "Course description here",
+      level: "beginner",
+      targetAudience: "Beginners in programming",
+      duration: "4 weeks",
+      learningOutcomes: ["Learn fundamentals", "Build projects"],
+      skills: ["JavaScript", "React"],
+      modules: [
+        {
+          title: "Module 1: Getting Started",
+          description: "Introduction to the course",
+          estimatedTime: "2 hours",
+          lessons: [
+            {
+              title: "Lesson 1: Welcome",
+              objectives: ["Understand course structure"],
+              estimatedTime: "15 minutes",
+              keyConcepts: ["Overview", "Goals"]
+            }
+          ]
+        }
+      ],
+      labs: [],
+      projects: [],
+      tests: [],
+      pricing: {
+        basePrice: 2999,
+        discountPrice: 1999,
+        creditCost: 800,
+        isFree: false,
+        freePreviewLessons: 2
+      },
+      rewards: {
+        coinName: "SkillCoins",
+        coinIcon: "coins",
+        coinsEnabled: true,
+        rules: {
+          courseCompletion: 500,
+          moduleCompletion: 50,
+          lessonCompletion: 10,
+          testPass: 100,
+          projectSubmission: 200,
+          labCompletion: 20
+        }
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(sampleJSON, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "course-template.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const onSubmit = (data: CourseFormValues) => {
     if (activeTab === "ai") {
@@ -263,10 +416,14 @@ export default function CreateCourse() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="ai" className="flex items-center gap-2" data-testid="tab-ai-create">
             <Sparkles className="h-4 w-4" />
             AI Generator
+          </TabsTrigger>
+          <TabsTrigger value="import" className="flex items-center gap-2" data-testid="tab-json-import">
+            <FileJson className="h-4 w-4" />
+            JSON Import
           </TabsTrigger>
           <TabsTrigger value="manual" className="flex items-center gap-2" data-testid="tab-manual-create">
             <BookOpen className="h-4 w-4" />
@@ -545,6 +702,153 @@ export default function CreateCourse() {
                       <>
                         <Sparkles className="h-4 w-4 mr-2" />
                         {generationMode === "preview" ? "Generate Preview" : "Generate Full Course"}
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="import" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileJson className="h-5 w-5 text-primary" />
+                    JSON Import
+                  </CardTitle>
+                  <CardDescription>
+                    Import a complete course structure from a JSON file. Great for bulk course creation
+                    or migrating courses from other platforms.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        data-testid="input-json-file"
+                      />
+                      <Button type="button" variant="outline" className="gap-2">
+                        <Upload className="h-4 w-4" />
+                        Upload JSON File
+                      </Button>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={downloadSampleJSON}
+                      className="gap-2"
+                      data-testid="button-download-template"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download Template
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Paste JSON Content</Label>
+                    <Textarea
+                      placeholder='{"name": "Course Name", "modules": [...]}'
+                      className="min-h-64 font-mono text-sm resize-none"
+                      value={jsonInput}
+                      onChange={(e) => {
+                        setJsonInput(e.target.value);
+                        validateAndPreviewJSON(e.target.value);
+                      }}
+                      data-testid="input-json-content"
+                    />
+                  </div>
+
+                  {jsonErrors.length > 0 && (
+                    <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-destructive font-medium">
+                        <AlertCircle className="h-4 w-4" />
+                        Validation Errors
+                      </div>
+                      <ul className="text-sm text-destructive space-y-1 list-disc list-inside">
+                        {jsonErrors.map((error, idx) => (
+                          <li key={idx}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {jsonPreview && (
+                    <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4 space-y-3">
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium">
+                        <CheckCircle2 className="h-4 w-4" />
+                        JSON Valid - Ready to Import
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Course Name:</span>
+                          <p className="font-medium">{jsonPreview.name}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Level:</span>
+                          <p className="font-medium capitalize">{jsonPreview.level || "beginner"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Modules:</span>
+                          <p className="font-medium">{jsonPreview.modules?.length || 0}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Total Lessons:</span>
+                          <p className="font-medium">
+                            {jsonPreview.modules?.reduce((acc: number, mod: any) => acc + (mod.lessons?.length || 0), 0) || 0}
+                          </p>
+                        </div>
+                        {jsonPreview.labs?.length > 0 && (
+                          <div>
+                            <span className="text-muted-foreground">Labs:</span>
+                            <p className="font-medium">{jsonPreview.labs.length}</p>
+                          </div>
+                        )}
+                        {jsonPreview.projects?.length > 0 && (
+                          <div>
+                            <span className="text-muted-foreground">Projects:</span>
+                            <p className="font-medium">{jsonPreview.projects.length}</p>
+                          </div>
+                        )}
+                        {jsonPreview.tests?.length > 0 && (
+                          <div>
+                            <span className="text-muted-foreground">Tests:</span>
+                            <p className="font-medium">{jsonPreview.tests.length}</p>
+                          </div>
+                        )}
+                        {jsonPreview.pricing && (
+                          <div>
+                            <span className="text-muted-foreground">Pricing:</span>
+                            <p className="font-medium">
+                              {jsonPreview.pricing.isFree ? "Free" : `₹${jsonPreview.pricing.basePrice || jsonPreview.pricing.discountPrice || 0}`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="w-full"
+                    disabled={!jsonPreview || importFromJSON.isPending}
+                    onClick={handleImportJSON}
+                    data-testid="button-import-course"
+                  >
+                    {importFromJSON.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Importing Course...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Import Course
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </>
                     )}

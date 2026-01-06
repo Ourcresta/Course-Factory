@@ -418,6 +418,266 @@ export async function registerRoutes(
     }
   });
 
+  // JSON Import: Create course from JSON structure
+  app.post("/api/courses/import", async (req, res) => {
+    try {
+      const jsonData = req.body;
+      const errors: string[] = [];
+
+      // Validate required fields
+      if (!jsonData.name || typeof jsonData.name !== "string") {
+        errors.push("Course name is required");
+      }
+      if (!jsonData.modules || !Array.isArray(jsonData.modules) || jsonData.modules.length === 0) {
+        errors.push("At least one module is required");
+      }
+
+      // Validate modules structure
+      if (jsonData.modules) {
+        jsonData.modules.forEach((mod: any, idx: number) => {
+          if (!mod.title) errors.push(`Module ${idx + 1}: title is required`);
+          if (!mod.lessons || !Array.isArray(mod.lessons) || mod.lessons.length === 0) {
+            errors.push(`Module ${idx + 1}: at least one lesson is required`);
+          }
+          mod.lessons?.forEach((lesson: any, lidx: number) => {
+            if (!lesson.title) errors.push(`Module ${idx + 1} Lesson ${lidx + 1}: title is required`);
+          });
+        });
+      }
+
+      if (errors.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          errors,
+          message: `Validation failed with ${errors.length} error(s)` 
+        });
+      }
+
+      // Determine default pricing based on level
+      const levelPricing: Record<string, number> = {
+        beginner: 1999,
+        intermediate: 3999,
+        advanced: 5999,
+      };
+      const defaultPrice = levelPricing[jsonData.level] || 1999;
+
+      // Create the course
+      const course = await storage.createCourse({
+        name: jsonData.name,
+        description: jsonData.description || "",
+        overview: jsonData.overview || "",
+        level: jsonData.level || "beginner",
+        targetAudience: jsonData.targetAudience || "",
+        duration: jsonData.duration || "",
+        learningOutcomes: jsonData.learningOutcomes || [],
+        jobRoles: jsonData.jobRoles || [],
+        status: "draft",
+        aiCommand: `JSON Import: ${jsonData.name}`,
+        creditCost: jsonData.pricing?.creditCost ?? Math.round(defaultPrice * 0.4),
+        isFree: jsonData.pricing?.isFree ?? false,
+        originalCreditCost: jsonData.pricing?.basePrice ?? defaultPrice,
+      });
+
+      // Track created modules and lessons for linking
+      const createdModules: { id: number; index: number; lessons: { id: number; index: number }[] }[] = [];
+
+      // Create modules and lessons
+      for (let i = 0; i < jsonData.modules.length; i++) {
+        const moduleData = jsonData.modules[i];
+        const module = await storage.createModule({
+          courseId: course.id,
+          title: moduleData.title,
+          description: moduleData.description || "",
+          estimatedTime: moduleData.estimatedTime || "",
+          orderIndex: i,
+        });
+
+        const createdLessons: { id: number; index: number }[] = [];
+
+        for (let j = 0; j < (moduleData.lessons || []).length; j++) {
+          const lessonData = moduleData.lessons[j];
+          const lesson = await storage.createLesson({
+            moduleId: module.id,
+            title: lessonData.title,
+            objectives: lessonData.objectives || [],
+            estimatedTime: lessonData.estimatedTime || "",
+            keyConceptS: lessonData.keyConceptS || lessonData.keyConcepts || [],
+            orderIndex: j,
+          });
+          createdLessons.push({ id: lesson.id, index: j });
+        }
+
+        createdModules.push({ id: module.id, index: i, lessons: createdLessons });
+      }
+
+      // Create labs if provided
+      if (jsonData.labs && Array.isArray(jsonData.labs)) {
+        for (let i = 0; i < jsonData.labs.length; i++) {
+          const labData = jsonData.labs[i];
+          const targetModule = createdModules.find(m => m.index === labData.moduleIndex);
+          const targetLesson = targetModule?.lessons.find(l => l.index === labData.lessonIndex);
+          const timeMatch = labData.estimatedTime?.match(/(\d+)/);
+          const estimatedMinutes = timeMatch ? parseInt(timeMatch[1]) : 15;
+          const labSlug = labData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+          await storage.createPracticeLab({
+            courseId: course.id,
+            moduleId: targetModule?.id || null,
+            lessonId: targetLesson?.id || null,
+            slug: `${labSlug}-${Date.now()}-${i}`,
+            title: labData.title,
+            instructions: labData.problemStatement || labData.instructions || "",
+            language: labData.language || "javascript",
+            starterCode: labData.starterCode || "",
+            expectedOutput: labData.expectedOutput || "",
+            validationType: labData.validationType || "output",
+            hints: labData.hints || [],
+            estimatedTime: estimatedMinutes,
+            difficulty: labData.difficulty || "beginner",
+            unlockType: "always",
+            orderIndex: i,
+          });
+        }
+      }
+
+      // Create projects if provided
+      if (jsonData.projects && Array.isArray(jsonData.projects)) {
+        for (let i = 0; i < jsonData.projects.length; i++) {
+          const projectData = jsonData.projects[i];
+          const targetModule = createdModules.find(m => m.index === projectData.moduleIndex);
+
+          await storage.createProject({
+            courseId: course.id,
+            moduleId: targetModule?.id || null,
+            title: projectData.title,
+            problemStatement: projectData.problemStatement || "",
+            techStack: projectData.techStack || [],
+            difficulty: projectData.difficulty || "intermediate",
+            evaluationChecklist: projectData.deliverables || projectData.evaluationChecklist || [],
+            orderIndex: i,
+          });
+        }
+      }
+
+      // Create tests if provided
+      if (jsonData.tests && Array.isArray(jsonData.tests)) {
+        for (const testData of jsonData.tests) {
+          const targetModule = createdModules.find(m => m.index === testData.moduleIndex);
+
+          const createdTest = await storage.createTest({
+            moduleId: targetModule?.id || createdModules[0]?.id,
+            title: testData.title,
+            description: testData.description || "",
+            passingPercentage: testData.passingPercentage || 70,
+          });
+
+          if (testData.questions && Array.isArray(testData.questions)) {
+            for (let q = 0; q < testData.questions.length; q++) {
+              const questionData = testData.questions[q];
+              await storage.createQuestion({
+                testId: createdTest.id,
+                type: questionData.type || "mcq",
+                difficulty: questionData.difficulty || "medium",
+                questionText: questionData.questionText,
+                options: questionData.options || [],
+                correctAnswer: questionData.correctAnswer,
+                explanation: questionData.explanation || "",
+                orderIndex: q,
+              });
+            }
+          }
+        }
+      }
+
+      // Create certificate if rules provided
+      if (jsonData.certificateRules) {
+        await storage.createCertificate({
+          courseId: course.id,
+          name: `${jsonData.name} Certificate`,
+          type: jsonData.certificateType || "completion",
+          level: jsonData.level || "beginner",
+          requiresTestPass: jsonData.certificateRules.testPassRequired ?? false,
+          passingPercentage: jsonData.certificateRules.minScore ?? 70,
+          requiresProjectCompletion: jsonData.certificateRules.projectSubmissionRequired ?? false,
+          requiresLabCompletion: (jsonData.certificateRules.minLabsCompleted ?? 0) > 0,
+          skillTags: jsonData.skills || [],
+        });
+      }
+
+      // Create rewards if provided
+      if (jsonData.rewards) {
+        await storage.createOrUpdateCourseReward(course.id, {
+          courseId: course.id,
+          coinsEnabled: jsonData.rewards.coinsEnabled ?? true,
+          coinName: jsonData.rewards.coinName || "Coins",
+          coinIcon: jsonData.rewards.coinIcon || "coins",
+          rulesJson: jsonData.rewards.rules || {},
+          bonusJson: jsonData.rewards.bonus || {},
+          scholarshipEnabled: jsonData.scholarship?.enabled ?? false,
+          scholarshipJson: jsonData.scholarship || null,
+        });
+      }
+
+      // Create achievement cards if provided
+      if (jsonData.achievementCards && Array.isArray(jsonData.achievementCards)) {
+        for (const cardData of jsonData.achievementCards) {
+          await storage.createAchievementCard({
+            courseId: course.id,
+            title: cardData.title,
+            description: cardData.description || "",
+            icon: cardData.icon || "trophy",
+            rarity: cardData.rarity || "common",
+            conditionJson: {
+              type: cardData.conditionType,
+              value: cardData.conditionValue,
+            },
+            isActive: true,
+          });
+        }
+      }
+
+      // Create motivational cards if provided
+      if (jsonData.motivationalCards && Array.isArray(jsonData.motivationalCards)) {
+        for (const cardData of jsonData.motivationalCards) {
+          await storage.createMotivationalCard({
+            courseId: course.id,
+            message: cardData.message,
+            icon: cardData.icon || "sparkles",
+            triggerType: cardData.triggerType || "percentage",
+            triggerValue: cardData.triggerValue,
+            isActive: true,
+          });
+        }
+      }
+
+      await storage.createAuditLog({
+        action: "json_import",
+        entityType: "course",
+        entityId: course.id,
+        metadata: {
+          source: "json_import",
+          modules: jsonData.modules.length,
+          labs: jsonData.labs?.length || 0,
+          projects: jsonData.projects?.length || 0,
+          tests: jsonData.tests?.length || 0,
+        },
+      });
+
+      res.status(201).json({ 
+        success: true,
+        id: course.id,
+        name: course.name,
+        message: `Course "${course.name}" imported successfully with ${createdModules.length} modules` 
+      });
+    } catch (error: any) {
+      console.error("Error importing course:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message || "Failed to import course" 
+      });
+    }
+  });
+
   // Reset stuck "generating" courses to "error" status (for recovery)
   app.post("/api/courses/reset-stuck", async (_req, res) => {
     try {
