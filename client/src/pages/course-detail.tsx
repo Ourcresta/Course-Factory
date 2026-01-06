@@ -61,6 +61,7 @@ import { TestManager } from "@/components/test-manager";
 import { ProjectManager } from "@/components/project-manager";
 import { LabManager } from "@/components/lab-manager";
 import { PricingTab } from "@/components/pricing-tab";
+import { RewardsTab } from "@/components/rewards-tab";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Course, Module, Lesson, Project, Test } from "@shared/schema";
@@ -616,21 +617,12 @@ export default function CourseDetail() {
         </TabsContent>
 
         <TabsContent value="rewards" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Gift className="h-5 w-5" />
-                Rewards & Cards
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EmptyState
-                icon={Gift}
-                title="Rewards & Cards Coming Soon"
-                description="Configure reward coins, achievement cards, and gamification elements for this course."
-              />
-            </CardContent>
-          </Card>
+          <RewardsTab
+            courseId={courseId!}
+            courseName={course.name}
+            isPublished={course.status === "published"}
+            modules={course.modules || []}
+          />
         </TabsContent>
 
         <TabsContent value="pricing" className="mt-6">
