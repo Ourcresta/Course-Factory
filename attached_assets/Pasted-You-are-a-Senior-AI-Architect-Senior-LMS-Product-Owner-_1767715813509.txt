@@ -1,0 +1,200 @@
+You are a Senior AI Architect, Senior LMS Product Owner, Senior Full-Stack Engineer,
+and Senior Gamification Designer.
+
+Your task is to UPGRADE the existing “AI COURSE FACTORY”
+inside the GURU ADMIN PORTAL to become a
+FULLY AUTOMATED COURSE CREATION ENGINE.
+
+====================================================
+CORE VISION
+====================================================
+When an admin clicks:
+“Generate Course with AI”
+
+The system should AUTO-CREATE:
+1) Course content
+2) Pricing
+3) Rewards & Coins
+4) Achievement & Motivational Cards
+5) Scholarships / Discounts
+6) Publish-ready configuration
+
+WITHOUT manual setup.
+
+====================================================
+AI COURSE FACTORY – INPUT
+====================================================
+Admin provides:
+- Course Title
+- Category (Tech / Exam / Skill / Language / Business)
+- Level (Beginner / Intermediate / Advanced)
+- Target Audience
+- Duration (days / weeks)
+- Goal (Job / Certification / Exam / Skill)
+- Language
+- Free or Paid
+
+====================================================
+AUTO-GENERATED OUTPUT (MANDATORY)
+====================================================
+
+----------------------------------------------------
+1️⃣ COURSE STRUCTURE (AUTO)
+----------------------------------------------------
+- Modules (AI decides optimal count)
+- Lessons per module
+- Practice Labs (if applicable)
+- Tests (MCQ + Coding + Case-based)
+- Projects (real-world aligned)
+
+----------------------------------------------------
+2️⃣ AUTO PRICING ENGINE
+----------------------------------------------------
+AI should decide:
+- Base price (₹)
+- Discounted launch price
+- Credit cost (Coins)
+- Free preview lessons count
+
+Pricing logic examples:
+- Beginner → Lower price
+- Advanced / Job-oriented → Premium price
+- Long duration → Higher value pricing
+
+----------------------------------------------------
+3️⃣ AUTO REWARD COINS SYSTEM
+----------------------------------------------------
+Auto-create rewards for the course:
+
+Coins config:
+- Course completion → +500 coins
+- Module completion → +50 coins
+- Lesson completion → +10 coins
+- Test pass → +100 coins
+- Project approval → +200 coins
+
+Bonus rules:
+- Early completion bonus (within X days)
+- Perfect test score bonus
+
+Coin name auto-generated (ex: SkillCoins, DevCoins, ExamCoins)
+
+----------------------------------------------------
+4️⃣ AUTO ACHIEVEMENT CARDS
+----------------------------------------------------
+AI must auto-create cards like:
+- “Fast Learner”
+- “Module Master”
+- “Project Champion”
+- “Top Performer”
+- “Course Finisher”
+
+Each card includes:
+- Title
+- Description
+- Icon
+- Unlock condition
+- Rarity (Common → Legendary)
+
+----------------------------------------------------
+5️⃣ AUTO MOTIVATIONAL CARDS
+----------------------------------------------------
+AI generates motivational messages:
+- Progress-based
+- Milestone-based
+- Encouragement-based
+
+Examples:
+- “You’re ahead of 70% learners!”
+- “Only 2 modules left — keep going!”
+- “Excellent performance in tests!”
+
+----------------------------------------------------
+6️⃣ AUTO SCHOLARSHIP / DISCOUNT RULES
+----------------------------------------------------
+AI decides:
+- Coin → discount mapping
+- Eligibility rules
+- Validity
+
+Example:
+- 1000 coins → ₹500 discount
+- Legendary card → 30% off next course
+
+----------------------------------------------------
+7️⃣ AUTO CERTIFICATE CONFIG
+----------------------------------------------------
+- Certificate title
+- Completion criteria
+- Card badge printed on certificate
+- Linked rewards summary
+
+----------------------------------------------------
+8️⃣ AUTO PUBLISH MODE
+----------------------------------------------------
+Once generated:
+- Course status → Draft
+- Admin can:
+  - Edit
+  - Regenerate
+  - Publish directly
+
+====================================================
+AI LOGIC RULES (IMPORTANT)
+====================================================
+- Use course type to tune rewards & pricing
+- Exams → More tests & strict rewards
+- Skill courses → More projects & cards
+- Beginner → Higher motivation frequency
+- Advanced → Higher rewards value
+
+====================================================
+TECHNICAL REQUIREMENTS
+====================================================
+- Modular AI pipeline
+- JSON-based generation output
+- Save everything in DB automatically
+- Idempotent generation (safe re-run)
+- Version history for AI generations
+
+====================================================
+DATABASE TABLES TO USE / CREATE
+====================================================
+- courses
+- modules
+- lessons
+- tests
+- projects
+- course_pricing
+- course_rewards
+- achievement_cards
+- motivational_cards
+- scholarships
+- certificates
+
+====================================================
+ADMIN UI REQUIREMENTS
+====================================================
+- “AI Generated” badge
+- Generation progress indicator
+- Preview everything before publish
+- One-click regenerate section-wise
+- Manual override allowed
+
+====================================================
+FINAL EXPECTATION
+====================================================
+After implementation:
+- Admin creates a FULL COURSE in 1 click
+- Rewards, pricing, cards are AUTO ATTACHED
+- Course is 100% ready for Shishya portal
+- Scalable for thousands of courses
+
+DO NOT ASK QUESTIONS.
+DO NOT SIMPLIFY.
+GENERATE:
+- AI logic
+- Backend APIs
+- Data models
+- Frontend UI
+- Clean production-ready code.

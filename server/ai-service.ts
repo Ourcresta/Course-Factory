@@ -72,6 +72,54 @@ interface FullCourseGeneration extends CourseGeneration {
     projectSubmissionRequired: boolean;
     minScore: number;
   };
+  pricing?: {
+    basePrice: number;
+    discountPrice: number;
+    creditCost: number;
+    isFree: boolean;
+    freePreviewLessons: number;
+  };
+  rewards?: {
+    coinName: string;
+    coinIcon: string;
+    coinsEnabled: boolean;
+    rules: {
+      courseCompletion: number;
+      moduleCompletion: number;
+      lessonCompletion: number;
+      testPass: number;
+      projectSubmission: number;
+      labCompletion: number;
+    };
+    bonus: {
+      earlyCompletionEnabled: boolean;
+      earlyCompletionDays: number;
+      earlyCompletionBonus: number;
+      perfectScoreEnabled: boolean;
+      perfectScoreBonus: number;
+    };
+  };
+  achievementCards?: {
+    title: string;
+    description: string;
+    icon: string;
+    rarity: string;
+    conditionType: string;
+    conditionValue?: number;
+  }[];
+  motivationalCards?: {
+    message: string;
+    icon: string;
+    triggerType: string;
+    triggerValue?: number;
+  }[];
+  scholarship?: {
+    enabled: boolean;
+    coinsToDiscount: number;
+    discountType: string;
+    discountValue: number;
+    validityDays: number;
+  };
 }
 
 interface ProjectGeneration {
@@ -337,6 +385,66 @@ Define certificate eligibility rules:
 • Test pass requirement
 • Project submission requirement
 
+STEP 8 — AUTO PRICING ENGINE:
+Generate intelligent pricing based on course type, level, and duration:
+• Base price (higher for advanced/job-oriented courses)
+• Discount price (launch pricing)
+• Credit cost (coins)
+• Whether free or paid
+• Free preview lessons count
+
+Pricing Guidelines:
+- Beginner courses: ₹1,999-3,999
+- Intermediate: ₹3,999-5,999
+- Advanced/Job-oriented: ₹5,999-9,999
+- Short courses (<2 weeks): ₹999-1,999
+- Certification prep: Premium pricing
+
+STEP 9 — AUTO REWARD COINS SYSTEM:
+Generate gamification rewards configuration:
+• Coin name (themed, e.g., "DevCoins", "SkillStars", "CodeGems")
+• Coin icon ("coins", "star", "gem", "trophy")
+• Earning rules for lessons, modules, tests, projects, labs
+• Bonus rules for early completion and perfect scores
+
+Reward Guidelines:
+- Lesson: 5-15 coins
+- Module: 30-75 coins  
+- Test pass: 50-150 coins
+- Project: 100-250 coins
+- Lab: 10-30 coins
+- Course completion: 300-750 coins
+- Early completion bonus: 50-150 coins
+- Perfect score bonus: 25-100 coins
+
+STEP 10 — AUTO ACHIEVEMENT CARDS:
+Generate 4-6 achievement cards with:
+• Title (motivating, e.g., "Fast Learner", "Code Master")
+• Description
+• Icon ("trophy", "star", "crown", "gem", "target", "rocket")
+• Rarity ("common", "rare", "epic", "legendary")
+• Unlock condition type and value
+
+Achievement Examples:
+- "First Steps" (25% complete, common)
+- "Halfway Hero" (50% complete, rare)
+- "Test Champion" (all tests passed, epic)
+- "Course Master" (100% complete, legendary)
+
+STEP 11 — AUTO MOTIVATIONAL CARDS:
+Generate 4-6 motivational messages:
+• Encouraging message
+• Icon
+• Trigger type ("percentage", "lesson_complete", "test_pass", "project_submit")
+• Trigger value if applicable
+
+STEP 12 — AUTO SCHOLARSHIP CONFIG:
+Generate scholarship/discount rules:
+• Coins required for discount
+• Discount type ("percentage" or "flat")
+• Discount value
+• Validity days
+
 Return a SINGLE JSON object with this EXACT structure:
 {
   "status": "${isPreview ? 'draft' : 'published'}",
@@ -414,6 +522,58 @@ Return a SINGLE JSON object with this EXACT structure:
     "testPassRequired": ${options.includeTests},
     "projectSubmissionRequired": ${options.includeProjects},
     "minScore": 70
+  },
+  "pricing": {
+    "basePrice": 4999,
+    "discountPrice": 2999,
+    "creditCost": 1200,
+    "isFree": false,
+    "freePreviewLessons": 2
+  },
+  "rewards": {
+    "coinName": "SkillCoins",
+    "coinIcon": "coins",
+    "coinsEnabled": true,
+    "rules": {
+      "courseCompletion": 500,
+      "moduleCompletion": 50,
+      "lessonCompletion": 10,
+      "testPass": 100,
+      "projectSubmission": 200,
+      "labCompletion": 20
+    },
+    "bonus": {
+      "earlyCompletionEnabled": true,
+      "earlyCompletionDays": 14,
+      "earlyCompletionBonus": 100,
+      "perfectScoreEnabled": true,
+      "perfectScoreBonus": 50
+    }
+  },
+  "achievementCards": [
+    {
+      "title": "Achievement Title",
+      "description": "Achievement description",
+      "icon": "trophy",
+      "rarity": "common",
+      "conditionType": "percentage_complete",
+      "conditionValue": 25
+    }
+  ],
+  "motivationalCards": [
+    {
+      "message": "Great progress! Keep going!",
+      "icon": "sparkles",
+      "triggerType": "percentage",
+      "triggerValue": 25
+    }
+  ],
+  "scholarship": {
+    "enabled": true,
+    "coinsToDiscount": 500,
+    "discountType": "percentage",
+    "discountValue": 10,
+    "validityDays": 30
   }
 }`;
 

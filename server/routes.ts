@@ -321,6 +321,66 @@ export async function registerRoutes(
             });
           }
 
+          // AUTO: Update course pricing if generated
+          if (generated.pricing) {
+            await storage.updateCourse(course.id, {
+              creditCost: generated.pricing.isFree ? 0 : generated.pricing.creditCost,
+              isFree: generated.pricing.isFree,
+              originalCreditCost: generated.pricing.isFree ? null : generated.pricing.basePrice,
+            });
+          }
+
+          // AUTO: Create rewards configuration if generated
+          if (generated.rewards) {
+            await storage.createOrUpdateCourseReward(course.id, {
+              courseId: course.id,
+              coinsEnabled: generated.rewards.coinsEnabled,
+              coinName: generated.rewards.coinName,
+              coinIcon: generated.rewards.coinIcon,
+              rulesJson: generated.rewards.rules,
+              bonusJson: generated.rewards.bonus,
+              scholarshipEnabled: generated.scholarship?.enabled ?? false,
+              scholarshipJson: generated.scholarship ? {
+                coinsToDiscount: generated.scholarship.coinsToDiscount,
+                discountType: generated.scholarship.discountType,
+                discountValue: generated.scholarship.discountValue,
+                validityDays: generated.scholarship.validityDays,
+              } : null,
+            });
+          }
+
+          // AUTO: Create achievement cards if generated
+          if (generated.achievementCards && generated.achievementCards.length > 0) {
+            for (const cardData of generated.achievementCards) {
+              await storage.createAchievementCard({
+                courseId: course.id,
+                title: cardData.title,
+                description: cardData.description,
+                icon: cardData.icon,
+                rarity: cardData.rarity as any,
+                conditionJson: {
+                  type: cardData.conditionType,
+                  value: cardData.conditionValue,
+                },
+                isActive: true,
+              });
+            }
+          }
+
+          // AUTO: Create motivational cards if generated
+          if (generated.motivationalCards && generated.motivationalCards.length > 0) {
+            for (const cardData of generated.motivationalCards) {
+              await storage.createMotivationalCard({
+                courseId: course.id,
+                message: cardData.message,
+                icon: cardData.icon,
+                triggerType: cardData.triggerType,
+                triggerValue: cardData.triggerValue,
+                isActive: true,
+              });
+            }
+          }
+
           await storage.createAuditLog({
             action: "ai_generate",
             entityType: "course",
@@ -332,6 +392,11 @@ export async function registerRoutes(
               projects: generated.projects?.length || 0,
               tests: generated.tests?.length || 0,
               certificate: !!generated.certificateRules,
+              pricing: !!generated.pricing,
+              rewards: !!generated.rewards,
+              achievementCards: generated.achievementCards?.length || 0,
+              motivationalCards: generated.motivationalCards?.length || 0,
+              scholarship: !!generated.scholarship,
             },
           });
           console.log(`[AI] Course ${course.id} generation completed successfully`);

@@ -1,0 +1,201 @@
+You are a Senior AI Architect, Senior LMS Engineer, Senior Backend Engineer,
+Senior UI/UX Designer, and Senior Product Owner.
+
+Your task is to ENHANCE the existing AI COURSE FACTORY
+by adding a FULL JSON UPLOAD / IMPORT SYSTEM
+that can auto-create a complete course with all configurations.
+
+====================================================
+CORE VISION
+====================================================
+AI Course Factory should support TWO creation modes:
+
+1️⃣ AI Auto Generate Course
+2️⃣ Upload JSON → Auto Create Course
+
+Both must produce the SAME final result:
+A fully configured, publish-ready course.
+
+====================================================
+NEW FEATURE: UPLOAD COURSE JSON
+====================================================
+
+Add a button in AI Course Factory UI:
+
+[ Upload Course JSON ]
+
+When clicked:
+- Open file picker
+- Accept only .json files
+- Validate structure
+- Show preview
+- Create / Update course automatically
+
+====================================================
+SUPPORTED JSON CONTENT
+====================================================
+The uploaded JSON can contain:
+
+- Course details
+- Modules
+- Lessons
+- Tests
+- Projects
+- Pricing
+- Rewards & Coins
+- Achievement Cards
+- Motivational Cards
+- Scholarships
+- Certificate config
+
+====================================================
+JSON STRUCTURE (STANDARD FORMAT)
+====================================================
+
+{
+  "course": {
+    "title": "Full Stack Web Development",
+    "category": "Tech",
+    "level": "Beginner",
+    "language": "English",
+    "duration_days": 60,
+    "description": "...",
+    "goal": "Job Ready",
+    "is_paid": true
+  },
+
+  "pricing": {
+    "base_price": 4999,
+    "discount_price": 2999,
+    "coins_price": 1200
+  },
+
+  "modules": [
+    {
+      "title": "HTML Basics",
+      "lessons": [
+        { "title": "Intro to HTML", "type": "video" },
+        { "title": "HTML Tags", "type": "video" }
+      ],
+      "test": {
+        "type": "mcq",
+        "pass_score": 60
+      }
+    }
+  ],
+
+  "projects": [
+    {
+      "title": "Portfolio Website",
+      "difficulty": "Easy",
+      "review_required": true
+    }
+  ],
+
+  "rewards": {
+    "coin_name": "DevCoins",
+    "rules": {
+      "lesson": 10,
+      "module": 50,
+      "test": 100,
+      "project": 200,
+      "course": 500
+    }
+  },
+
+  "achievement_cards": [
+    {
+      "title": "Fast Learner",
+      "rarity": "Rare",
+      "condition": "Complete course within 30 days"
+    }
+  ],
+
+  "motivational_cards": [
+    {
+      "message": "You're 50% done. Keep going!",
+      "trigger": "course_progress_50"
+    }
+  ],
+
+  "certificate": {
+    "title": "Certified Full Stack Developer",
+    "badge": "Gold"
+  }
+}
+
+====================================================
+IMPORT FLOW
+====================================================
+1) Upload JSON
+2) Validate schema
+3) Show PREVIEW (read-only)
+4) Highlight errors (if any)
+5) Confirm Import
+6) Save everything to DB
+7) Course status → Draft
+
+====================================================
+UI REQUIREMENTS
+====================================================
+- Upload JSON button
+- Drag & drop supported
+- JSON preview panel
+- Error list (line-based)
+- Success toast
+- Import summary:
+  - Modules created
+  - Lessons created
+  - Tests created
+  - Projects created
+  - Rewards configured
+
+====================================================
+BACKEND REQUIREMENTS
+====================================================
+- JSON schema validation
+- Transaction-based import
+- Rollback on failure
+- Idempotent imports
+- Version history per import
+- Support update vs new course
+
+====================================================
+SECURITY RULES
+====================================================
+- Only Guru/Admin can upload
+- Max file size limit
+- Reject unknown fields
+- Sanitize all inputs
+
+====================================================
+AI + JSON HYBRID MODE (ADVANCED)
+====================================================
+If JSON is PARTIAL:
+- Use AI to AUTO-FILL missing parts
+- Example:
+  - Missing rewards → AI generates rewards
+  - Missing pricing → AI calculates pricing
+  - Missing cards → AI generates cards
+
+====================================================
+FINAL EXPECTATION
+====================================================
+After implementation:
+- Admin can create courses via AI OR JSON
+- JSON import supports bulk & migration
+- Perfect for:
+  - Legacy course migration
+  - Partner content
+  - Enterprise onboarding
+- Fully compatible with Shishya portal
+
+DO NOT ASK QUESTIONS.
+DO NOT REMOVE EXISTING AI FLOW.
+GENERATE:
+- Frontend UI
+- Backend APIs
+- JSON schema validator
+- Import service
+- Error handling
+- Clean production-ready code.
