@@ -332,7 +332,7 @@ export async function registerRoutes(
 
           // AUTO: Create rewards configuration if generated
           if (generated.rewards) {
-            await storage.createOrUpdateCourseReward(course.id, {
+            await storage.createCourseReward({
               courseId: course.id,
               coinsEnabled: generated.rewards.coinsEnabled,
               coinName: generated.rewards.coinName,
@@ -342,9 +342,10 @@ export async function registerRoutes(
               scholarshipEnabled: generated.scholarship?.enabled ?? false,
               scholarshipJson: generated.scholarship ? {
                 coinsToDiscount: generated.scholarship.coinsToDiscount,
-                discountType: generated.scholarship.discountType,
+                discountType: generated.scholarship.discountType as "flat" | "percentage",
                 discountValue: generated.scholarship.discountValue,
                 validityDays: generated.scholarship.validityDays,
+                eligiblePlans: generated.scholarship.eligiblePlans || ["all"],
               } : null,
             });
           }
@@ -352,6 +353,10 @@ export async function registerRoutes(
           // AUTO: Create achievement cards if generated
           if (generated.achievementCards && generated.achievementCards.length > 0) {
             for (const cardData of generated.achievementCards) {
+              const validTriggerTypes = ["custom", "percentage_complete", "module_complete", "all_tests_passed", "project_approved", "all_labs_complete"] as const;
+              const conditionType = validTriggerTypes.includes(cardData.conditionType as any) 
+                ? cardData.conditionType as typeof validTriggerTypes[number]
+                : "custom";
               await storage.createAchievementCard({
                 courseId: course.id,
                 title: cardData.title,
@@ -359,7 +364,7 @@ export async function registerRoutes(
                 icon: cardData.icon,
                 rarity: cardData.rarity as any,
                 conditionJson: {
-                  type: cardData.conditionType,
+                  type: conditionType,
                   value: cardData.conditionValue,
                 },
                 isActive: true,
@@ -510,54 +515,49 @@ export async function registerRoutes(
         createdModules.push({ id: module.id, index: i, lessons: createdLessons });
       }
 
-      // Create labs if provided
-      if (jsonData.labs && Array.isArray(jsonData.labs)) {
-        for (let i = 0; i < jsonData.labs.length; i++) {
-          const labData = jsonData.labs[i];
-          const targetModule = createdModules.find(m => m.index === labData.moduleIndex);
-          const targetLesson = targetModule?.lessons.find(l => l.index === labData.lessonIndex);
-          const timeMatch = labData.estimatedTime?.match(/(\d+)/);
-          const estimatedMinutes = timeMatch ? parseInt(timeMatch[1]) : 15;
-          const labSlug = labData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      // Create labs and projects in parallel for speed
+      const labPromises = (jsonData.labs || []).map((labData: any, i: number) => {
+        const targetModule = createdModules.find(m => m.index === labData.moduleIndex);
+        const targetLesson = targetModule?.lessons.find(l => l.index === labData.lessonIndex);
+        const timeMatch = labData.estimatedTime?.match(/(\d+)/);
+        const estimatedMinutes = timeMatch ? parseInt(timeMatch[1]) : 15;
+        const labSlug = labData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-          await storage.createPracticeLab({
-            courseId: course.id,
-            moduleId: targetModule?.id || null,
-            lessonId: targetLesson?.id || null,
-            slug: `${labSlug}-${Date.now()}-${i}`,
-            title: labData.title,
-            instructions: labData.problemStatement || labData.instructions || "",
-            language: labData.language || "javascript",
-            starterCode: labData.starterCode || "",
-            expectedOutput: labData.expectedOutput || "",
-            validationType: labData.validationType || "output",
-            hints: labData.hints || [],
-            estimatedTime: estimatedMinutes,
-            difficulty: labData.difficulty || "beginner",
-            unlockType: "always",
-            orderIndex: i,
-          });
-        }
-      }
+        return storage.createPracticeLab({
+          courseId: course.id,
+          moduleId: targetModule?.id || null,
+          lessonId: targetLesson?.id || null,
+          slug: `${labSlug}-${course.id}-${i}`,
+          title: labData.title,
+          instructions: labData.problemStatement || labData.instructions || "",
+          language: labData.language || "javascript",
+          starterCode: labData.starterCode || "",
+          expectedOutput: labData.expectedOutput || "",
+          validationType: labData.validationType || "output",
+          hints: labData.hints || [],
+          estimatedTime: estimatedMinutes,
+          difficulty: labData.difficulty || "beginner",
+          unlockType: "always",
+          orderIndex: i,
+        });
+      });
 
-      // Create projects if provided
-      if (jsonData.projects && Array.isArray(jsonData.projects)) {
-        for (let i = 0; i < jsonData.projects.length; i++) {
-          const projectData = jsonData.projects[i];
-          const targetModule = createdModules.find(m => m.index === projectData.moduleIndex);
+      const projectPromises = (jsonData.projects || []).map((projectData: any, i: number) => {
+        const targetModule = createdModules.find(m => m.index === projectData.moduleIndex);
+        return storage.createProject({
+          courseId: course.id,
+          moduleId: targetModule?.id || null,
+          title: projectData.title,
+          problemStatement: projectData.problemStatement || "",
+          techStack: projectData.techStack || [],
+          difficulty: projectData.difficulty || "intermediate",
+          evaluationChecklist: projectData.deliverables || projectData.evaluationChecklist || [],
+          orderIndex: i,
+        });
+      });
 
-          await storage.createProject({
-            courseId: course.id,
-            moduleId: targetModule?.id || null,
-            title: projectData.title,
-            problemStatement: projectData.problemStatement || "",
-            techStack: projectData.techStack || [],
-            difficulty: projectData.difficulty || "intermediate",
-            evaluationChecklist: projectData.deliverables || projectData.evaluationChecklist || [],
-            orderIndex: i,
-          });
-        }
-      }
+      // Execute labs and projects in parallel
+      await Promise.all([...labPromises, ...projectPromises]);
 
       // Create tests if provided
       if (jsonData.tests && Array.isArray(jsonData.tests)) {
@@ -606,7 +606,7 @@ export async function registerRoutes(
 
       // Create rewards if provided
       if (jsonData.rewards) {
-        await storage.createOrUpdateCourseReward(course.id, {
+        await storage.createCourseReward({
           courseId: course.id,
           coinsEnabled: jsonData.rewards.coinsEnabled ?? true,
           coinName: jsonData.rewards.coinName || "Coins",
@@ -618,37 +618,34 @@ export async function registerRoutes(
         });
       }
 
-      // Create achievement cards if provided
-      if (jsonData.achievementCards && Array.isArray(jsonData.achievementCards)) {
-        for (const cardData of jsonData.achievementCards) {
-          await storage.createAchievementCard({
-            courseId: course.id,
-            title: cardData.title,
-            description: cardData.description || "",
-            icon: cardData.icon || "trophy",
-            rarity: cardData.rarity || "common",
-            conditionJson: {
-              type: cardData.conditionType,
-              value: cardData.conditionValue,
-            },
-            isActive: true,
-          });
-        }
-      }
+      // Create achievement and motivational cards in parallel
+      const achievementPromises = (jsonData.achievementCards || []).map((cardData: any) =>
+        storage.createAchievementCard({
+          courseId: course.id,
+          title: cardData.title,
+          description: cardData.description || "",
+          icon: cardData.icon || "trophy",
+          rarity: cardData.rarity || "common",
+          conditionJson: {
+            type: cardData.conditionType || "custom",
+            value: cardData.conditionValue,
+          },
+          isActive: true,
+        })
+      );
 
-      // Create motivational cards if provided
-      if (jsonData.motivationalCards && Array.isArray(jsonData.motivationalCards)) {
-        for (const cardData of jsonData.motivationalCards) {
-          await storage.createMotivationalCard({
-            courseId: course.id,
-            message: cardData.message,
-            icon: cardData.icon || "sparkles",
-            triggerType: cardData.triggerType || "percentage",
-            triggerValue: cardData.triggerValue,
-            isActive: true,
-          });
-        }
-      }
+      const motivationalPromises = (jsonData.motivationalCards || []).map((cardData: any) =>
+        storage.createMotivationalCard({
+          courseId: course.id,
+          message: cardData.message,
+          icon: cardData.icon || "sparkles",
+          triggerType: cardData.triggerType || "percentage",
+          triggerValue: cardData.triggerValue,
+          isActive: true,
+        })
+      );
+
+      await Promise.all([...achievementPromises, ...motivationalPromises]);
 
       await storage.createAuditLog({
         action: "json_import",
