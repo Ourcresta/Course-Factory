@@ -779,7 +779,7 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   coinsPerMonth: integer("coins_per_month").default(0).notNull(),
   signupBonusCoins: integer("signup_bonus_coins").default(0).notNull(),
   features: jsonb("features").$type<{
-    aiMithra: boolean;
+    aiUsha: boolean;
     labs: boolean;
     tests: boolean;
     projects: boolean;

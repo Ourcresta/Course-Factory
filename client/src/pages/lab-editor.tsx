@@ -630,7 +630,7 @@ export default function LabEditor() {
               <Separator />
 
               <div className="space-y-2">
-                <Label htmlFor="aiPromptContext">AI Assistant Context (Mithra)</Label>
+                <Label htmlFor="aiPromptContext">AI Assistant Context (Usha)</Label>
                 <Textarea
                   id="aiPromptContext"
                   value={formData.aiPromptContext || ""}
@@ -641,7 +641,7 @@ export default function LabEditor() {
                   data-testid="input-ai-context"
                 />
                 <p className="text-xs text-muted-foreground">
-                  This context is provided to Mithra (AI tutor) when students ask for help with this specific lab.
+                  This context is provided to Usha (AI tutor) when students ask for help with this specific lab.
                 </p>
               </div>
             </CardContent>

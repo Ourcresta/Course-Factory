@@ -45,7 +45,7 @@ export default function Subscriptions() {
     coinsPerMonth: 0,
     signupBonusCoins: 0,
     features: {
-      aiMithra: false,
+      aiUsha: false,
       labs: false,
       tests: false,
       projects: false,
@@ -110,7 +110,7 @@ export default function Subscriptions() {
       coinsPerMonth: 0,
       signupBonusCoins: 0,
       features: {
-        aiMithra: false,
+        aiUsha: false,
         labs: false,
         tests: false,
         projects: false,
@@ -133,7 +133,7 @@ export default function Subscriptions() {
       coinsPerMonth: plan.coinsPerMonth,
       signupBonusCoins: plan.signupBonusCoins,
       features: plan.features || {
-        aiMithra: false,
+        aiUsha: false,
         labs: false,
         tests: false,
         projects: false,
@@ -272,7 +272,7 @@ export default function Subscriptions() {
                 <div className="space-y-2">
                   {plan.features && (
                     <>
-                      <FeatureRow label="AI Mithra" enabled={plan.features.aiMithra} />
+                      <FeatureRow label="AI Usha" enabled={plan.features.aiUsha} />
                       <FeatureRow label="Labs" enabled={plan.features.labs} />
                       <FeatureRow label="Tests" enabled={plan.features.tests} />
                       <FeatureRow label="Projects" enabled={plan.features.projects} />
@@ -424,7 +424,7 @@ function PlanForm({
         <Label className="text-base">Features</Label>
         <div className="grid grid-cols-2 gap-4">
           {[
-            { key: "aiMithra", label: "AI Mithra Access" },
+            { key: "aiUsha", label: "AI Usha Access" },
             { key: "labs", label: "Practice Labs" },
             { key: "tests", label: "Tests" },
             { key: "projects", label: "Projects" },
