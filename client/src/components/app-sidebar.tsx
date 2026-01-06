@@ -19,6 +19,7 @@ import {
   FileText,
   Gift,
   Percent,
+  Scale,
 } from "lucide-react";
 import {
   Sidebar,
@@ -143,6 +144,12 @@ const systemItems = [
     title: "Security & Admins",
     url: "/security",
     icon: Shield,
+  },
+  {
+    title: "Reward Governance",
+    url: "/governance",
+    icon: Scale,
+    highlight: true,
   },
   {
     title: "Settings",
@@ -288,6 +295,11 @@ export function AppSidebar() {
                     <Link href={item.url} data-testid={`link-nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
+                      {item.highlight && (
+                        <Badge variant="secondary" className="ml-auto text-xs">
+                          New
+                        </Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

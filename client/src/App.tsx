@@ -40,6 +40,7 @@ import ShishyaActivity from "@/pages/shishya-activity";
 import ShishyaPayments from "@/pages/shishya-payments";
 import ShishyaEngagement from "@/pages/shishya-engagement";
 import Security from "@/pages/security";
+import Governance from "@/pages/governance";
 
 function Router() {
   return (
@@ -73,6 +74,7 @@ function Router() {
 
       {/* System */}
       <Route path="/security" component={Security} />
+      <Route path="/governance" component={Governance} />
       <Route path="/settings" component={Settings} />
 
       {/* Course-scoped routes */}
