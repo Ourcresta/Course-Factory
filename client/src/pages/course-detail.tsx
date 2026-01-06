@@ -24,6 +24,7 @@ import {
   X,
   Globe,
   FlaskConical,
+  Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -380,6 +381,7 @@ export default function CourseDetail() {
           <TabsTrigger value="tests" data-testid="tab-tests">Tests</TabsTrigger>
           <TabsTrigger value="labs" data-testid="tab-labs">Labs</TabsTrigger>
           <TabsTrigger value="certificate" data-testid="tab-certificate">Certificate</TabsTrigger>
+          <TabsTrigger value="rewards" data-testid="tab-rewards">Rewards & Cards</TabsTrigger>
           <TabsTrigger value="pricing" data-testid="tab-pricing">Pricing</TabsTrigger>
           <TabsTrigger value="publish" data-testid="tab-publish">Publish</TabsTrigger>
         </TabsList>
@@ -611,6 +613,24 @@ export default function CourseDetail() {
             courseLevel={course.level}
             isPublished={course.status === "published"}
           />
+        </TabsContent>
+
+        <TabsContent value="rewards" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                Rewards & Cards
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EmptyState
+                icon={Gift}
+                title="Rewards & Cards Coming Soon"
+                description="Configure reward coins, achievement cards, and gamification elements for this course."
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="pricing" className="mt-6">
