@@ -1,0 +1,223 @@
+YOU ARE REPLIT AI.
+
+ACT AS:
+- Senior Full Stack Engineer
+- Senior AI Architect
+- Senior Database Architect
+- Senior EdTech Product Manager
+- Senior Compliance & Fraud-Control Engineer
+- Senior QA Engineer
+
+DO NOT ASK QUESTIONS.
+DO NOT SIMPLIFY.
+DO NOT CREATE DEMO CODE.
+BUILD A FULL PRODUCTION-READY SYSTEM.
+
+=====================================================
+PROJECT NAME:
+OURSHIKSHA – ADMIN APPROVAL & REWARD GOVERNANCE ENGINE
+=====================================================
+
+GOAL:
+Give Admin/Guru FULL CONTROL over:
+- Reward approval
+- Coin issuance
+- Scholarship release
+- Abuse prevention
+- Manual overrides
+- Audit & transparency
+
+This system EXTENDS the AI Motivation Rules Engine.
+
+=====================================================
+TECH STACK (MANDATORY)
+=====================================================
+Backend:
+- Node.js
+- Express.js
+- PostgreSQL
+- Prisma ORM
+- JWT Authentication
+- Node-Cron
+
+Frontend:
+- React
+- Tailwind CSS
+- ShadCN UI
+- Chart.js
+
+=====================================================
+SYSTEM MODULES
+=====================================================
+1. AI Motivation Engine (Auto triggers)
+2. Admin Approval Engine (Manual governance)
+3. Reward Review Queue
+4. Fraud & Abuse Detection
+5. Audit Logs & Reports
+6. Manual Override Engine
+
+=====================================================
+ADMIN APPROVAL FLOW (CORE)
+=====================================================
+
+ALL REWARDS can be marked as:
+- AUTO-APPROVED
+- ADMIN-APPROVAL-REQUIRED
+- MANUAL-ONLY
+
+FLOW:
+AI Trigger → Reward Generated → Approval Queue → Admin Action → Wallet Update
+
+NO reward reaches wallet without final approval state.
+
+=====================================================
+REWARD APPROVAL STATES
+=====================================================
+- PENDING
+- APPROVED
+- REJECTED
+- REVOKED
+- ADJUSTED
+
+Each state change MUST be logged.
+
+=====================================================
+REWARD TYPES UNDER ADMIN CONTROL
+=====================================================
+- Coins
+- Motivation Cards
+- Scholarships
+- Coupons
+- Free Courses
+- Premium Unlocks
+- Mystery Rewards
+
+=====================================================
+ADMIN POWERS
+=====================================================
+Admin can:
+- Approve / Reject rewards
+- Modify coin amount before approval
+- Delay reward release
+- Revoke already-issued rewards
+- Freeze user wallet
+- Blacklist abuse patterns
+- Issue manual rewards
+- Apply penalties (coin deduction)
+
+=====================================================
+FRAUD & ABUSE RULES
+=====================================================
+System must detect:
+- Rapid completion anomalies
+- Multiple rewards in short time
+- Streak manipulation
+- Repeated course resets
+- Multi-account abuse
+
+Suspicious rewards must:
+- Auto-flag
+- Move to MANUAL REVIEW queue
+
+=====================================================
+ADMIN DASHBOARD (MANDATORY UI)
+=====================================================
+Admin views:
+- Pending Reward Queue
+- Approved / Rejected history
+- High-value rewards
+- Suspicious activity list
+- Wallet adjustment panel
+- Scholarship control panel
+
+Each row shows:
+- Student
+- Course
+- Rule triggered
+- AI reason
+- Reward value
+- Risk score
+
+=====================================================
+MANUAL OVERRIDE ENGINE
+=====================================================
+Admin can:
+- Grant coins without rule
+- Deduct coins with reason
+- Grant scholarship directly
+- Expire rewards
+- Reset streaks
+
+Override actions MUST require:
+- Admin reason
+- Timestamp
+- Admin ID
+
+=====================================================
+AUDIT & LOGGING (CRITICAL)
+=====================================================
+Log EVERYTHING:
+- Rule triggered
+- Reward generated
+- Admin action
+- Wallet transaction
+- Reversal or adjustment
+
+Logs must be:
+- Immutable
+- Searchable
+- Exportable (CSV)
+
+=====================================================
+DATABASE (PRISMA – REQUIRED)
+=====================================================
+New / Extended Tables:
+
+- RewardApproval
+- AdminActionLog
+- FraudFlag
+- WalletFreeze
+- RewardOverride
+- ApprovalPolicy
+- RiskScore
+
+Include:
+- Relations
+- Indexes
+- Timestamps
+- Admin references
+
+=====================================================
+SECURITY & GOVERNANCE
+=====================================================
+- Role-based access (Super Admin / Guru / Moderator)
+- Approval limits per role
+- Dual-approval for high-value rewards
+- JWT-protected routes
+
+=====================================================
+CRON & AUTOMATION
+=====================================================
+Scheduled jobs:
+- Auto-expire pending approvals
+- Re-evaluate suspicious users
+- Daily admin summary report
+
+=====================================================
+DELIVERABLE REQUIREMENTS
+=====================================================
+You MUST:
+1. Explain full admin governance architecture
+2. Design Prisma schema
+3. Build backend APIs
+4. Build Admin UI (Approval Dashboard)
+5. Integrate with AI Motivation Engine
+6. Add fraud detection logic
+7. Make system production-ready
+
+DO NOT SKIP ANY PART.
+BUILD EVERYTHING END-TO-END.
+
+=====================================================
+END OF MASTER PROMPT
+=====================================================

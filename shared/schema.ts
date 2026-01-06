@@ -979,3 +979,287 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 
+// ==================== REWARD TYPES ====================
+export type RewardType = "coins" | "scholarship" | "coupon" | "free_course" | "premium_unlock" | "mystery_reward" | "motivation_card";
+export type ApprovalStatus = "pending" | "approved" | "rejected" | "revoked" | "adjusted";
+export type ApprovalMode = "auto_approved" | "admin_approval_required" | "manual_only";
+
+// ==================== APPROVAL POLICIES ====================
+export const approvalPolicies = pgTable("approval_policies", {
+  id: serial("id").primaryKey(),
+  rewardType: text("reward_type").notNull(),
+  approvalMode: text("approval_mode").notNull().default("admin_approval_required"),
+  minValueForApproval: integer("min_value_for_approval").default(0),
+  maxAutoApproveValue: integer("max_auto_approve_value").default(100),
+  requireDualApproval: boolean("require_dual_approval").default(false),
+  dualApprovalThreshold: integer("dual_approval_threshold").default(1000),
+  cooldownMinutes: integer("cooldown_minutes").default(0),
+  dailyLimit: integer("daily_limit"),
+  weeklyLimit: integer("weekly_limit"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertApprovalPolicySchema = createInsertSchema(approvalPolicies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertApprovalPolicy = z.infer<typeof insertApprovalPolicySchema>;
+export type ApprovalPolicy = typeof approvalPolicies.$inferSelect;
+
+// ==================== MOTIVATION RULES (AI Engine Triggers) ====================
+export const motivationRules = pgTable("motivation_rules", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  triggerType: text("trigger_type").notNull(),
+  triggerCondition: jsonb("trigger_condition").$type<{
+    event: string;
+    threshold?: number;
+    streak?: number;
+    courseId?: number;
+    moduleId?: number;
+  }>(),
+  rewardType: text("reward_type").notNull(),
+  rewardValue: integer("reward_value").notNull().default(0),
+  rewardMetadata: jsonb("reward_metadata").$type<Record<string, any>>(),
+  approvalMode: text("approval_mode").notNull().default("admin_approval_required"),
+  priority: integer("priority").default(0),
+  isActive: boolean("is_active").default(true).notNull(),
+  validFrom: timestamp("valid_from"),
+  validTo: timestamp("valid_to"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertMotivationRuleSchema = createInsertSchema(motivationRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMotivationRule = z.infer<typeof insertMotivationRuleSchema>;
+export type MotivationRule = typeof motivationRules.$inferSelect;
+
+// ==================== REWARD APPROVALS (Queue) ====================
+export const rewardApprovals = pgTable("reward_approvals", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  ruleId: integer("rule_id").references(() => motivationRules.id, { onDelete: "set null" }),
+  rewardType: text("reward_type").notNull(),
+  originalValue: integer("original_value").notNull(),
+  adjustedValue: integer("adjusted_value"),
+  status: text("status").notNull().default("pending"),
+  triggerEvent: text("trigger_event"),
+  triggerData: jsonb("trigger_data").$type<Record<string, any>>(),
+  aiReason: text("ai_reason"),
+  riskScore: integer("risk_score").default(0),
+  isFlagged: boolean("is_flagged").default(false),
+  flagReason: text("flag_reason"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  secondApprover: varchar("second_approver").references(() => users.id),
+  secondApprovedAt: timestamp("second_approved_at"),
+  walletTransactionId: integer("wallet_transaction_id"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const rewardApprovalsRelations = relations(rewardApprovals, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [rewardApprovals.shishyaUserId], references: [shishyaUsers.id] }),
+  rule: one(motivationRules, { fields: [rewardApprovals.ruleId], references: [motivationRules.id] }),
+  reviewer: one(users, { fields: [rewardApprovals.reviewedBy], references: [users.id] }),
+}));
+
+export const insertRewardApprovalSchema = createInsertSchema(rewardApprovals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertRewardApproval = z.infer<typeof insertRewardApprovalSchema>;
+export type RewardApproval = typeof rewardApprovals.$inferSelect;
+
+// ==================== FRAUD FLAGS ====================
+export const fraudFlags = pgTable("fraud_flags", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  flagType: text("flag_type").notNull(),
+  severity: text("severity").notNull().default("medium"),
+  description: text("description"),
+  detectionData: jsonb("detection_data").$type<{
+    pattern: string;
+    occurrences: number;
+    timeWindow: string;
+    relatedRewards?: number[];
+  }>(),
+  status: text("status").notNull().default("active"),
+  resolvedBy: varchar("resolved_by").references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
+  resolutionNotes: text("resolution_notes"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const fraudFlagsRelations = relations(fraudFlags, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [fraudFlags.shishyaUserId], references: [shishyaUsers.id] }),
+  resolver: one(users, { fields: [fraudFlags.resolvedBy], references: [users.id] }),
+}));
+
+export const insertFraudFlagSchema = createInsertSchema(fraudFlags).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertFraudFlag = z.infer<typeof insertFraudFlagSchema>;
+export type FraudFlag = typeof fraudFlags.$inferSelect;
+
+// ==================== WALLET FREEZES ====================
+export const walletFreezes = pgTable("wallet_freezes", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  frozenBy: varchar("frozen_by").notNull().references(() => users.id),
+  frozenAt: timestamp("frozen_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  unfrozenBy: varchar("unfrozen_by").references(() => users.id),
+  unfrozenAt: timestamp("unfrozen_at"),
+  unfreezeReason: text("unfreeze_reason"),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const walletFreezesRelations = relations(walletFreezes, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [walletFreezes.shishyaUserId], references: [shishyaUsers.id] }),
+  frozenByAdmin: one(users, { fields: [walletFreezes.frozenBy], references: [users.id] }),
+}));
+
+export const insertWalletFreezeSchema = createInsertSchema(walletFreezes).omit({
+  id: true,
+  frozenAt: true,
+});
+
+export type InsertWalletFreeze = z.infer<typeof insertWalletFreezeSchema>;
+export type WalletFreeze = typeof walletFreezes.$inferSelect;
+
+// ==================== REWARD OVERRIDES (Manual Actions) ====================
+export const rewardOverrides = pgTable("reward_overrides", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  adminId: varchar("admin_id").notNull().references(() => users.id),
+  actionType: text("action_type").notNull(),
+  rewardType: text("reward_type"),
+  amount: integer("amount"),
+  reason: text("reason").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  walletTransactionId: integer("wallet_transaction_id"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const rewardOverridesRelations = relations(rewardOverrides, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [rewardOverrides.shishyaUserId], references: [shishyaUsers.id] }),
+  admin: one(users, { fields: [rewardOverrides.adminId], references: [users.id] }),
+}));
+
+export const insertRewardOverrideSchema = createInsertSchema(rewardOverrides).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRewardOverride = z.infer<typeof insertRewardOverrideSchema>;
+export type RewardOverride = typeof rewardOverrides.$inferSelect;
+
+// ==================== RISK SCORES ====================
+export const riskScores = pgTable("risk_scores", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().unique().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  overallScore: integer("overall_score").default(0).notNull(),
+  velocityScore: integer("velocity_score").default(0),
+  patternScore: integer("pattern_score").default(0),
+  accountAgeScore: integer("account_age_score").default(0),
+  behaviorScore: integer("behavior_score").default(0),
+  lastCalculatedAt: timestamp("last_calculated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  riskFactors: jsonb("risk_factors").$type<{
+    rapidCompletions?: boolean;
+    multipleRewardsShortTime?: boolean;
+    streakManipulation?: boolean;
+    repeatedResets?: boolean;
+    suspiciousPatterns?: string[];
+  }>(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const riskScoresRelations = relations(riskScores, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [riskScores.shishyaUserId], references: [shishyaUsers.id] }),
+}));
+
+export const insertRiskScoreSchema = createInsertSchema(riskScores).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertRiskScore = z.infer<typeof insertRiskScoreSchema>;
+export type RiskScore = typeof riskScores.$inferSelect;
+
+// ==================== ADMIN ACTION LOGS (Immutable Audit) ====================
+export const adminActionLogs = pgTable("admin_action_logs", {
+  id: serial("id").primaryKey(),
+  adminId: varchar("admin_id").notNull().references(() => users.id),
+  actionType: text("action_type").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id"),
+  previousState: jsonb("previous_state").$type<Record<string, any>>(),
+  newState: jsonb("new_state").$type<Record<string, any>>(),
+  reason: text("reason"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const adminActionLogsRelations = relations(adminActionLogs, ({ one }) => ({
+  admin: one(users, { fields: [adminActionLogs.adminId], references: [users.id] }),
+}));
+
+export const insertAdminActionLogSchema = createInsertSchema(adminActionLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAdminActionLog = z.infer<typeof insertAdminActionLogSchema>;
+export type AdminActionLog = typeof adminActionLogs.$inferSelect;
+
+// ==================== SCHOLARSHIPS ====================
+export const scholarships = pgTable("scholarships", {
+  id: serial("id").primaryKey(),
+  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  rewardApprovalId: integer("reward_approval_id").references(() => rewardApprovals.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  amount: integer("amount").notNull(),
+  currency: text("currency").default("INR"),
+  status: text("status").notNull().default("pending"),
+  courseId: integer("course_id").references(() => courses.id),
+  validFrom: timestamp("valid_from"),
+  validTo: timestamp("valid_to"),
+  issuedBy: varchar("issued_by").references(() => users.id),
+  issuedAt: timestamp("issued_at"),
+  redeemedAt: timestamp("redeemed_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const scholarshipsRelations = relations(scholarships, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [scholarships.shishyaUserId], references: [shishyaUsers.id] }),
+  course: one(courses, { fields: [scholarships.courseId], references: [courses.id] }),
+  approval: one(rewardApprovals, { fields: [scholarships.rewardApprovalId], references: [rewardApprovals.id] }),
+}));
+
+export const insertScholarshipSchema = createInsertSchema(scholarships).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertScholarship = z.infer<typeof insertScholarshipSchema>;
+export type Scholarship = typeof scholarships.$inferSelect;
+
