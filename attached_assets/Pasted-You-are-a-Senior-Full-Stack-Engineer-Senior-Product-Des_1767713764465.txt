@@ -1,0 +1,192 @@
+You are a Senior Full-Stack Engineer, Senior Product Designer, and Senior LMS Architect.
+
+Your task is to DESIGN, BUILD, and INTEGRATE the
+“REWARDS & CARDS” TAB
+inside the COURSE DETAILS page of the GURU ADMIN portal.
+
+====================================================
+CONTEXT
+====================================================
+- Platform: Oushiksha (Guru Admin)
+- Route example: /courses/:courseId
+- Tab: Rewards & Cards
+- Existing tabs: Overview, Modules, Projects, Tests, Labs, Certificate, Pricing, Publish
+- Replace the current “Coming Soon” placeholder with a FULL FEATURED SYSTEM
+
+====================================================
+GOALS OF REWARDS & CARDS
+====================================================
+1. Motivate students to complete courses faster
+2. Gamify learning with points, badges, and cards
+3. Allow admin (Guru) to fully configure rewards per course
+4. Sync rewards automatically to Shishya (Student Portal)
+
+====================================================
+FEATURES TO BUILD (MANDATORY)
+====================================================
+
+----------------------------
+A) REWARD COINS SYSTEM
+----------------------------
+- Enable / Disable reward coins for this course
+- Coin name (default: Skill Coins)
+- Coin icon (emoji or icon picker)
+- Coin earning rules:
+  - Course completion
+  - Module completion
+  - Lesson completion
+  - Test pass
+  - Project submission
+- Points configuration:
+  - Numeric input for each action
+- Bonus coins:
+  - Early completion bonus (within X days)
+  - Perfect score bonus
+
+----------------------------
+B) ACHIEVEMENT CARDS
+----------------------------
+Admin can CREATE achievement cards:
+- Card title
+- Card description
+- Card icon / illustration
+- Unlock condition:
+  - % course completed
+  - Specific module completed
+  - All tests passed
+  - Project approved
+- Rarity:
+  - Common
+  - Rare
+  - Epic
+  - Legendary
+- Preview card UI before saving
+
+----------------------------
+C) MOTIVATIONAL CARDS
+----------------------------
+- Auto-generated motivational cards:
+  - “You’re 50% done!”
+  - “Great job completing Module 3!”
+- Admin can:
+  - Edit message templates
+  - Enable / Disable auto cards
+- Cards shown to students in Shishya dashboard
+
+----------------------------
+D) SCHOLARSHIP / DISCOUNT REWARDS
+----------------------------
+- Conditional rewards:
+  - X coins = ₹ discount
+  - Card unlock = coupon
+- Configure:
+  - Discount percentage or flat amount
+  - Validity period
+  - Eligible plans
+
+----------------------------
+E) REWARD PREVIEW (VERY IMPORTANT)
+----------------------------
+- Live preview panel:
+  - Student view simulation
+  - Coins wallet preview
+  - Cards gallery preview
+
+====================================================
+UI / UX REQUIREMENTS
+====================================================
+- Use existing admin UI style
+- Clean card-based layout
+- Toggle switches for enable/disable
+- Tabs inside Rewards:
+  - Coins
+  - Achievement Cards
+  - Motivational Cards
+  - Scholarships
+- Empty state handling
+- Loading skeletons
+- Success & error toasts
+
+====================================================
+DATABASE / DATA MODEL
+====================================================
+Create or assume tables:
+
+1. course_rewards
+- id
+- course_id
+- coins_enabled
+- coin_name
+- coin_icon
+- rules_json
+- bonus_json
+
+2. achievement_cards
+- id
+- course_id
+- title
+- description
+- icon
+- condition_json
+- rarity
+- active
+
+3. motivational_cards
+- id
+- course_id
+- message
+- trigger_type
+- active
+
+4. student_rewards (for later Shishya sync)
+- student_id
+- course_id
+- coins_earned
+- cards_unlocked
+
+====================================================
+API REQUIREMENTS
+====================================================
+Implement APIs:
+- GET /api/courses/:id/rewards
+- POST /api/courses/:id/rewards
+- POST /api/courses/:id/achievement-card
+- POST /api/courses/:id/motivational-card
+- PUT /api/rewards/:id
+- DELETE /api/rewards/:id
+
+====================================================
+FRONTEND REQUIREMENTS
+====================================================
+- React / Next.js compatible components
+- Controlled forms
+- Validation
+- Reusable RewardCard component
+- State management per course
+- No page reloads
+
+====================================================
+SECURITY & RULES
+====================================================
+- Only Guru/Admin can edit
+- Students can only read (via Shishya)
+- Validate numeric values
+- Prevent negative coin values
+
+====================================================
+FINAL EXPECTATION
+====================================================
+After implementation:
+- “Rewards & Cards” tab becomes fully functional
+- Admin can configure complete gamification for a course
+- Data is ready to sync with Shishya portal
+- Scalable for future wallet, leaderboard, and NFT cards
+
+DO NOT ASK QUESTIONS.
+DO NOT SKIP FEATURES.
+GENERATE:
+- Frontend UI code
+- Backend API code
+- Data models
+- Clear comments
+- Production-ready structure.

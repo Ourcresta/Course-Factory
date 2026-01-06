@@ -1263,3 +1263,123 @@ export const insertScholarshipSchema = createInsertSchema(scholarships).omit({
 export type InsertScholarship = z.infer<typeof insertScholarshipSchema>;
 export type Scholarship = typeof scholarships.$inferSelect;
 
+// ==================== COURSE REWARDS ====================
+export const courseRewards = pgTable("course_rewards", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id").notNull().unique().references(() => courses.id, { onDelete: "cascade" }),
+  coinsEnabled: boolean("coins_enabled").default(false).notNull(),
+  coinName: text("coin_name").default("Skill Coins"),
+  coinIcon: text("coin_icon").default("coins"),
+  rulesJson: jsonb("rules_json").$type<{
+    courseCompletion: number;
+    moduleCompletion: number;
+    lessonCompletion: number;
+    testPass: number;
+    projectSubmission: number;
+    labCompletion: number;
+  }>().default({
+    courseCompletion: 100,
+    moduleCompletion: 20,
+    lessonCompletion: 5,
+    testPass: 15,
+    projectSubmission: 25,
+    labCompletion: 10,
+  }),
+  bonusJson: jsonb("bonus_json").$type<{
+    earlyCompletionEnabled: boolean;
+    earlyCompletionDays: number;
+    earlyCompletionBonus: number;
+    perfectScoreEnabled: boolean;
+    perfectScoreBonus: number;
+  }>().default({
+    earlyCompletionEnabled: false,
+    earlyCompletionDays: 7,
+    earlyCompletionBonus: 50,
+    perfectScoreEnabled: false,
+    perfectScoreBonus: 25,
+  }),
+  scholarshipEnabled: boolean("scholarship_enabled").default(false),
+  scholarshipJson: jsonb("scholarship_json").$type<{
+    coinsToDiscount: number;
+    discountType: "percentage" | "flat";
+    discountValue: number;
+    validityDays: number;
+    eligiblePlans: string[];
+  }>(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const courseRewardsRelations = relations(courseRewards, ({ one, many }) => ({
+  course: one(courses, { fields: [courseRewards.courseId], references: [courses.id] }),
+  achievementCards: many(achievementCards),
+  motivationalCards: many(motivationalCards),
+}));
+
+export const insertCourseRewardSchema = createInsertSchema(courseRewards).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCourseReward = z.infer<typeof insertCourseRewardSchema>;
+export type CourseReward = typeof courseRewards.$inferSelect;
+
+// ==================== ACHIEVEMENT CARDS ====================
+export const achievementCards = pgTable("achievement_cards", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  icon: text("icon").default("trophy"),
+  conditionJson: jsonb("condition_json").$type<{
+    type: "percentage_complete" | "module_complete" | "all_tests_passed" | "project_approved" | "all_labs_complete" | "custom";
+    value?: number;
+    moduleId?: number;
+    customCondition?: string;
+  }>().notNull(),
+  rarity: text("rarity").notNull().default("common"),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const achievementCardsRelations = relations(achievementCards, ({ one }) => ({
+  course: one(courses, { fields: [achievementCards.courseId], references: [courses.id] }),
+}));
+
+export const insertAchievementCardSchema = createInsertSchema(achievementCards).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAchievementCard = z.infer<typeof insertAchievementCardSchema>;
+export type AchievementCard = typeof achievementCards.$inferSelect;
+
+// ==================== MOTIVATIONAL CARDS ====================
+export const motivationalCards = pgTable("motivational_cards", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  triggerType: text("trigger_type").notNull(),
+  triggerValue: integer("trigger_value"),
+  icon: text("icon").default("sparkles"),
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const motivationalCardsRelations = relations(motivationalCards, ({ one }) => ({
+  course: one(courses, { fields: [motivationalCards.courseId], references: [courses.id] }),
+}));
+
+export const insertMotivationalCardSchema = createInsertSchema(motivationalCards).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMotivationalCard = z.infer<typeof insertMotivationalCardSchema>;
+export type MotivationalCard = typeof motivationalCards.$inferSelect;
+

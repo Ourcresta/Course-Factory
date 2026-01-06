@@ -61,6 +61,15 @@ import {
   upiSettings,
   bankAccounts,
   systemSettings,
+  courseRewards,
+  achievementCards,
+  motivationalCards,
+  type CourseReward,
+  type InsertCourseReward,
+  type AchievementCard,
+  type InsertAchievementCard,
+  type MotivationalCard,
+  type InsertMotivationalCard,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, isNull, sql, lt } from "drizzle-orm";
@@ -1347,6 +1356,103 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Course Rewards
+  async getCourseReward(courseId: number): Promise<CourseReward | undefined> {
+    const [reward] = await db.select().from(courseRewards).where(eq(courseRewards.courseId, courseId));
+    return reward;
+  }
+
+  async getCourseRewardWithCards(courseId: number) {
+    const [reward] = await db.select().from(courseRewards).where(eq(courseRewards.courseId, courseId));
+    const achievements = await db.select().from(achievementCards)
+      .where(eq(achievementCards.courseId, courseId))
+      .orderBy(achievementCards.sortOrder);
+    const motivationals = await db.select().from(motivationalCards)
+      .where(eq(motivationalCards.courseId, courseId))
+      .orderBy(motivationalCards.sortOrder);
+    return { reward, achievementCards: achievements, motivationalCards: motivationals };
+  }
+
+  async createCourseReward(reward: InsertCourseReward): Promise<CourseReward> {
+    const [created] = await db.insert(courseRewards).values(reward).returning();
+    return created;
+  }
+
+  async updateCourseReward(courseId: number, reward: Partial<InsertCourseReward>): Promise<CourseReward | undefined> {
+    const [updated] = await db.update(courseRewards)
+      .set({ ...reward, updatedAt: new Date() })
+      .where(eq(courseRewards.courseId, courseId))
+      .returning();
+    return updated;
+  }
+
+  async upsertCourseReward(courseId: number, reward: Partial<InsertCourseReward>): Promise<CourseReward> {
+    const existing = await this.getCourseReward(courseId);
+    if (existing) {
+      return (await this.updateCourseReward(courseId, reward))!;
+    } else {
+      return await this.createCourseReward({ ...reward, courseId } as InsertCourseReward);
+    }
+  }
+
+  // Achievement Cards
+  async getAchievementCard(id: number): Promise<AchievementCard | undefined> {
+    const [card] = await db.select().from(achievementCards).where(eq(achievementCards.id, id));
+    return card;
+  }
+
+  async getAchievementCardsByCourse(courseId: number): Promise<AchievementCard[]> {
+    return db.select().from(achievementCards)
+      .where(eq(achievementCards.courseId, courseId))
+      .orderBy(achievementCards.sortOrder);
+  }
+
+  async createAchievementCard(card: InsertAchievementCard): Promise<AchievementCard> {
+    const [created] = await db.insert(achievementCards).values(card).returning();
+    return created;
+  }
+
+  async updateAchievementCard(id: number, card: Partial<InsertAchievementCard>): Promise<AchievementCard | undefined> {
+    const [updated] = await db.update(achievementCards)
+      .set({ ...card, updatedAt: new Date() })
+      .where(eq(achievementCards.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAchievementCard(id: number): Promise<void> {
+    await db.delete(achievementCards).where(eq(achievementCards.id, id));
+  }
+
+  // Motivational Cards
+  async getMotivationalCard(id: number): Promise<MotivationalCard | undefined> {
+    const [card] = await db.select().from(motivationalCards).where(eq(motivationalCards.id, id));
+    return card;
+  }
+
+  async getMotivationalCardsByCourse(courseId: number): Promise<MotivationalCard[]> {
+    return db.select().from(motivationalCards)
+      .where(eq(motivationalCards.courseId, courseId))
+      .orderBy(motivationalCards.sortOrder);
+  }
+
+  async createMotivationalCard(card: InsertMotivationalCard): Promise<MotivationalCard> {
+    const [created] = await db.insert(motivationalCards).values(card).returning();
+    return created;
+  }
+
+  async updateMotivationalCard(id: number, card: Partial<InsertMotivationalCard>): Promise<MotivationalCard | undefined> {
+    const [updated] = await db.update(motivationalCards)
+      .set(card)
+      .where(eq(motivationalCards.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMotivationalCard(id: number): Promise<void> {
+    await db.delete(motivationalCards).where(eq(motivationalCards.id, id));
   }
 
 }
