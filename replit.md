@@ -98,3 +98,43 @@ Courses are managed as `draft` or `published`. Published courses are read-only; 
 -   **Authentication**: Requires `X-API-Key` header (keys managed in Settings).
 -   **Endpoints**: Provide access to published course metadata, full course content, tests, projects, labs, and certificate requirements.
 -   **Response Format**: Consistent JSON structure with `success` flag, `count`, and data.
+
+## Deployment (Version 1.0)
+
+### Deployment Documentation
+-   **ENV_SAMPLE.txt**: Environment variable template with all required secrets
+-   **README_DEPLOY.md**: Step-by-step MilesWeb deployment guide
+-   **SECURITY_CHECKLIST.md**: Production security audit checklist
+-   **docs/JSON_SCHEMA.md**: Complete JSON import schema documentation
+-   **database/schema.sql**: PostgreSQL schema export for database setup
+-   **ecosystem.config.js**: PM2 process manager configuration
+
+### Production Requirements
+-   **Database**: PostgreSQL 15+ (recommended)
+-   **Runtime**: Node.js 20 LTS
+-   **Process Manager**: PM2 for clustering and monitoring
+-   **Web Server**: Nginx or Apache as reverse proxy
+-   **SSL**: Let's Encrypt for HTTPS
+
+### Build Commands
+```bash
+npm ci                    # Install dependencies
+npm run build             # Build frontend and backend
+npm run db:push           # Push schema to database
+pm2 start ecosystem.config.js --env production
+```
+
+### Security Features
+-   Helmet.js security headers
+-   bcrypt password hashing (12 rounds)
+-   JWT authentication (12-hour expiry)
+-   Rate limiting on all endpoints
+-   Input validation with Zod schemas
+-   CORS configuration for production domains
+
+### Default Pricing (Auto-applied)
+| Level        | Price (INR) | Credit Cost |
+|-------------|-------------|-------------|
+| Beginner    | ₹1,999      | 800         |
+| Intermediate | ₹3,999      | 1,600       |
+| Advanced    | ₹5,999      | 2,400       |
