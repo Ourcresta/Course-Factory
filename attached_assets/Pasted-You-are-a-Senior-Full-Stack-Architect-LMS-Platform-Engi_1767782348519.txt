@@ -1,0 +1,175 @@
+You are a Senior Full-Stack Architect, LMS Platform Engineer, and DevOps Specialist.
+
+Your task is to PREPARE, HARDEN, and MAKE READY FOR DEPLOYMENT the 
+"OurShiksha – Guru Admin Course Factory" application on MilesWeb hosting.
+
+=====================================================
+🔹 PRODUCT CONTEXT
+=====================================================
+
+Product Name: OurShiksha
+Module: Guru Admin – Course Factory
+Environment: Production
+Hosting: MilesWeb (Linux Shared / VPS)
+Frontend + Backend: Monorepo (Node.js / React / Next.js OR Flask if present)
+Database: MySQL (MilesWeb)
+Storage: Local + optional S3-compatible storage
+Auth: Admin-only secure access
+Role: Guru (Super Admin)
+
+=====================================================
+🔹 CORE FUNCTIONALITY (DO NOT REMOVE)
+=====================================================
+
+1️⃣ Guru Admin Dashboard
+- Secure login (JWT + refresh token)
+- Role-based access (Guru only)
+- Session timeout + logout
+
+2️⃣ AI Course Factory
+- Create course manually OR via JSON upload
+- Course structure:
+  - Course metadata (title, category, level, language)
+  - Modules
+  - Lessons
+  - Documents
+  - Videos (links)
+  - Tests (MCQ + coding + assignment)
+  - Projects
+  - Rewards (coins, badges, cards)
+  - Pricing (Free / Paid / Subscription)
+
+3️⃣ JSON Upload Engine
+- Upload ONE JSON file containing:
+  - Course
+  - Modules
+  - Lessons
+  - Tests
+  - Projects
+  - Rewards
+- Validate schema
+- Preview before publish
+- Error handling with clear messages
+
+4️⃣ Approval Workflow
+- Draft → Review → Approved → Published
+- Versioning support
+- Rollback option
+
+5️⃣ Certificate & Portfolio Hooks
+- Course completion triggers:
+  - Certificate eligibility
+  - Portfolio entry creation
+  - Reward coins allocation
+
+=====================================================
+🔹 PRODUCTION HARDENING REQUIREMENTS
+=====================================================
+
+✔ Environment variables (.env)
+✔ Remove all hardcoded secrets
+✔ Production-ready logging
+✔ Error boundaries (frontend)
+✔ Global error handler (backend)
+✔ Input validation (XSS, SQL injection safe)
+✔ CSRF protection
+✔ Secure headers (Helmet or equivalent)
+✔ Rate limiting for APIs
+✔ Password hashing (bcrypt)
+✔ Token expiration + refresh flow
+
+=====================================================
+🔹 DATABASE PREPARATION (MySQL)
+=====================================================
+
+- Provide migration-ready SQL schema
+- Tables:
+  - users
+  - roles
+  - courses
+  - modules
+  - lessons
+  - tests
+  - questions
+  - projects
+  - rewards
+  - certificates
+  - portfolios
+  - approvals
+  - audit_logs
+
+- Add indexes for performance
+- Foreign key constraints
+- Soft delete support
+
+=====================================================
+🔹 FILE & STORAGE HANDLING
+=====================================================
+
+- Course images
+- Document uploads (PDF, DOC)
+- Max upload size configuration
+- Secure file paths
+- MIME type validation
+
+=====================================================
+🔹 BUILD & DEPLOYMENT (MilesWeb)
+=====================================================
+
+Prepare the app for MilesWeb deployment:
+
+1️⃣ Build commands
+- Frontend production build
+- Backend production start
+
+2️⃣ Folder structure for MilesWeb
+/public_html
+  ├── frontend_build
+  ├── backend
+  ├── uploads
+  └── logs
+
+3️⃣ Configuration
+- Apache / Nginx compatible
+- .htaccess support
+- Enable gzip + caching
+- HTTPS ready
+
+4️⃣ Database connection using MilesWeb credentials
+
+5️⃣ Instructions to:
+- Import MySQL DB
+- Set environment variables
+- Start the app
+- Verify deployment
+
+=====================================================
+🔹 ADMIN UX REQUIREMENTS
+=====================================================
+
+- Clean modern UI
+- Dark + Neon theme (OurShiksha default)
+- Cards, metrics, progress indicators
+- Search, filter, sort for courses
+- One-click publish
+- Status badges
+
+=====================================================
+🔹 FINAL OUTPUT REQUIRED
+=====================================================
+
+1️⃣ Production-ready code cleanup
+2️⃣ Deployment-safe configuration
+3️⃣ SQL schema file
+4️⃣ JSON schema for course upload
+5️⃣ README_DEPLOY.md with step-by-step MilesWeb deployment guide
+6️⃣ SECURITY_CHECKLIST.md
+7️⃣ ENV_SAMPLE.txt
+
+IMPORTANT RULES:
+- Do NOT break existing functionality
+- Do NOT include demo credentials
+- Write clean, commented, scalable code
+- Assume this will be used by thousands of students
+
+Proceed step-by-step and finalize the system for LIVE deployment.
