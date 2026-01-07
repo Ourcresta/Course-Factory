@@ -1,10 +1,10 @@
-# OurShiksha Enterprise Database Architecture
+# OurShiksha Database Architecture
 
-## Version 2.0 - Enterprise Schema Design
+## Schema Design
 
 ### Schema Philosophy
 
-The enterprise schema follows these principles:
+The schema follows these principles:
 1. **Single Database** - One PostgreSQL database (`ourshiksha_db`)
 2. **Logical Separation** - Tables prefixed by domain (admin_, course_, reward_, etc.)
 3. **RBAC Foundation** - Role-based access control at the database level

@@ -17,7 +17,7 @@
 4. [Student Management (Shishya)](#4-student-management-shishya)
 5. [Payments & Subscriptions](#5-payments--subscriptions)
 6. [Rewards & Gamification](#6-rewards--gamification)
-7. [Enterprise RBAC System](#7-enterprise-rbac-system)
+7. [RBAC System](#7-rbac-system)
 8. [Approval Workflows](#8-approval-workflows)
 9. [Course Versioning & Quality](#9-course-versioning--quality)
 10. [AI & Governance](#10-ai--governance)
@@ -841,7 +841,7 @@
 
 ---
 
-## 7. Enterprise RBAC System
+## 7. RBAC System
 
 ### `admin_roles`
 **Purpose**: Role definitions with hierarchy levels
@@ -1309,5 +1309,4 @@ GROUP BY ce.course_id, ce.progress_percentage;
 ---
 
 **Document Version**: 1.0  
-**Last Updated**: January 2026  
-**Database Version**: Enterprise V2
+**Last Updated**: January 2026

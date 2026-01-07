@@ -96,10 +96,10 @@ certificates
 - Fields: id, courseId, title, description
 - Fields: templateUrl, requirements, validityMonths
 
-certificate_templates (enterprise)
+certificate_templates
 - Fields: id, name, designData, isActive
 
-signer_registry (enterprise)
+signer_registry
 - Fields: id, name, title, signatureUrl, isActive
 ```
 
@@ -114,7 +114,7 @@ scholarship_policies
 subscription_plans
 - Fields: id, name, slug, price, billingCycle, features
 
-pricing_rules (enterprise)
+pricing_rules
 - Fields: id, name, ruleType, conditions, adjustments
 ```
 
