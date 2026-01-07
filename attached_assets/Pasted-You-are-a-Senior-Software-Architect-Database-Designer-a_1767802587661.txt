@@ -1,0 +1,265 @@
+You are a Senior Software Architect, Database Designer, and Technical Educator.
+
+Your task is to EXPLAIN and DOCUMENT the complete database architecture of a learning platform called "OurShiksha" to two audiences:
+1) Admin Portal (Guru – Course Factory)
+2) Student Portal (Shishya – Learning Platform)
+
+The platform uses ONE SINGLE PostgreSQL database named:
+ourshiksha_db
+
+--------------------------------------------
+CORE PHILOSOPHY (YOU MUST FOLLOW THIS)
+--------------------------------------------
+- There is ONLY ONE database
+- Admin and Student portals work on the SAME database
+- Data visibility is controlled using:
+  - status fields (draft / published)
+  - role-based access (RBAC)
+  - read/write permissions
+- No duplicate databases
+- No duplicate course data
+
+--------------------------------------------
+SECTION 1: HIGH-LEVEL SYSTEM OVERVIEW
+--------------------------------------------
+Explain in simple language:
+- Why a single database is used
+- How Admin and Student portals safely share data
+- How "Draft → Publish → Visible to Students" works
+- Why this approach is scalable and enterprise-ready
+
+--------------------------------------------
+SECTION 2: ADMIN PORTAL (GURU) – COURSE FACTORY
+--------------------------------------------
+Explain that Admin uses the database to CREATE and MANAGE content.
+
+### ADMIN WORKFLOW:
+1. Admin creates a course in DRAFT mode
+2. Admin edits modules, lessons, tests, labs, projects
+3. AI can auto-generate content
+4. Admin reviews and approves
+5. Admin publishes the course
+6. Course becomes visible to students
+
+--------------------------------------------
+ADMIN DRAFT TABLES (WRITE IN DETAIL)
+--------------------------------------------
+Explain EACH table, its purpose, and key columns:
+
+- draft_courses
+  - id
+  - name
+  - description
+  - level
+  - pricing
+  - ai_command
+  - status
+  - created_by
+  - created_at
+
+- draft_modules
+  - id
+  - draft_course_id
+  - title
+  - order_index
+
+- draft_lessons
+  - id
+  - draft_module_id
+  - title
+  - video_url
+  - notes
+  - order_index
+
+- draft_tests
+  - id
+  - draft_course_id
+  - title
+  - passing_percentage
+  - status
+
+- draft_practice_labs
+  - id
+  - draft_course_id
+  - lesson_id
+  - instructions
+  - starter_code
+  - difficulty
+
+- draft_projects
+  - id
+  - draft_course_id
+  - title
+  - problem_statement
+  - difficulty
+
+- draft_certificates
+  - id
+  - draft_course_id
+  - rules
+  - min_score
+  - requirements
+
+Explain clearly:
+- These tables are ONLY visible to Admin
+- Students can NEVER access draft tables
+- AI generation happens here
+- Editing and approvals happen here
+
+--------------------------------------------
+SECTION 3: PUBLISH PROCESS (VERY IMPORTANT)
+--------------------------------------------
+Explain step-by-step what happens when Admin clicks "Publish":
+
+- Data is copied from draft tables to live tables
+- A database transaction is used
+- If anything fails, publish is rolled back
+- Course status changes to "published"
+- published_at timestamp is set
+- Version history is stored
+
+Explain that after publish:
+- Draft data can remain for versioning
+- Students ONLY read live tables
+
+--------------------------------------------
+SECTION 4: LIVE CONTENT TABLES (STUDENT VISIBLE)
+--------------------------------------------
+Explain each LIVE table and how students use it:
+
+- courses
+  - id
+  - name
+  - description
+  - level
+  - duration
+  - status
+  - published_at
+
+- modules
+  - id
+  - course_id
+  - title
+  - order_index
+
+- lessons
+  - id
+  - module_id
+  - title
+  - video_url
+  - notes
+
+- practice_labs
+  - id
+  - course_id
+  - lesson_id
+  - instructions
+  - starter_code
+  - expected_output
+
+- tests
+  - id
+  - course_id
+  - title
+  - passing_percentage
+
+- projects
+  - id
+  - course_id
+  - title
+  - problem_statement
+
+- certificates
+  - id
+  - course_id
+  - rules
+  - requirements
+
+Explain clearly:
+- Student portal has READ-ONLY access to these tables
+- Students only see:
+  WHERE status = 'published'
+
+--------------------------------------------
+SECTION 5: STUDENT PORTAL (SHISHYA) – LEARNING FLOW
+--------------------------------------------
+Explain student journey step-by-step:
+
+1. Student registers
+2. Student enrolls in a course
+3. Student watches lessons
+4. Student completes labs
+5. Student attempts tests
+6. Student submits projects
+7. Progress is tracked
+8. Certificate eligibility is evaluated
+9. Certificate & marksheet are generated
+
+--------------------------------------------
+STUDENT ACTIVITY TABLES (WRITE IN DETAIL)
+--------------------------------------------
+Explain purpose and columns:
+
+- shishya_users
+- course_enrollments
+- lesson_progress
+- user_lab_progress
+- user_test_attempts
+- user_project_submissions
+- activity_logs
+
+Explain that:
+- These tables are WRITE-ONLY for students
+- Admin can READ for analytics
+- Course content tables are never modified by students
+
+--------------------------------------------
+SECTION 6: CERTIFICATES & MARKSHEETS
+--------------------------------------------
+Explain:
+- Certificates are generated only after course completion
+- Rules are checked from certificates table
+- Marksheets aggregate:
+  - tests
+  - labs
+  - projects
+  - grades
+- Certificates are immutable once issued
+
+--------------------------------------------
+SECTION 7: SECURITY & PERMISSIONS
+--------------------------------------------
+Explain:
+- Role-based access control (RBAC)
+- Admin roles vs Student roles
+- Why students cannot see drafts
+- Why admins cannot fake student progress
+
+--------------------------------------------
+SECTION 8: SIMPLE DATA FLOW DIAGRAM (TEXT)
+--------------------------------------------
+Explain in text flow:
+
+Admin Portal
+→ Draft Tables
+→ Publish Action
+→ Live Tables
+→ Student Portal
+→ Progress Tables
+→ Certificate Engine
+
+--------------------------------------------
+FINAL REQUIREMENT
+--------------------------------------------
+- Use very clear language
+- Explain like teaching a junior developer
+- Use bullet points and headings
+- No code unless required
+- Focus on HOW and WHY, not just WHAT
+- Assume this explanation will be used for:
+  - Documentation
+  - Team onboarding
+  - Investor explanation
+  - System handover
+
+END.
