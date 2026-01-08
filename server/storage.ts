@@ -25,8 +25,6 @@ import {
   type InsertAuditLog,
   type PracticeLab,
   type InsertPracticeLab,
-  type ApiKey,
-  type InsertApiKey,
   type OtpToken,
   type InsertOtpToken,
   type LoginAttempt,
@@ -50,7 +48,6 @@ import {
   aiGenerationLogs,
   publishStatus,
   practiceLabs,
-  apiKeys,
   otpTokens,
   loginAttempts,
   adminSessions,
@@ -250,15 +247,6 @@ export interface IStorage {
   updatePracticeLab(id: number, lab: Partial<InsertPracticeLab>): Promise<PracticeLab | undefined>;
   deletePracticeLab(id: number): Promise<void>;
   linkLabToCourse(labId: number, courseId: number): Promise<PracticeLab | undefined>;
-
-  // API Keys
-  getApiKey(id: number): Promise<ApiKey | undefined>;
-  getApiKeyByKey(key: string): Promise<ApiKey | undefined>;
-  getAllApiKeys(): Promise<ApiKey[]>;
-  createApiKey(apiKey: InsertApiKey): Promise<ApiKey>;
-  updateApiKey(id: number, apiKey: Partial<InsertApiKey>): Promise<ApiKey | undefined>;
-  deleteApiKey(id: number): Promise<void>;
-  updateApiKeyLastUsed(id: number): Promise<void>;
 
   // Public API methods for Shishya integration
   getPublishedCourses(): Promise<Course[]>;
@@ -963,46 +951,6 @@ export class DatabaseStorage implements IStorage {
 
   async deletePracticeLab(id: number): Promise<void> {
     await db.delete(practiceLabs).where(eq(practiceLabs.id, id));
-  }
-
-  // API Keys
-  async getApiKey(id: number): Promise<ApiKey | undefined> {
-    const [key] = await db.select().from(apiKeys).where(eq(apiKeys.id, id));
-    return key;
-  }
-
-  async getApiKeyByKey(key: string): Promise<ApiKey | undefined> {
-    const [apiKey] = await db.select().from(apiKeys).where(eq(apiKeys.key, key));
-    return apiKey;
-  }
-
-  async getAllApiKeys(): Promise<ApiKey[]> {
-    return db.select().from(apiKeys).orderBy(desc(apiKeys.createdAt));
-  }
-
-  async createApiKey(apiKey: InsertApiKey): Promise<ApiKey> {
-    const [newKey] = await db.insert(apiKeys).values(apiKey).returning();
-    return newKey;
-  }
-
-  async updateApiKey(id: number, apiKey: Partial<InsertApiKey>): Promise<ApiKey | undefined> {
-    const [updated] = await db
-      .update(apiKeys)
-      .set(apiKey)
-      .where(eq(apiKeys.id, id))
-      .returning();
-    return updated;
-  }
-
-  async deleteApiKey(id: number): Promise<void> {
-    await db.delete(apiKeys).where(eq(apiKeys.id, id));
-  }
-
-  async updateApiKeyLastUsed(id: number): Promise<void> {
-    await db
-      .update(apiKeys)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(apiKeys.id, id));
   }
 
   // Public API methods for Shishya integration

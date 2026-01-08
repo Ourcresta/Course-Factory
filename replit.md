@@ -122,6 +122,7 @@ Courses are managed as `draft` or `published`. Published courses are read-only; 
 -   `@replit/vite-plugin-dev-banner`
 
 ### Public API for Shishya Integration
--   **Authentication**: Requires `X-API-Key` header (keys managed in Settings).
+-   **Authentication**: No authentication required - both Guru (admin) and Shishya (student) portals share the same database.
 -   **Endpoints**: Provide access to published course metadata, full course content, tests, projects, labs, and certificate requirements.
 -   **Response Format**: Consistent JSON structure with `success` flag, `count`, and data.
+-   **Note**: API key functionality has been removed as it's unnecessary when both portals share the same database.

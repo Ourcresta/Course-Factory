@@ -2498,13 +2498,9 @@ export async function registerRoutes(
   app.get("/api/dashboard/shishya-status", async (req, res) => {
     try {
       const shishyaSetting = await storage.getSystemSetting("shishya_enabled");
-      const apiKeys = await storage.getAllApiKeys();
-      const activeKeys = apiKeys.filter(k => k.isActive);
       
       res.json({
         isEnabled: shishyaSetting?.value === "true",
-        activeApiKeys: activeKeys.length,
-        totalApiKeys: apiKeys.length,
         lastSyncAt: null,
       });
     } catch (error) {

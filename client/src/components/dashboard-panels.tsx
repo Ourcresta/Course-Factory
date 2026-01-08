@@ -17,7 +17,6 @@ import {
   CreditCard,
   Shield,
   Users,
-  Key,
   TrendingUp,
   RefreshCw,
   Eye,
@@ -81,8 +80,6 @@ interface CreditStatus {
 interface SecurityStatus {
   totalAdmins: number;
   pendingApprovals: number;
-  activeApiKeys: number;
-  expiredApiKeys: number;
   failedLoginAttempts: number;
 }
 
@@ -531,8 +528,6 @@ export function SecurityPanel() {
   const mockData: SecurityStatus = {
     totalAdmins: 3,
     pendingApprovals: 1,
-    activeApiKeys: 2,
-    expiredApiKeys: 0,
     failedLoginAttempts: 5,
   };
 
@@ -559,7 +554,7 @@ export function SecurityPanel() {
           Security & Governance
         </CardTitle>
         <CardDescription>
-          Admin access and API key status
+          Admin access and login security
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -579,14 +574,6 @@ export function SecurityPanel() {
           <Badge variant={security.pendingApprovals > 0 ? "destructive" : "secondary"} className="text-xs">
             {security.pendingApprovals}
           </Badge>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Key className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Active API Keys</span>
-          </div>
-          <Badge variant="secondary" className="text-xs">{security.activeApiKeys}</Badge>
         </div>
 
         <div className="flex items-center justify-between">
@@ -614,8 +601,6 @@ export function SecurityPanel() {
 
 interface ShishyaStatus {
   isEnabled: boolean;
-  activeApiKeys: number;
-  totalApiKeys: number;
   lastSyncAt: string | null;
 }
 
@@ -651,8 +636,6 @@ export function ShishyaControlPanel() {
 
   const mockData: ShishyaStatus = {
     isEnabled: false,
-    activeApiKeys: 0,
-    totalApiKeys: 0,
     lastSyncAt: null,
   };
 
@@ -711,31 +694,11 @@ export function ShishyaControlPanel() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-3 rounded-md bg-background/80 text-center border">
-            <p className="text-2xl font-bold">{status.activeApiKeys}</p>
-            <p className="text-xs text-muted-foreground">Active API Keys</p>
-          </div>
-          <div className="p-3 rounded-md bg-background/80 text-center border">
-            <p className="text-2xl font-bold">{status.totalApiKeys}</p>
-            <p className="text-xs text-muted-foreground">Total Keys</p>
-          </div>
-        </div>
-
         {!status.isEnabled && (
           <div className="p-3 rounded-md bg-yellow-500/10 border border-yellow-500/20">
             <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-xs font-medium">Enable to start syncing courses with Shishya</span>
-            </div>
-          </div>
-        )}
-
-        {status.isEnabled && status.activeApiKeys === 0 && (
-          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
-            <div className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-xs font-medium">No active API keys - create one in Settings</span>
             </div>
           </div>
         )}
