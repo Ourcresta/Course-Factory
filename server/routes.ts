@@ -17,6 +17,7 @@ import { registerAuthRoutes } from "./auth-routes";
 import { registerAdminRoutes } from "./admin-routes";
 import { registerGovernanceRoutes } from "./governance-routes";
 import { registerRewardsRoutes } from "./rewards-routes";
+import { registerDraftRoutes } from "./draft-routes";
 import { apiRateLimiter } from "./auth-middleware";
 
 function handleValidationError(error: unknown, res: any) {
@@ -57,6 +58,9 @@ export async function registerRoutes(
   
   // Register course rewards routes
   registerRewardsRoutes(app);
+  
+  // Register draft course routes (dual-table architecture)
+  registerDraftRoutes(app);
   
   // Apply rate limiting to API routes
   app.use('/api', apiRateLimiter);
