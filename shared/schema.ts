@@ -6,8 +6,6 @@ import { z } from "zod";
 // Re-export chat models
 export * from "./models/chat";
 
-// Re-export draft tables
-export * from "./draft-schema";
 
 // ==================== USERS (ADMIN) ====================
 export const users = pgTable("users", {
@@ -80,7 +78,6 @@ export type Skill = typeof skills.$inferSelect;
 // is_active: Controls visibility to Shishya portal (true = visible when published)
 export const courses = pgTable("courses", {
   id: serial("id").primaryKey(),
-  draftCourseId: integer("draft_course_id"),
   name: text("name").notNull(),
   description: text("description"),
   level: text("level").notNull().default("beginner"),

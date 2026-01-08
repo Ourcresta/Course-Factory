@@ -124,6 +124,7 @@ export interface IStorage {
     totalCourses: number;
     publishedCourses: number;
     draftCourses: number;
+    archivedCourses: number;
     generatingCourses: number;
   }>;
 
