@@ -6,6 +6,9 @@ import { z } from "zod";
 // Re-export chat models
 export * from "./models/chat";
 
+// Re-export draft tables
+export * from "./draft-schema";
+
 // ==================== USERS (ADMIN) ====================
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -72,9 +75,10 @@ export const insertSkillSchema = createInsertSchema(skills).omit({
 export type InsertSkill = z.infer<typeof insertSkillSchema>;
 export type Skill = typeof skills.$inferSelect;
 
-// ==================== COURSES ====================
+// ==================== COURSES (LIVE - READ BY STUDENTS) ====================
 export const courses = pgTable("courses", {
   id: serial("id").primaryKey(),
+  draftCourseId: integer("draft_course_id"),
   name: text("name").notNull(),
   description: text("description"),
   level: text("level").notNull().default("beginner"),
@@ -87,10 +91,9 @@ export const courses = pgTable("courses", {
   includeTests: boolean("include_tests").default(true),
   includeLabs: boolean("include_labs").default(true),
   certificateType: text("certificate_type").default("completion"),
-  status: text("status").notNull().default("draft"),
+  status: text("status").notNull().default("published"),
   aiCommand: text("ai_command"),
   thumbnailUrl: text("thumbnail_url"),
-  // Pricing fields
   creditCost: integer("credit_cost").default(0).notNull(),
   isFree: boolean("is_free").default(true).notNull(),
   originalCreditCost: integer("original_credit_cost"),
@@ -99,6 +102,7 @@ export const courses = pgTable("courses", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   publishedAt: timestamp("published_at"),
   deletedAt: timestamp("deleted_at"),
+  version: integer("version").default(1).notNull(),
 });
 
 export const coursesRelations = relations(courses, ({ many }) => ({
