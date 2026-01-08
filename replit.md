@@ -91,7 +91,23 @@ Lessons can have YouTube video references attached for supplementary learning:
 - **Location**: `/courses/:id/modules/:moduleId/lessons/:lessonId` editor page
 
 ### Publish Workflow
-Courses are managed as `draft` or `published`. Published courses are read-only; unpublishing is required for edits. Validation checks content minimums before publishing.
+Courses are managed as `draft` or `published` in the `courses` table:
+
+**States**:
+- `draft`: Course is editable, not visible to students
+- `published`: Course is read-only, visible via public API to Shishya portal
+- `generating`: AI is actively generating content (cannot publish/edit)
+
+**Publishing Process**:
+1. Admin creates/edits course content while in `draft` status
+2. Click "Publish" button on course detail page
+3. System validates: at least 1 module with at least 1 lesson each
+4. Status changes to `published`, `publishedAt` timestamp set
+5. Course becomes available via `/api/public/courses` endpoints
+
+**Unpublishing**:
+- Click "Unpublish" to return course to `draft` status
+- Course becomes editable again, removed from public API
 
 ### Admin Authentication
 -   **Sign In**: Email/password, JWT (12-hour expiry).

@@ -713,7 +713,7 @@ export default function CourseDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Publish Course</AlertDialogTitle>
             <AlertDialogDescription>
-              Publishing will make this course available via the public API. External platforms like Shishya can then fetch the course content using their API key.
+              Publishing will make this course available via the public API. The Shishya student portal will be able to access this course content.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
