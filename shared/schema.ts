@@ -1456,7 +1456,7 @@ export type ShishyaUshaMessage = typeof shishyaUshaMessages.$inferSelect;
 // ==================== USER SUBSCRIPTIONS ====================
 export const userSubscriptions = pgTable("user_subscriptions", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
   planId: integer("plan_id").notNull().references(() => subscriptionPlans.id),
   status: text("status").default("active").notNull(),
   startDate: timestamp("start_date").notNull(),
@@ -1477,53 +1477,6 @@ export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions
 
 export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
-
-// ==================== COIN WALLETS ====================
-export const coinWallets = pgTable("coin_wallets", {
-  id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().unique().references(() => shishyaUsers.id, { onDelete: "cascade" }),
-  balance: integer("balance").default(0).notNull(),
-  lifetimeEarned: integer("lifetime_earned").default(0).notNull(),
-  lifetimeSpent: integer("lifetime_spent").default(0).notNull(),
-  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
-
-export const coinWalletsRelations = relations(coinWallets, ({ one }) => ({
-  user: one(shishyaUsers, { fields: [coinWallets.shishyaUserId], references: [shishyaUsers.id] }),
-}));
-
-export const insertCoinWalletSchema = createInsertSchema(coinWallets).omit({
-  id: true,
-  updatedAt: true,
-});
-
-export type InsertCoinWallet = z.infer<typeof insertCoinWalletSchema>;
-export type CoinWallet = typeof coinWallets.$inferSelect;
-
-// ==================== COIN TRANSACTIONS ====================
-export const coinTransactions = pgTable("coin_transactions", {
-  id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
-  amount: integer("amount").notNull(),
-  type: text("type").notNull(),
-  reason: text("reason"),
-  referenceId: text("reference_id"),
-  referenceType: text("reference_type"),
-  balanceAfter: integer("balance_after").notNull(),
-  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
-});
-
-export const coinTransactionsRelations = relations(coinTransactions, ({ one }) => ({
-  user: one(shishyaUsers, { fields: [coinTransactions.shishyaUserId], references: [shishyaUsers.id] }),
-}));
-
-export const insertCoinTransactionSchema = createInsertSchema(coinTransactions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertCoinTransaction = z.infer<typeof insertCoinTransactionSchema>;
-export type CoinTransaction = typeof coinTransactions.$inferSelect;
 
 // ==================== PROMOTIONS ====================
 export const promotions = pgTable("promotions", {
@@ -1555,7 +1508,7 @@ export type Promotion = typeof promotions.$inferSelect;
 // ==================== SHISHYA PAYMENTS ====================
 export const shishyaPayments = pgTable("shishya_payments", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
   amount: integer("amount").notNull(),
   currency: text("currency").default("INR").notNull(),
   status: text("status").default("pending").notNull(),
@@ -1584,7 +1537,7 @@ export type ShishyaPayment = typeof shishyaPayments.$inferSelect;
 // ==================== ACTIVITY LOGS ====================
 export const activityLogs = pgTable("activity_logs", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").references(() => shishyaUsers.id, { onDelete: "set null" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).references(() => shishyaUsers.id, { onDelete: "set null" }),
   action: text("action").notNull(),
   entityType: text("entity_type"),
   entityId: text("entity_id"),
@@ -1674,7 +1627,7 @@ export type MotivationRule = typeof motivationRules.$inferSelect;
 // ==================== REWARD APPROVALS (Queue) ====================
 export const rewardApprovals = pgTable("reward_approvals", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
   ruleId: integer("rule_id").references(() => motivationRules.id, { onDelete: "set null" }),
   rewardType: text("reward_type").notNull(),
   originalValue: integer("original_value").notNull(),
@@ -1715,7 +1668,7 @@ export type RewardApproval = typeof rewardApprovals.$inferSelect;
 // ==================== FRAUD FLAGS ====================
 export const fraudFlags = pgTable("fraud_flags", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
   flagType: text("flag_type").notNull(),
   severity: text("severity").notNull().default("medium"),
   description: text("description"),
@@ -1748,7 +1701,7 @@ export type FraudFlag = typeof fraudFlags.$inferSelect;
 // ==================== WALLET FREEZES ====================
 export const walletFreezes = pgTable("wallet_freezes", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
   reason: text("reason").notNull(),
   frozenBy: varchar("frozen_by").notNull().references(() => users.id),
   frozenAt: timestamp("frozen_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -1774,7 +1727,7 @@ export type WalletFreeze = typeof walletFreezes.$inferSelect;
 // ==================== REWARD OVERRIDES (Manual Actions) ====================
 export const rewardOverrides = pgTable("reward_overrides", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
   adminId: varchar("admin_id").notNull().references(() => users.id),
   actionType: text("action_type").notNull(),
   rewardType: text("reward_type"),
@@ -1801,7 +1754,7 @@ export type RewardOverride = typeof rewardOverrides.$inferSelect;
 // ==================== RISK SCORES ====================
 export const riskScores = pgTable("risk_scores", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().unique().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).notNull().unique().references(() => shishyaUsers.id, { onDelete: "cascade" }),
   overallScore: integer("overall_score").default(0).notNull(),
   velocityScore: integer("velocity_score").default(0),
   patternScore: integer("pattern_score").default(0),
@@ -1860,7 +1813,7 @@ export type AdminActionLog = typeof adminActionLogs.$inferSelect;
 // ==================== SCHOLARSHIPS ====================
 export const scholarships = pgTable("scholarships", {
   id: serial("id").primaryKey(),
-  shishyaUserId: integer("shishya_user_id").notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  shishyaUserId: varchar("shishya_user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
   rewardApprovalId: integer("reward_approval_id").references(() => rewardApprovals.id),
   title: text("title").notNull(),
   description: text("description"),
