@@ -788,26 +788,670 @@ export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 
 // ==================== SHISHYA USERS (STUDENTS) ====================
 export const shishyaUsers = pgTable("shishya_users", {
-  id: serial("id").primaryKey(),
-  externalId: text("external_id").unique(),
-  name: text("name").notNull(),
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
+  passwordHash: text("password_hash"),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  name: text("name"),
   phone: text("phone"),
-  avatarUrl: text("avatar_url"),
   status: text("status").default("active").notNull(),
   lastActiveAt: timestamp("last_active_at"),
   totalSpend: integer("total_spend").default(0).notNull(),
   signupSource: text("signup_source"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export const insertShishyaUserSchema = createInsertSchema(shishyaUsers).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 
 export type InsertShishyaUser = z.infer<typeof insertShishyaUserSchema>;
 export type ShishyaUser = typeof shishyaUsers.$inferSelect;
+
+// ==================== SHISHYA SESSIONS ====================
+export const shishyaSessions = pgTable("shishya_sessions", {
+  sid: varchar("sid", { length: 255 }).primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
+
+export type ShishyaSession = typeof shishyaSessions.$inferSelect;
+
+// ==================== SHISHYA OTP CODES ====================
+export const shishyaOtpCodes = pgTable("shishya_otp_codes", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  otpHash: text("otp_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  verified: boolean("verified").default(false).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertShishyaOtpCodeSchema = createInsertSchema(shishyaOtpCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaOtpCode = z.infer<typeof insertShishyaOtpCodeSchema>;
+export type ShishyaOtpCode = typeof shishyaOtpCodes.$inferSelect;
+
+// ==================== SHISHYA OTP LOGS ====================
+export const shishyaOtpLogs = pgTable("shishya_otp_logs", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  action: text("action").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertShishyaOtpLogSchema = createInsertSchema(shishyaOtpLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaOtpLog = z.infer<typeof insertShishyaOtpLogSchema>;
+export type ShishyaOtpLog = typeof shishyaOtpLogs.$inferSelect;
+
+// ==================== SHISHYA USER PROFILES ====================
+export const shishyaUserProfiles = pgTable("shishya_user_profiles", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().unique().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  fullName: text("full_name"),
+  username: text("username").unique(),
+  bio: text("bio"),
+  profilePhoto: text("profile_photo"),
+  headline: text("headline"),
+  location: text("location"),
+  githubUrl: text("github_url"),
+  linkedinUrl: text("linkedin_url"),
+  websiteUrl: text("website_url"),
+  facebookUrl: text("facebook_url"),
+  instagramUrl: text("instagram_url"),
+  portfolioVisible: boolean("portfolio_visible").default(false).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaUserProfilesRelations = relations(shishyaUserProfiles, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUserProfiles.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaUserProfileSchema = createInsertSchema(shishyaUserProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertShishyaUserProfile = z.infer<typeof insertShishyaUserProfileSchema>;
+export type ShishyaUserProfile = typeof shishyaUserProfiles.$inferSelect;
+
+// ==================== SHISHYA USER PROGRESS ====================
+export const shishyaUserProgress = pgTable("shishya_user_progress", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  lessonId: integer("lesson_id").notNull().references(() => lessons.id, { onDelete: "cascade" }),
+  completed: boolean("completed").default(false).notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaUserProgressRelations = relations(shishyaUserProgress, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUserProgress.userId], references: [shishyaUsers.id] }),
+  course: one(courses, { fields: [shishyaUserProgress.courseId], references: [courses.id] }),
+  lesson: one(lessons, { fields: [shishyaUserProgress.lessonId], references: [lessons.id] }),
+}));
+
+export const insertShishyaUserProgressSchema = createInsertSchema(shishyaUserProgress).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaUserProgress = z.infer<typeof insertShishyaUserProgressSchema>;
+export type ShishyaUserProgress = typeof shishyaUserProgress.$inferSelect;
+
+// ==================== SHISHYA USER LAB PROGRESS ====================
+export const shishyaUserLabProgress = pgTable("shishya_user_lab_progress", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  labId: integer("lab_id").notNull().references(() => practiceLabs.id, { onDelete: "cascade" }),
+  completed: boolean("completed").default(false).notNull(),
+  userCode: text("user_code"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaUserLabProgressRelations = relations(shishyaUserLabProgress, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUserLabProgress.userId], references: [shishyaUsers.id] }),
+  lab: one(practiceLabs, { fields: [shishyaUserLabProgress.labId], references: [practiceLabs.id] }),
+}));
+
+export const insertShishyaUserLabProgressSchema = createInsertSchema(shishyaUserLabProgress).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaUserLabProgress = z.infer<typeof insertShishyaUserLabProgressSchema>;
+export type ShishyaUserLabProgress = typeof shishyaUserLabProgress.$inferSelect;
+
+// ==================== SHISHYA USER TEST ATTEMPTS ====================
+export const shishyaUserTestAttempts = pgTable("shishya_user_test_attempts", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  testId: integer("test_id").notNull().references(() => tests.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  score: integer("score").notNull(),
+  totalQuestions: integer("total_questions").notNull(),
+  passed: boolean("passed").default(false).notNull(),
+  answers: jsonb("answers").$type<Record<string, any>>(),
+  timeTaken: integer("time_taken"),
+  attemptedAt: timestamp("attempted_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaUserTestAttemptsRelations = relations(shishyaUserTestAttempts, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUserTestAttempts.userId], references: [shishyaUsers.id] }),
+  test: one(tests, { fields: [shishyaUserTestAttempts.testId], references: [tests.id] }),
+  course: one(courses, { fields: [shishyaUserTestAttempts.courseId], references: [courses.id] }),
+}));
+
+export const insertShishyaUserTestAttemptSchema = createInsertSchema(shishyaUserTestAttempts).omit({
+  id: true,
+  attemptedAt: true,
+});
+
+export type InsertShishyaUserTestAttempt = z.infer<typeof insertShishyaUserTestAttemptSchema>;
+export type ShishyaUserTestAttempt = typeof shishyaUserTestAttempts.$inferSelect;
+
+// ==================== SHISHYA USER PROJECT SUBMISSIONS ====================
+export const shishyaUserProjectSubmissions = pgTable("shishya_user_project_submissions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  submissionUrl: text("submission_url"),
+  githubUrl: text("github_url"),
+  description: text("description"),
+  status: text("status").default("pending").notNull(),
+  feedback: text("feedback"),
+  submittedAt: timestamp("submitted_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+export const shishyaUserProjectSubmissionsRelations = relations(shishyaUserProjectSubmissions, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUserProjectSubmissions.userId], references: [shishyaUsers.id] }),
+  project: one(projects, { fields: [shishyaUserProjectSubmissions.projectId], references: [projects.id] }),
+  course: one(courses, { fields: [shishyaUserProjectSubmissions.courseId], references: [courses.id] }),
+}));
+
+export const insertShishyaUserProjectSubmissionSchema = createInsertSchema(shishyaUserProjectSubmissions).omit({
+  id: true,
+  submittedAt: true,
+});
+
+export type InsertShishyaUserProjectSubmission = z.infer<typeof insertShishyaUserProjectSubmissionSchema>;
+export type ShishyaUserProjectSubmission = typeof shishyaUserProjectSubmissions.$inferSelect;
+
+// ==================== SHISHYA USER CERTIFICATES ====================
+export const shishyaUserCertificates = pgTable("shishya_user_certificates", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  certificateNumber: text("certificate_number").notNull().unique(),
+  issuedAt: timestamp("issued_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  pdfUrl: text("pdf_url"),
+});
+
+export const shishyaUserCertificatesRelations = relations(shishyaUserCertificates, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUserCertificates.userId], references: [shishyaUsers.id] }),
+  course: one(courses, { fields: [shishyaUserCertificates.courseId], references: [courses.id] }),
+}));
+
+export const insertShishyaUserCertificateSchema = createInsertSchema(shishyaUserCertificates).omit({
+  id: true,
+  issuedAt: true,
+});
+
+export type InsertShishyaUserCertificate = z.infer<typeof insertShishyaUserCertificateSchema>;
+export type ShishyaUserCertificate = typeof shishyaUserCertificates.$inferSelect;
+
+// ==================== SHISHYA COURSE ENROLLMENTS ====================
+export const shishyaCourseEnrollments = pgTable("shishya_course_enrollments", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  enrolledAt: timestamp("enrolled_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  completedAt: timestamp("completed_at"),
+  status: text("status").default("active").notNull(),
+});
+
+export const shishyaCourseEnrollmentsRelations = relations(shishyaCourseEnrollments, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaCourseEnrollments.userId], references: [shishyaUsers.id] }),
+  course: one(courses, { fields: [shishyaCourseEnrollments.courseId], references: [courses.id] }),
+}));
+
+export const insertShishyaCourseEnrollmentSchema = createInsertSchema(shishyaCourseEnrollments).omit({
+  id: true,
+  enrolledAt: true,
+});
+
+export type InsertShishyaCourseEnrollment = z.infer<typeof insertShishyaCourseEnrollmentSchema>;
+export type ShishyaCourseEnrollment = typeof shishyaCourseEnrollments.$inferSelect;
+
+// ==================== SHISHYA USER CREDITS ====================
+export const shishyaUserCredits = pgTable("shishya_user_credits", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().unique().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  balance: integer("balance").default(0).notNull(),
+  lifetimeEarned: integer("lifetime_earned").default(0).notNull(),
+  lifetimeSpent: integer("lifetime_spent").default(0).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaUserCreditsRelations = relations(shishyaUserCredits, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUserCredits.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaUserCreditSchema = createInsertSchema(shishyaUserCredits).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertShishyaUserCredit = z.infer<typeof insertShishyaUserCreditSchema>;
+export type ShishyaUserCredit = typeof shishyaUserCredits.$inferSelect;
+
+// ==================== SHISHYA CREDIT TRANSACTIONS ====================
+export const shishyaCreditTransactions = pgTable("shishya_credit_transactions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  amount: integer("amount").notNull(),
+  type: text("type").notNull(),
+  description: text("description"),
+  referenceId: text("reference_id"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaCreditTransactionsRelations = relations(shishyaCreditTransactions, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaCreditTransactions.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaCreditTransactionSchema = createInsertSchema(shishyaCreditTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaCreditTransaction = z.infer<typeof insertShishyaCreditTransactionSchema>;
+export type ShishyaCreditTransaction = typeof shishyaCreditTransactions.$inferSelect;
+
+// ==================== SHISHYA VOUCHERS ====================
+export const shishyaVouchers = pgTable("shishya_vouchers", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  credits: integer("credits").notNull(),
+  maxUses: integer("max_uses").default(1).notNull(),
+  usedCount: integer("used_count").default(0).notNull(),
+  expiresAt: timestamp("expires_at"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertShishyaVoucherSchema = createInsertSchema(shishyaVouchers).omit({
+  id: true,
+  usedCount: true,
+  createdAt: true,
+});
+
+export type InsertShishyaVoucher = z.infer<typeof insertShishyaVoucherSchema>;
+export type ShishyaVoucher = typeof shishyaVouchers.$inferSelect;
+
+// ==================== SHISHYA VOUCHER REDEMPTIONS ====================
+export const shishyaVoucherRedemptions = pgTable("shishya_voucher_redemptions", {
+  id: serial("id").primaryKey(),
+  voucherId: integer("voucher_id").notNull().references(() => shishyaVouchers.id, { onDelete: "cascade" }),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  redeemedAt: timestamp("redeemed_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaVoucherRedemptionsRelations = relations(shishyaVoucherRedemptions, ({ one }) => ({
+  voucher: one(shishyaVouchers, { fields: [shishyaVoucherRedemptions.voucherId], references: [shishyaVouchers.id] }),
+  user: one(shishyaUsers, { fields: [shishyaVoucherRedemptions.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaVoucherRedemptionSchema = createInsertSchema(shishyaVoucherRedemptions).omit({
+  id: true,
+  redeemedAt: true,
+});
+
+export type InsertShishyaVoucherRedemption = z.infer<typeof insertShishyaVoucherRedemptionSchema>;
+export type ShishyaVoucherRedemption = typeof shishyaVoucherRedemptions.$inferSelect;
+
+// ==================== SHISHYA GIFT BOXES ====================
+export const shishyaGiftBoxes = pgTable("shishya_gift_boxes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  credits: integer("credits").notNull(),
+  message: text("message"),
+  opened: boolean("opened").default(false).notNull(),
+  openedAt: timestamp("opened_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaGiftBoxesRelations = relations(shishyaGiftBoxes, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaGiftBoxes.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaGiftBoxSchema = createInsertSchema(shishyaGiftBoxes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaGiftBox = z.infer<typeof insertShishyaGiftBoxSchema>;
+export type ShishyaGiftBox = typeof shishyaGiftBoxes.$inferSelect;
+
+// ==================== SHISHYA NOTIFICATIONS ====================
+export const shishyaNotifications = pgTable("shishya_notifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").default("info").notNull(),
+  read: boolean("read").default(false).notNull(),
+  actionUrl: text("action_url"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaNotificationsRelations = relations(shishyaNotifications, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaNotifications.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaNotificationSchema = createInsertSchema(shishyaNotifications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaNotification = z.infer<typeof insertShishyaNotificationSchema>;
+export type ShishyaNotification = typeof shishyaNotifications.$inferSelect;
+
+// ==================== SHISHYA STUDENT STREAKS ====================
+export const shishyaStudentStreaks = pgTable("shishya_student_streaks", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().unique().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastActivityDate: timestamp("last_activity_date"),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaStudentStreaksRelations = relations(shishyaStudentStreaks, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaStudentStreaks.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaStudentStreakSchema = createInsertSchema(shishyaStudentStreaks).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertShishyaStudentStreak = z.infer<typeof insertShishyaStudentStreakSchema>;
+export type ShishyaStudentStreak = typeof shishyaStudentStreaks.$inferSelect;
+
+// ==================== SHISHYA MYSTERY BOXES ====================
+export const shishyaMysteryBoxes = pgTable("shishya_mystery_boxes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  boxType: text("box_type").notNull(),
+  rewardType: text("reward_type"),
+  rewardValue: integer("reward_value"),
+  opened: boolean("opened").default(false).notNull(),
+  openedAt: timestamp("opened_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaMysteryBoxesRelations = relations(shishyaMysteryBoxes, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaMysteryBoxes.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaMysteryBoxSchema = createInsertSchema(shishyaMysteryBoxes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaMysteryBox = z.infer<typeof insertShishyaMysteryBoxSchema>;
+export type ShishyaMysteryBox = typeof shishyaMysteryBoxes.$inferSelect;
+
+// ==================== SHISHYA MOTIVATION RULES ====================
+export const shishyaMotivationRules = pgTable("shishya_motivation_rules", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  triggerType: text("trigger_type").notNull(),
+  triggerCondition: jsonb("trigger_condition").notNull(),
+  actionType: text("action_type").notNull(),
+  actionData: jsonb("action_data").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  priority: integer("priority").default(0).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertShishyaMotivationRuleSchema = createInsertSchema(shishyaMotivationRules).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaMotivationRule = z.infer<typeof insertShishyaMotivationRuleSchema>;
+export type ShishyaMotivationRule = typeof shishyaMotivationRules.$inferSelect;
+
+// ==================== SHISHYA RULE TRIGGER LOGS ====================
+export const shishyaRuleTriggerLogs = pgTable("shishya_rule_trigger_logs", {
+  id: serial("id").primaryKey(),
+  ruleId: integer("rule_id").notNull().references(() => shishyaMotivationRules.id, { onDelete: "cascade" }),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  triggeredAt: timestamp("triggered_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  actionTaken: jsonb("action_taken"),
+});
+
+export const shishyaRuleTriggerLogsRelations = relations(shishyaRuleTriggerLogs, ({ one }) => ({
+  rule: one(shishyaMotivationRules, { fields: [shishyaRuleTriggerLogs.ruleId], references: [shishyaMotivationRules.id] }),
+  user: one(shishyaUsers, { fields: [shishyaRuleTriggerLogs.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaRuleTriggerLogSchema = createInsertSchema(shishyaRuleTriggerLogs).omit({
+  id: true,
+  triggeredAt: true,
+});
+
+export type InsertShishyaRuleTriggerLog = z.infer<typeof insertShishyaRuleTriggerLogSchema>;
+export type ShishyaRuleTriggerLog = typeof shishyaRuleTriggerLogs.$inferSelect;
+
+// ==================== SHISHYA MOTIVATION CARDS ====================
+export const shishyaMotivationCards = pgTable("shishya_motivation_cards", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  cardType: text("card_type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  actionUrl: text("action_url"),
+  dismissed: boolean("dismissed").default(false).notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaMotivationCardsRelations = relations(shishyaMotivationCards, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaMotivationCards.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaMotivationCardSchema = createInsertSchema(shishyaMotivationCards).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaMotivationCard = z.infer<typeof insertShishyaMotivationCardSchema>;
+export type ShishyaMotivationCard = typeof shishyaMotivationCards.$inferSelect;
+
+// ==================== SHISHYA AI NUDGE LOGS ====================
+export const shishyaAiNudgeLogs = pgTable("shishya_ai_nudge_logs", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  nudgeType: text("nudge_type").notNull(),
+  message: text("message").notNull(),
+  context: jsonb("context"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaAiNudgeLogsRelations = relations(shishyaAiNudgeLogs, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaAiNudgeLogs.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaAiNudgeLogSchema = createInsertSchema(shishyaAiNudgeLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaAiNudgeLog = z.infer<typeof insertShishyaAiNudgeLogSchema>;
+export type ShishyaAiNudgeLog = typeof shishyaAiNudgeLogs.$inferSelect;
+
+// ==================== SHISHYA SCHOLARSHIPS ====================
+export const shishyaScholarships = pgTable("shishya_scholarships", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  credits: integer("credits").notNull(),
+  eligibilityCriteria: jsonb("eligibility_criteria"),
+  maxRecipients: integer("max_recipients"),
+  currentRecipients: integer("current_recipients").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  startsAt: timestamp("starts_at"),
+  endsAt: timestamp("ends_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const insertShishyaScholarshipSchema = createInsertSchema(shishyaScholarships).omit({
+  id: true,
+  currentRecipients: true,
+  createdAt: true,
+});
+
+export type InsertShishyaScholarship = z.infer<typeof insertShishyaScholarshipSchema>;
+export type ShishyaScholarship = typeof shishyaScholarships.$inferSelect;
+
+// ==================== SHISHYA USER SCHOLARSHIPS ====================
+export const shishyaUserScholarships = pgTable("shishya_user_scholarships", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  scholarshipId: integer("scholarship_id").notNull().references(() => shishyaScholarships.id, { onDelete: "cascade" }),
+  awardedAt: timestamp("awarded_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  status: text("status").default("active").notNull(),
+});
+
+export const shishyaUserScholarshipsRelations = relations(shishyaUserScholarships, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUserScholarships.userId], references: [shishyaUsers.id] }),
+  scholarship: one(shishyaScholarships, { fields: [shishyaUserScholarships.scholarshipId], references: [shishyaScholarships.id] }),
+}));
+
+export const insertShishyaUserScholarshipSchema = createInsertSchema(shishyaUserScholarships).omit({
+  id: true,
+  awardedAt: true,
+});
+
+export type InsertShishyaUserScholarship = z.infer<typeof insertShishyaUserScholarshipSchema>;
+export type ShishyaUserScholarship = typeof shishyaUserScholarships.$inferSelect;
+
+// ==================== SHISHYA MARKSHEETS ====================
+export const shishyaMarksheets = pgTable("shishya_marksheets", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  marksheetNumber: text("marksheet_number").notNull().unique(),
+  coursesCompleted: integer("courses_completed").default(0).notNull(),
+  totalCredits: integer("total_credits").default(0).notNull(),
+  cgpa: text("cgpa"),
+  classification: text("classification"),
+  generatedAt: timestamp("generated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaMarksheetsRelations = relations(shishyaMarksheets, ({ one }) => ({
+  user: one(shishyaUsers, { fields: [shishyaMarksheets.userId], references: [shishyaUsers.id] }),
+}));
+
+export const insertShishyaMarksheetSchema = createInsertSchema(shishyaMarksheets).omit({
+  id: true,
+  generatedAt: true,
+});
+
+export type InsertShishyaMarksheet = z.infer<typeof insertShishyaMarksheetSchema>;
+export type ShishyaMarksheet = typeof shishyaMarksheets.$inferSelect;
+
+// ==================== SHISHYA MARKSHEET VERIFICATIONS ====================
+export const shishyaMarksheetVerifications = pgTable("shishya_marksheet_verifications", {
+  id: serial("id").primaryKey(),
+  marksheetId: varchar("marksheet_id", { length: 36 }).notNull().references(() => shishyaMarksheets.id, { onDelete: "cascade" }),
+  verifiedAt: timestamp("verified_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  verifierIp: text("verifier_ip"),
+  verifierAgent: text("verifier_agent"),
+});
+
+export const shishyaMarksheetVerificationsRelations = relations(shishyaMarksheetVerifications, ({ one }) => ({
+  marksheet: one(shishyaMarksheets, { fields: [shishyaMarksheetVerifications.marksheetId], references: [shishyaMarksheets.id] }),
+}));
+
+export const insertShishyaMarksheetVerificationSchema = createInsertSchema(shishyaMarksheetVerifications).omit({
+  id: true,
+  verifiedAt: true,
+});
+
+export type InsertShishyaMarksheetVerification = z.infer<typeof insertShishyaMarksheetVerificationSchema>;
+export type ShishyaMarksheetVerification = typeof shishyaMarksheetVerifications.$inferSelect;
+
+// ==================== SHISHYA USHA CONVERSATIONS ====================
+export const shishyaUshaConversations = pgTable("shishya_usha_conversations", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => shishyaUsers.id, { onDelete: "cascade" }),
+  courseId: integer("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  pageType: text("page_type").notNull(),
+  contextId: integer("context_id"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaUshaConversationsRelations = relations(shishyaUshaConversations, ({ one, many }) => ({
+  user: one(shishyaUsers, { fields: [shishyaUshaConversations.userId], references: [shishyaUsers.id] }),
+  course: one(courses, { fields: [shishyaUshaConversations.courseId], references: [courses.id] }),
+  messages: many(shishyaUshaMessages),
+}));
+
+export const insertShishyaUshaConversationSchema = createInsertSchema(shishyaUshaConversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertShishyaUshaConversation = z.infer<typeof insertShishyaUshaConversationSchema>;
+export type ShishyaUshaConversation = typeof shishyaUshaConversations.$inferSelect;
+
+// ==================== SHISHYA USHA MESSAGES ====================
+export const shishyaUshaMessages = pgTable("shishya_usha_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull().references(() => shishyaUshaConversations.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  responseType: text("response_type"),
+  helpLevel: text("help_level"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const shishyaUshaMessagesRelations = relations(shishyaUshaMessages, ({ one }) => ({
+  conversation: one(shishyaUshaConversations, { fields: [shishyaUshaMessages.conversationId], references: [shishyaUshaConversations.id] }),
+}));
+
+export const insertShishyaUshaMessageSchema = createInsertSchema(shishyaUshaMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertShishyaUshaMessage = z.infer<typeof insertShishyaUshaMessageSchema>;
+export type ShishyaUshaMessage = typeof shishyaUshaMessages.$inferSelect;
 
 // ==================== USER SUBSCRIPTIONS ====================
 export const userSubscriptions = pgTable("user_subscriptions", {
