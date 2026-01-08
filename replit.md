@@ -56,6 +56,33 @@ Preferred communication style: Simple, everyday language.
 ### Data Model
 Core entities include Users, Courses, Modules, Lessons, Projects, Tests, Questions, Practice Labs, Certificates, Skills, and Audit Logs.
 
+### Dual-Table Architecture (Version 1)
+The platform uses a dual-table architecture to separate draft content from published content:
+
+**Draft Tables** (`shared/draft-schema.ts`):
+- `draft_courses`, `draft_modules`, `draft_lessons`, `draft_tests`, `draft_questions`
+- `draft_projects`, `draft_practice_labs`, `draft_certificates`
+- `draft_rewards`, `draft_achievement_cards`, `draft_motivational_cards`
+- Draft tables include: `createdBy`, `liveCourseId` (reference to published version), `version`
+
+**Live Tables** (`shared/schema.ts`):
+- Original tables: `courses`, `modules`, `lessons`, `tests`, `questions`, etc.
+- Include `draftCourseId` (reverse reference), `version` field
+- Students read ONLY from live tables with `status='published'`
+
+**Workflow**:
+1. Admin creates/edits content in draft tables via `/api/draft-courses/*` endpoints
+2. On publish, `publish-service.ts` copies draft content to live tables with ID mapping
+3. Live course gets `status='published'` and is visible to students via Public API
+4. Unpublish sets live course `status='draft'` (content preserved for re-publishing)
+
+**Routes**:
+- `/api/draft-courses/*` - Full CRUD for draft content
+- `/api/draft-courses/:id/publish` - Publish draft to live
+- `/api/draft-courses/:id/unpublish` - Unpublish from live
+- `/api/courses/*` - Legacy routes (still work with live tables)
+- `/api/public/*` - Student-facing API (reads only published live content)
+
 ### Lesson YouTube References
 Lessons can have YouTube video references attached for supplementary learning:
 - **Schema**: `youtubeReferences` field stores array of `{url, title, description?}`
