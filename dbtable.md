@@ -1,1169 +1,1653 @@
-# Oushiksha Guru - Database Schema Documentation
+# Oushiksha Guru & Shishya Database Schema Documentation
 
-Complete reference for all PostgreSQL database tables used in the Oushiksha Guru admin platform.
+## Overview
+
+The database contains **69 tables** organized into two main categories:
+
+1. **Admin (Guru) Tables** - Managed by the Admin portal for course creation, content management, and governance
+2. **Student (Shishya) Tables** - All prefixed with `shishya_` for student authentication, progress, credits, and AI features
+
+Both Guru (admin) and Shishya (student) portals share the same PostgreSQL database.
 
 ---
 
 ## Table of Contents
 
-1. [Admin & Authentication](#admin--authentication)
-2. [Course Management (Core)](#course-management-core)
-3. [Course Content](#course-content)
-4. [Projects & Labs](#projects--labs)
-5. [Tests & Questions](#tests--questions)
-6. [Certificates](#certificates)
-7. [Business & Payments](#business--payments)
-8. [Shishya (Student) Portal](#shishya-student-portal)
-9. [Rewards & Gamification](#rewards--gamification)
-10. [Fraud Detection & Security](#fraud-detection--security)
-11. [Audit & Logging](#audit--logging)
+1. [Course Content Tables](#course-content-tables)
+2. [Admin Authentication & Security Tables](#admin-authentication--security-tables)
+3. [Business & Payment Tables](#business--payment-tables)
+4. [Governance & Compliance Tables](#governance--compliance-tables)
+5. [Shishya Authentication Tables](#shishya-authentication-tables)
+6. [Shishya Profile Tables](#shishya-profile-tables)
+7. [Shishya Progress Tables](#shishya-progress-tables)
+8. [Shishya Credits & Wallet Tables](#shishya-credits--wallet-tables)
+9. [Shishya Notifications Tables](#shishya-notifications-tables)
+10. [Shishya AI Motivation Tables](#shishya-ai-motivation-tables)
+11. [Shishya Academic Tables](#shishya-academic-tables)
+12. [Shishya AI Tutor Tables](#shishya-ai-tutor-tables)
 
 ---
 
-## Admin & Authentication
+## Course Content Tables
 
-### `users`
-**Purpose**: Stores admin user accounts for the Guru (admin) portal.
+These tables store the educational content created by admins. Shishya reads only published content.
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | varchar | No | UUID | Primary key (auto-generated UUID) |
-| `username` | text | No | - | Unique username for login |
-| `email` | text | No | - | Unique email address |
-| `password` | text | No | - | Bcrypt hashed password (12 rounds) |
-| `role` | text | No | 'admin' | User role: 'admin', 'pending_admin', 'super_admin' |
-| `is_active` | boolean | No | true | Whether account is active |
-| `is_email_verified` | boolean | No | false | Email verification status |
-| `two_factor_enabled` | boolean | No | false | 2FA enabled flag |
-| `failed_login_attempts` | integer | No | 0 | Counter for failed logins |
-| `locked_until` | timestamp | Yes | - | Account lockout expiry time |
-| `invited_by` | varchar | Yes | - | FK to users.id (inviter) |
-| `last_login_at` | timestamp | Yes | - | Last successful login time |
-| `created_at` | timestamp | No | NOW() | Account creation time |
+### courses
 
-**Usage**: Used for admin authentication, role-based access control, and account security.
+Main catalog of all courses. **Source of truth** for course data.
 
----
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | TEXT | Course title |
+| description | TEXT | Full course description |
+| level | TEXT | Difficulty: beginner/intermediate/advanced |
+| target_audience | TEXT | Who this course is for |
+| duration | TEXT | Estimated completion time |
+| overview | TEXT | Course overview summary |
+| learning_outcomes | JSONB | Array of learning objectives |
+| job_roles | JSONB | Target job roles |
+| include_projects | BOOLEAN | Whether course has projects |
+| include_tests | BOOLEAN | Whether course has tests |
+| include_labs | BOOLEAN | Whether course has labs |
+| certificate_type | TEXT | Type of certificate offered |
+| status | TEXT | draft/published/archived/generating |
+| is_active | BOOLEAN | Quick toggle for Shishya visibility |
+| ai_command | TEXT | Original AI generation command |
+| thumbnail_url | TEXT | Course cover image |
+| credit_cost | INTEGER | Credits required to enroll |
+| is_free | BOOLEAN | Whether course is free |
+| original_credit_cost | INTEGER | Original price before discount |
+| version | INTEGER | Content version number |
+| published_at | TIMESTAMP | When course was published |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
 
-### `otp_tokens`
-**Purpose**: Stores one-time passwords for email verification during signup.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `user_id` | varchar | No | - | FK to users.id |
-| `otp` | text | No | - | 6-digit OTP code |
-| `expires_at` | timestamp | No | - | OTP expiration time |
-| `attempts` | integer | No | 0 | Number of verification attempts |
-| `is_used` | boolean | No | false | Whether OTP was used |
-| `created_at` | timestamp | No | NOW() | Token creation time |
-
-**Usage**: Email verification during admin signup. Sent via Resend API.
+**Usage:** Course catalog, enrollment, progress tracking
+**Shishya Query:** `WHERE status = 'published' AND is_active = true`
 
 ---
 
-### `admin_sessions`
-**Purpose**: Tracks active admin login sessions for security monitoring.
+### modules
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | varchar | No | UUID | Primary key |
-| `user_id` | varchar | No | - | FK to users.id |
-| `token` | text | No | - | JWT token |
-| `device` | text | Yes | - | Device type (mobile, desktop) |
-| `browser` | text | Yes | - | Browser name |
-| `ip_address` | text | Yes | - | Client IP address |
-| `location` | text | Yes | - | Geo-location |
-| `is_active` | boolean | No | true | Session active status |
-| `last_active_at` | timestamp | No | NOW() | Last activity time |
-| `expires_at` | timestamp | No | - | Session expiration (12 hours) |
-| `created_at` | timestamp | No | NOW() | Session start time |
+Sections or chapters within a course.
 
-**Usage**: Session management, concurrent login tracking, session revocation.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| title | TEXT | Module title |
+| description | TEXT | Module overview |
+| order_index | INTEGER | Display order in course |
+| estimated_time | TEXT | Time to complete |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
 
----
-
-### `login_attempts`
-**Purpose**: Records all login attempts for security auditing.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `email` | text | No | - | Attempted email |
-| `user_id` | varchar | Yes | - | FK to users.id (if found) |
-| `success` | boolean | No | - | Login success/failure |
-| `ip_address` | text | Yes | - | Client IP |
-| `user_agent` | text | Yes | - | Browser user agent |
-| `location` | text | Yes | - | Geo-location |
-| `reason` | text | Yes | - | Failure reason |
-| `created_at` | timestamp | No | NOW() | Attempt timestamp |
-
-**Usage**: Security monitoring, brute force detection, audit trail.
+**Usage:** Course structure, navigation, progress tracking
+**Connection:** courses (1) -> (N) modules
 
 ---
 
-## Course Management (Core)
+### lessons
 
-### `courses`
-**Purpose**: Main course table - SINGLE SOURCE OF TRUTH for all course data.
+Individual learning units within modules.
 
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `name` | text | No | - | Course title |
-| `description` | text | Yes | - | Course description |
-| `level` | text | No | 'beginner' | 'beginner', 'intermediate', 'advanced' |
-| `target_audience` | text | Yes | - | Who this course is for |
-| `duration` | text | Yes | - | Estimated duration (e.g., "8 weeks") |
-| `overview` | text | Yes | - | Course overview/summary |
-| `learning_outcomes` | jsonb | Yes | - | Array of learning outcomes |
-| `job_roles` | jsonb | Yes | - | Array of target job roles |
-| `include_projects` | boolean | Yes | true | Generate projects flag |
-| `include_tests` | boolean | Yes | true | Generate tests flag |
-| `include_labs` | boolean | Yes | true | Generate labs flag |
-| `certificate_type` | text | Yes | 'completion' | Certificate type |
-| `status` | text | No | 'draft' | **'draft' \| 'published' \| 'archived' \| 'generating'** |
-| `is_active` | boolean | No | false | **Controls Shishya visibility** |
-| `ai_command` | text | Yes | - | Original AI generation command |
-| `thumbnail_url` | text | Yes | - | Course thumbnail image URL |
-| `credit_cost` | integer | No | 0 | Price in credits |
-| `is_free` | boolean | No | true | Free course flag |
-| `original_credit_cost` | integer | Yes | - | Original price (for discounts) |
-| `pricing_updated_at` | timestamp | Yes | - | Last pricing update |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update time |
-| `published_at` | timestamp | Yes | - | **Set when published** |
-| `deleted_at` | timestamp | Yes | - | Soft delete timestamp |
-| `version` | integer | No | 1 | Version number |
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| module_id | INTEGER | FK to modules.id |
+| title | TEXT | Lesson title |
+| objectives | JSONB | Learning objectives |
+| estimated_time | TEXT | Duration |
+| key_concepts | JSONB | Important concepts covered |
+| video_url | TEXT | Video lesson URL |
+| external_links | JSONB | Additional resources |
+| youtube_references | JSONB | YouTube video references |
+| order_index | INTEGER | Display order in module |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
 
-**Status Flow**:
-- `draft` → Default state, editable, not visible to students
-- `generating` → AI is generating content (cannot publish)
-- `published` → Live and visible to Shishya portal (`is_active=true`)
-- `archived` → Preserved for audit, hidden from students (`is_active=false`)
+**Usage:** Content display, lesson viewer, progress tracking
+**Connection:** modules (1) -> (N) lessons
 
-**Shishya Visibility Rule** (MANDATORY):
-```sql
-SELECT * FROM courses WHERE status = 'published' AND is_active = true;
+---
+
+### tests
+
+Assessments for courses.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| module_id | INTEGER | FK to modules.id (optional) |
+| title | TEXT | Test title |
+| description | TEXT | Test instructions |
+| duration_minutes | INTEGER | Time limit |
+| passing_percentage | INTEGER | Minimum score to pass |
+| total_marks | INTEGER | Maximum marks |
+| is_active | BOOLEAN | Whether test is available |
+| shuffle_questions | BOOLEAN | Randomize question order |
+| show_results | BOOLEAN | Show results after completion |
+| type | TEXT | Test type |
+| difficulty | TEXT | Difficulty level |
+| created_at | TIMESTAMP | Record creation time |
+
+**Usage:** Test taking, scoring, certificate eligibility
+**Connection:** courses (1) -> (N) tests
+
+---
+
+### questions
+
+Test questions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| test_id | INTEGER | FK to tests.id |
+| type | TEXT | Question type (mcq/true_false/short_answer) |
+| text | TEXT | Question text |
+| options | JSONB | Answer options for MCQ |
+| correct_answer | TEXT | Correct answer |
+| explanation | TEXT | Answer explanation |
+| marks | INTEGER | Points for this question |
+| order_index | INTEGER | Display order |
+| created_at | TIMESTAMP | Record creation time |
+
+**Usage:** Test content, grading
+**Connection:** tests (1) -> (N) questions
+
+---
+
+### projects
+
+Hands-on assignments for practical learning.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| module_id | INTEGER | FK to modules.id (optional) |
+| title | TEXT | Project title |
+| description | TEXT | Project requirements |
+| difficulty | TEXT | beginner/intermediate/advanced |
+| estimated_hours | INTEGER | Expected completion time |
+| requirements | JSONB | Submission requirements |
+| rubric | JSONB | Grading criteria |
+| starter_template | TEXT | Initial code template |
+| solution_guide | TEXT | Solution reference |
+| resources | JSONB | Helpful resources |
+| skills | JSONB | Skills practiced |
+| submission_type | TEXT | How to submit |
+| max_submissions | INTEGER | Submission limit |
+| is_active | BOOLEAN | Whether project is available |
+| order_index | INTEGER | Display order |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Project display, submission tracking, certificate eligibility
+**Connection:** courses (1) -> (N) projects
+
+---
+
+### practice_labs
+
+Guided coding exercises with browser-based execution.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| module_id | INTEGER | FK to modules.id |
+| lesson_id | INTEGER | FK to lessons.id |
+| slug | TEXT | URL-friendly identifier |
+| title | TEXT | Lab title |
+| description | TEXT | Lab instructions |
+| difficulty | TEXT | Difficulty level |
+| language | TEXT | Programming language |
+| estimated_time | INTEGER | Minutes to complete |
+| instructions | TEXT | Step-by-step guide |
+| starter_code | TEXT | Initial code template |
+| expected_output | TEXT | Expected result for validation |
+| validation_type | TEXT | How to validate solution |
+| validation_code | TEXT | Validation logic |
+| hints | JSONB | Progressive hints |
+| solution_code | TEXT | Reference solution |
+| prerequisites | JSONB | Required knowledge |
+| skills | JSONB | Skills practiced |
+| is_active | BOOLEAN | Whether lab is available |
+| order_index | INTEGER | Display order |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Interactive coding, output matching, skill building
+**Connection:** courses (1) -> (N) practice_labs
+
+---
+
+### certificates
+
+Certificate templates for courses.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| name | TEXT | Certificate name |
+| description | TEXT | Certificate description |
+| type | TEXT | completion/achievement/skill |
+| skill_tags | JSONB | Skills certified |
+| level | TEXT | Certificate level |
+| requires_test_pass | BOOLEAN | Must pass test |
+| requires_project_completion | BOOLEAN | Must submit project |
+| requires_lab_completion | BOOLEAN | Must complete labs |
+| passing_percentage | INTEGER | Minimum score required |
+| qr_verification | BOOLEAN | QR code for verification |
+| template_id | TEXT | PDF template reference |
+| category | TEXT | Certificate category |
+| tags | JSONB | Additional tags |
+| status | TEXT | draft/active |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Certificate generation, verification, portfolio
+**Connection:** courses (1) -> (1) certificates
+
+---
+
+### skills
+
+Master list of skills taught across courses.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | TEXT | Skill name |
+| category | TEXT | Skill category |
+| created_at | TIMESTAMP | Record creation time |
+
+**Usage:** Skills library, course tagging, portfolio
+**Connection:** Linked to courses via course_skills
+
+---
+
+### course_skills
+
+Many-to-many relationship between courses and skills.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| skill_id | INTEGER | FK to skills.id |
+
+**Usage:** Skill tagging for courses
+**Connection:** courses (N) <-> (N) skills
+
+---
+
+### ai_notes
+
+AI-generated lesson notes and summaries.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| lesson_id | INTEGER | FK to lessons.id |
+| content | TEXT | Full notes content |
+| simplified_explanation | TEXT | Simple explanation |
+| bullet_notes | JSONB | Key points |
+| key_takeaways | JSONB | Main takeaways |
+| interview_questions | JSONB | Related interview questions |
+| version | INTEGER | Notes version |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Study aids, revision, interview prep
+**Connection:** lessons (1) -> (1) ai_notes
+
+---
+
+### course_rewards
+
+Reward configuration for each course.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| coins_enabled | BOOLEAN | Enable coin rewards |
+| coin_name | TEXT | Custom coin name |
+| coin_icon | TEXT | Icon for coins |
+| rules_json | JSONB | Reward rules configuration |
+| bonus_json | JSONB | Bonus reward settings |
+| scholarship_enabled | BOOLEAN | Enable scholarship |
+| scholarship_json | JSONB | Scholarship configuration |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Gamification, rewards configuration
+**Connection:** courses (1) -> (1) course_rewards
+
+---
+
+### achievement_cards
+
+Achievement badges for courses.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| title | TEXT | Achievement title |
+| description | TEXT | Achievement description |
+| icon | TEXT | Badge icon |
+| condition_json | JSONB | Unlock conditions |
+| rarity | TEXT | common/rare/epic/legendary |
+| is_active | BOOLEAN | Whether active |
+| sort_order | INTEGER | Display order |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Gamification, student motivation
+**Connection:** courses (1) -> (N) achievement_cards
+
+---
+
+### motivational_cards
+
+Motivational messages displayed during learning.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| message | TEXT | Motivational message |
+| trigger_type | TEXT | When to display |
+| trigger_value | INTEGER | Trigger threshold |
+| icon | TEXT | Display icon |
+| is_active | BOOLEAN | Whether active |
+| sort_order | INTEGER | Display order |
+| created_at | TIMESTAMP | Record creation time |
+
+**Usage:** Student motivation, engagement
+**Connection:** courses (1) -> (N) motivational_cards
+
+---
+
+## Admin Authentication & Security Tables
+
+### users
+
+Admin user accounts.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | Primary key (UUID) |
+| username | TEXT | Unique username |
+| email | TEXT | Unique email address |
+| password | TEXT | Bcrypt hashed password |
+| role | TEXT | pending_admin/admin/super_admin |
+| is_email_verified | BOOLEAN | Email verification status |
+| profile_image | TEXT | Profile picture URL |
+| last_login | TIMESTAMP | Last login time |
+| failed_login_attempts | INTEGER | Failed login counter |
+| lockout_until | TIMESTAMP | Account lockout expiry |
+| must_change_password | BOOLEAN | Force password change |
+| created_at | TIMESTAMP | Account creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Admin authentication, authorization
+**Security:** Bcrypt hashing, lockout after failed attempts
+
+---
+
+### otp_tokens
+
+One-time passwords for admin verification.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR | FK to users.id |
+| otp | TEXT | Hashed OTP code |
+| expires_at | TIMESTAMP | OTP expiration |
+| attempts | INTEGER | Verification attempts |
+| is_used | BOOLEAN | Whether OTP was used |
+| created_at | TIMESTAMP | OTP creation time |
+
+**Usage:** Email verification, password reset
+**Connection:** users (1) -> (N) otp_tokens
+
+---
+
+### admin_sessions
+
+Active admin login sessions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | Primary key (UUID) |
+| user_id | VARCHAR | FK to users.id |
+| token | TEXT | Session token |
+| device | TEXT | Device info |
+| browser | TEXT | Browser info |
+| ip_address | TEXT | Client IP |
+| location | TEXT | Geo location |
+| is_active | BOOLEAN | Session active status |
+| last_active_at | TIMESTAMP | Last activity |
+| expires_at | TIMESTAMP | Session expiry |
+| created_at | TIMESTAMP | Session creation |
+
+**Usage:** Session management, security monitoring
+**Connection:** users (1) -> (N) admin_sessions
+
+---
+
+### login_attempts
+
+Login attempt audit log.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| email | TEXT | Attempted email |
+| user_id | VARCHAR | FK to users.id (if exists) |
+| success | BOOLEAN | Whether login succeeded |
+| ip_address | TEXT | Client IP |
+| user_agent | TEXT | Browser info |
+| location | TEXT | Geo location |
+| reason | TEXT | Failure reason |
+| created_at | TIMESTAMP | Attempt time |
+
+**Usage:** Security auditing, abuse detection
+**Connection:** users (1) -> (N) login_attempts
+
+---
+
+### audit_logs
+
+System-wide audit trail.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR | FK to users.id |
+| action | TEXT | Action performed |
+| entity_type | TEXT | Type of entity modified |
+| entity_id | INTEGER | ID of entity modified |
+| old_value | JSONB | Previous state |
+| new_value | JSONB | New state |
+| metadata | JSONB | Additional context |
+| created_at | TIMESTAMP | Action timestamp |
+
+**Usage:** Compliance, debugging, accountability
+**Connection:** Tracks all admin actions
+
+---
+
+### ai_generation_logs
+
+AI content generation history.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| course_id | INTEGER | FK to courses.id |
+| generation_type | TEXT | Type of content generated |
+| prompt | TEXT | AI prompt used |
+| response | TEXT | AI response |
+| tokens_used | INTEGER | API tokens consumed |
+| status | TEXT | pending/success/failed |
+| error_message | TEXT | Error if failed |
+| created_at | TIMESTAMP | Generation start |
+| completed_at | TIMESTAMP | Generation end |
+
+**Usage:** AI usage tracking, debugging, cost monitoring
+**Connection:** courses (1) -> (N) ai_generation_logs
+
+---
+
+## Business & Payment Tables
+
+### credit_packages
+
+Purchasable credit bundles.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | TEXT | Package name |
+| description | TEXT | Package description |
+| credits | INTEGER | Credits included |
+| price_inr | INTEGER | Price in INR |
+| price_usd | INTEGER | Price in USD |
+| discount | INTEGER | Discount percentage |
+| is_active | BOOLEAN | Whether available |
+| is_featured | BOOLEAN | Featured package |
+| validity_days | INTEGER | Credit validity |
+| created_at | TIMESTAMP | Record creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Credit purchases, pricing display
+
+---
+
+### vouchers
+
+Promotional voucher codes (Admin-managed).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| code | TEXT | Unique voucher code |
+| type | TEXT | Voucher type |
+| value | INTEGER | Discount value |
+| min_purchase | INTEGER | Minimum purchase required |
+| max_uses | INTEGER | Maximum redemptions |
+| used_count | INTEGER | Current usage count |
+| starts_at | TIMESTAMP | Start date |
+| expires_at | TIMESTAMP | Expiration date |
+| is_active | BOOLEAN | Whether active |
+| applicable_packages | JSONB | Eligible packages |
+| created_by | VARCHAR | Admin who created |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Promotions, marketing campaigns
+
+---
+
+### gift_boxes
+
+Gift card products (Admin catalog).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | TEXT | Gift box name |
+| description | TEXT | Description |
+| credits | INTEGER | Credits included |
+| price_inr | INTEGER | Price in INR |
+| price_usd | INTEGER | Price in USD |
+| template_image | TEXT | Gift card design |
+| custom_message | TEXT | Gift message |
+| is_active | BOOLEAN | Whether available |
+| expiry_days | INTEGER | Validity period |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Gift purchases, gifting features
+
+---
+
+### payment_gateways
+
+Payment gateway configurations.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | TEXT | Gateway name |
+| type | TEXT | Gateway type |
+| is_active | BOOLEAN | Whether enabled |
+| is_test_mode | BOOLEAN | Test mode flag |
+| config | JSONB | Gateway configuration |
+| priority | INTEGER | Display order |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Payment processing configuration
+
+---
+
+### upi_settings
+
+UPI payment settings.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| upi_id | TEXT | UPI ID |
+| display_name | TEXT | Display name |
+| is_active | BOOLEAN | Whether enabled |
+| qr_code | TEXT | QR code image |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** UPI payment collection
+
+---
+
+### bank_accounts
+
+Bank account details for payments.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| bank_name | TEXT | Bank name |
+| account_number | TEXT | Account number |
+| account_holder_name | TEXT | Account holder |
+| ifsc_code | TEXT | IFSC code |
+| branch_name | TEXT | Branch name |
+| account_type | TEXT | savings/current |
+| is_active | BOOLEAN | Whether active |
+| is_primary | BOOLEAN | Primary account |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Bank transfer payments
+
+---
+
+### subscription_plans
+
+Subscription tier definitions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | TEXT | Plan name |
+| description | TEXT | Plan description |
+| price_monthly | INTEGER | Monthly price |
+| price_yearly | INTEGER | Yearly price |
+| currency | TEXT | Currency code |
+| features | JSONB | Plan features |
+| credits_monthly | INTEGER | Monthly credits |
+| max_courses | INTEGER | Course access limit |
+| priority_support | BOOLEAN | Priority support |
+| is_active | BOOLEAN | Whether available |
+| is_featured | BOOLEAN | Featured plan |
+| created_at | TIMESTAMP | Creation time |
+
+**Usage:** Subscription management, pricing
+
+---
+
+### user_subscriptions
+
+User subscription records.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| shishya_user_id | VARCHAR | FK to shishya_users.id |
+| plan_id | INTEGER | FK to subscription_plans.id |
+| status | TEXT | active/cancelled/expired |
+| starts_at | TIMESTAMP | Start date |
+| ends_at | TIMESTAMP | End date |
+| auto_renew | BOOLEAN | Auto renewal |
+| created_at | TIMESTAMP | Creation time |
+
+**Usage:** Subscription tracking
+**Connection:** shishya_users (1) -> (N) user_subscriptions
+
+---
+
+### promotions
+
+Marketing promotions and campaigns.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | TEXT | Promotion name |
+| description | TEXT | Description |
+| type | TEXT | Promotion type |
+| value | INTEGER | Discount value |
+| code | TEXT | Promo code |
+| starts_at | TIMESTAMP | Start date |
+| ends_at | TIMESTAMP | End date |
+| max_uses | INTEGER | Usage limit |
+| used_count | INTEGER | Current usage |
+| is_active | BOOLEAN | Whether active |
+| created_by | VARCHAR | Admin who created |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Marketing, seasonal discounts
+
+---
+
+### system_settings
+
+Global system configuration.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| key | TEXT | Setting key |
+| value | TEXT | Setting value |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** System-wide configuration
+
+---
+
+## Governance & Compliance Tables
+
+### approval_policies
+
+Reward approval policy configurations.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| reward_type | TEXT | Type of reward |
+| approval_mode | TEXT | auto/manual/dual approval |
+| min_value_for_approval | INTEGER | Threshold for approval |
+| max_auto_approve_value | INTEGER | Auto-approve limit |
+| require_dual_approval | BOOLEAN | Dual approval required |
+| dual_approval_threshold | INTEGER | Dual approval threshold |
+| cooldown_minutes | INTEGER | Cooldown between rewards |
+| daily_limit | INTEGER | Daily limit |
+| weekly_limit | INTEGER | Weekly limit |
+| is_active | BOOLEAN | Whether active |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Fraud prevention, reward governance
+
+---
+
+### motivation_rules
+
+Admin-defined motivation trigger rules.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | TEXT | Rule name |
+| description | TEXT | Rule description |
+| trigger_type | TEXT | Event type |
+| trigger_condition | JSONB | Trigger conditions |
+| reward_type | TEXT | Reward type |
+| reward_value | INTEGER | Reward amount |
+| reward_metadata | JSONB | Additional reward data |
+| approval_mode | TEXT | Approval requirement |
+| priority | INTEGER | Rule priority |
+| is_active | BOOLEAN | Whether active |
+| valid_from | TIMESTAMP | Start date |
+| valid_to | TIMESTAMP | End date |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Automated gamification, engagement rules
+
+---
+
+### reward_approvals
+
+Pending reward approvals queue.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| shishya_user_id | VARCHAR | FK to shishya_users.id |
+| rule_id | INTEGER | FK to motivation_rules.id |
+| reward_type | TEXT | Type of reward |
+| reward_value | INTEGER | Reward amount |
+| trigger_event | TEXT | What triggered this |
+| trigger_data | JSONB | Trigger context |
+| status | TEXT | pending/approved/rejected |
+| first_approver_id | VARCHAR | First approver |
+| first_approved_at | TIMESTAMP | First approval time |
+| second_approver_id | VARCHAR | Second approver |
+| second_approved_at | TIMESTAMP | Second approval time |
+| rejected_by | VARCHAR | Rejector if rejected |
+| rejection_reason | TEXT | Rejection reason |
+| auto_approved | BOOLEAN | Auto-approved flag |
+| expires_at | TIMESTAMP | Approval expiry |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Reward approval workflow
+**Connection:** shishya_users (1) -> (N) reward_approvals
+
+---
+
+### fraud_flags
+
+Suspicious activity flags.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| shishya_user_id | INTEGER | FK to shishya_users.id |
+| flag_type | TEXT | Type of fraud indicator |
+| severity | TEXT | low/medium/high/critical |
+| description | TEXT | Flag description |
+| detection_data | JSONB | Detection details |
+| status | TEXT | active/resolved/dismissed |
+| resolved_by | VARCHAR | Admin who resolved |
+| resolved_at | TIMESTAMP | Resolution time |
+| resolution_notes | TEXT | Resolution notes |
+| created_at | TIMESTAMP | Detection time |
+
+**Usage:** Fraud detection, abuse prevention
+**Connection:** shishya_users (1) -> (N) fraud_flags
+
+---
+
+### wallet_freezes
+
+Frozen wallet records.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| shishya_user_id | VARCHAR | FK to shishya_users.id |
+| frozen_by | VARCHAR | Admin who froze |
+| reason | TEXT | Freeze reason |
+| frozen_at | TIMESTAMP | Freeze time |
+| unfrozen_by | VARCHAR | Admin who unfroze |
+| unfrozen_at | TIMESTAMP | Unfreeze time |
+| is_active | BOOLEAN | Currently frozen |
+| created_at | TIMESTAMP | Record creation |
+| updated_at | TIMESTAMP | Last update |
+
+**Usage:** Wallet security, fraud response
+**Connection:** shishya_users (1) -> (N) wallet_freezes
+
+---
+
+### reward_overrides
+
+Manual reward adjustments.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| shishya_user_id | VARCHAR | FK to shishya_users.id |
+| admin_id | VARCHAR | Admin who made override |
+| action_type | TEXT | grant_coins/deduct_coins |
+| reward_type | TEXT | Type of reward |
+| amount | INTEGER | Amount adjusted |
+| reason | TEXT | Justification |
+| wallet_transaction_id | INTEGER | Related transaction |
+| created_at | TIMESTAMP | Override time |
+
+**Usage:** Manual reward management
+**Connection:** shishya_users (1) -> (N) reward_overrides
+
+---
+
+### risk_scores
+
+User risk assessment scores.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| shishya_user_id | VARCHAR | FK to shishya_users.id |
+| overall_score | INTEGER | Combined risk score |
+| velocity_score | INTEGER | Activity velocity risk |
+| pattern_score | INTEGER | Pattern anomaly risk |
+| value_score | INTEGER | Value anomaly risk |
+| factors | JSONB | Contributing factors |
+| last_calculated | TIMESTAMP | Last calculation |
+| created_at | TIMESTAMP | First calculation |
+| updated_at | TIMESTAMP | Last update |
+
+**Usage:** Risk assessment, fraud prevention
+**Connection:** shishya_users (1) -> (1) risk_scores
+
+---
+
+### admin_action_logs
+
+Detailed admin action audit trail.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| admin_id | VARCHAR | FK to users.id |
+| action_type | TEXT | Type of action |
+| entity_type | TEXT | Entity affected |
+| entity_id | TEXT | Entity ID |
+| previous_state | JSONB | State before |
+| new_state | JSONB | State after |
+| reason | TEXT | Action justification |
+| ip_address | TEXT | Admin IP |
+| user_agent | TEXT | Browser info |
+| created_at | TIMESTAMP | Action time |
+
+**Usage:** Admin accountability, compliance
+**Connection:** users (1) -> (N) admin_action_logs
+
+---
+
+### scholarships
+
+Scholarship programs managed by admin.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| shishya_user_id | VARCHAR | FK to shishya_users.id |
+| course_id | INTEGER | FK to courses.id |
+| title | TEXT | Scholarship title |
+| description | TEXT | Description |
+| credits | INTEGER | Credits awarded |
+| percentage | INTEGER | Discount percentage |
+| status | TEXT | pending/approved/rejected |
+| approved_by | VARCHAR | Approving admin |
+| valid_from | TIMESTAMP | Start date |
+| valid_to | TIMESTAMP | End date |
+| created_at | TIMESTAMP | Creation time |
+| updated_at | TIMESTAMP | Last update |
+
+**Usage:** Financial aid, access grants
+**Connection:** shishya_users (1) -> (N) scholarships
+
+---
+
+### activity_logs
+
+User activity tracking.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| shishya_user_id | INTEGER | FK to shishya_users.id |
+| action | TEXT | Action performed |
+| entity_type | TEXT | Type of entity |
+| entity_id | TEXT | Entity ID |
+| metadata | JSONB | Additional data |
+| ip_address | TEXT | Client IP |
+| user_agent | TEXT | Browser info |
+| created_at | TIMESTAMP | Action time |
+
+**Usage:** User behavior analytics
+**Connection:** shishya_users (1) -> (N) activity_logs
+
+---
+
+## Shishya Authentication Tables
+
+### shishya_users
+
+Student account credentials.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | Primary key (UUID v4) |
+| email | VARCHAR(255) | Unique email address |
+| password_hash | TEXT | Bcrypt hashed password |
+| name | VARCHAR(255) | Display name |
+| phone | VARCHAR(20) | Phone number |
+| status | VARCHAR(20) | active/suspended/deleted |
+| email_verified | BOOLEAN | Email verification status |
+| phone_verified | BOOLEAN | Phone verification status |
+| last_login_at | TIMESTAMP | Last login time |
+| last_active_at | TIMESTAMP | Last activity time |
+| created_at | TIMESTAMP | Account creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Student authentication, login, identity
+**Key:** UUID v4 for distributed ID generation
+
+---
+
+### shishya_sessions
+
+Server-side session storage.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| sid | VARCHAR(255) | Session ID (Primary key) |
+| sess | JSONB | Session data |
+| expire | TIMESTAMP | Session expiration time |
+
+**Usage:** Session management, HTTP-only cookies
+**Connection:** Express session store
+
+---
+
+### shishya_otp_codes
+
+One-time passwords for verification.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| email | VARCHAR(255) | Target email address |
+| otp_hash | TEXT | SHA256 hashed OTP |
+| expires_at | TIMESTAMP | OTP expiration time |
+| verified | BOOLEAN | Whether OTP was used |
+| created_at | TIMESTAMP | OTP creation time |
+
+**Usage:** Email verification, password reset, secure signup
+
+---
+
+### shishya_otp_logs
+
+OTP action audit trail.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| email | VARCHAR(255) | Target email |
+| action | VARCHAR(50) | Action type (send/verify/fail) |
+| ip_address | VARCHAR(45) | Client IP address |
+| user_agent | TEXT | Browser user agent |
+| created_at | TIMESTAMP | Action timestamp |
+
+**Usage:** Security auditing, abuse detection
+
+---
+
+## Shishya Profile Tables
+
+### shishya_user_profiles
+
+Extended student profile information.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | Primary key (UUID) |
+| user_id | VARCHAR(36) | FK to shishya_users.id (Unique) |
+| full_name | VARCHAR(255) | Display name |
+| username | VARCHAR(50) | Unique public username |
+| bio | TEXT | About me (max 500 chars) |
+| profile_photo | TEXT | Base64 encoded photo |
+| headline | VARCHAR(200) | Professional headline |
+| location | VARCHAR(100) | City/Country |
+| github_url | TEXT | GitHub profile link |
+| linkedin_url | TEXT | LinkedIn profile link |
+| website_url | TEXT | Personal website |
+| facebook_url | TEXT | Facebook profile |
+| instagram_url | TEXT | Instagram profile |
+| portfolio_visible | BOOLEAN | Public portfolio enabled |
+| created_at | TIMESTAMP | Profile creation time |
+| updated_at | TIMESTAMP | Last update time |
+
+**Usage:** Profile page, public portfolio, social links
+**Connection:** shishya_users (1) -> (1) shishya_user_profiles
+
+---
+
+## Shishya Progress Tables
+
+### shishya_user_progress
+
+Lesson completion tracking.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| course_id | INTEGER | FK to courses.id |
+| lesson_id | INTEGER | FK to lessons.id |
+| completed | BOOLEAN | Completion status |
+| completed_at | TIMESTAMP | When marked complete |
+| created_at | TIMESTAMP | Record creation time |
+
+**Usage:** Progress bars, continue learning, course completion
+**Connection:** shishya_users (1) -> (N) shishya_user_progress
+
+---
+
+### shishya_user_lab_progress
+
+Lab completion and code storage.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| lab_id | INTEGER | FK to practice_labs.id |
+| completed | BOOLEAN | Completion status |
+| user_code | TEXT | Student's saved code |
+| completed_at | TIMESTAMP | When completed |
+| created_at | TIMESTAMP | Record creation time |
+
+**Usage:** Lab progress, code persistence, skill tracking
+**Connection:** shishya_users (1) -> (N) shishya_user_lab_progress
+
+---
+
+### shishya_user_test_attempts
+
+Test attempt history and scores.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| test_id | INTEGER | FK to tests.id |
+| course_id | INTEGER | FK to courses.id |
+| score | INTEGER | Points earned |
+| total_questions | INTEGER | Number of questions |
+| passed | BOOLEAN | Met passing percentage |
+| answers | JSONB | Student's answers |
+| time_taken | INTEGER | Seconds to complete |
+| attempted_at | TIMESTAMP | Attempt timestamp |
+
+**Usage:** Test results, certificate eligibility, marksheet grades
+**Connection:** shishya_users (1) -> (N) shishya_user_test_attempts
+
+---
+
+### shishya_user_project_submissions
+
+Project submission tracking.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| project_id | INTEGER | FK to projects.id |
+| course_id | INTEGER | FK to courses.id |
+| submission_url | TEXT | Live demo URL |
+| github_url | TEXT | Repository URL |
+| description | TEXT | Submission notes |
+| status | VARCHAR(20) | pending/approved/rejected |
+| feedback | TEXT | Reviewer feedback |
+| submitted_at | TIMESTAMP | Submission time |
+| reviewed_at | TIMESTAMP | Review timestamp |
+
+**Usage:** Project submissions, portfolio, certificate eligibility
+**Connection:** shishya_users (1) -> (N) shishya_user_project_submissions
+
+---
+
+### shishya_user_certificates
+
+Earned certificates.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | Primary key (UUID) |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| course_id | INTEGER | FK to courses.id |
+| certificate_number | VARCHAR(50) | Unique verification ID |
+| issued_at | TIMESTAMP | Issue date |
+| pdf_url | TEXT | Generated PDF URL |
+
+**Usage:** Certificate viewer, public verification, portfolio
+**Connection:** shishya_users (1) -> (N) shishya_user_certificates
+
+---
+
+### shishya_course_enrollments
+
+Course enrollment records.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| course_id | INTEGER | FK to courses.id |
+| enrolled_at | TIMESTAMP | Enrollment time |
+| completed_at | TIMESTAMP | Completion time |
+| status | VARCHAR(20) | active/completed/dropped |
+
+**Usage:** Dashboard, course access control, progress tracking
+**Connection:** shishya_users (1) -> (N) shishya_course_enrollments
+
+---
+
+## Shishya Credits & Wallet Tables
+
+### shishya_user_credits
+
+Student credit balance.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id (Unique) |
+| balance | INTEGER | Current credit balance |
+| lifetime_earned | INTEGER | Total credits ever received |
+| lifetime_spent | INTEGER | Total credits ever spent |
+| updated_at | TIMESTAMP | Last balance change |
+
+**Usage:** Wallet display, enrollment, credit management
+**Connection:** shishya_users (1) -> (1) shishya_user_credits
+
+---
+
+### shishya_credit_transactions
+
+Credit transaction history.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| amount | INTEGER | Credits (+/-) |
+| type | VARCHAR(20) | welcome/purchase/spend/refund |
+| description | TEXT | Transaction description |
+| reference_id | VARCHAR(100) | External reference (Razorpay) |
+| created_at | TIMESTAMP | Transaction time |
+
+**Usage:** Transaction history, wallet page, auditing
+**Connection:** shishya_users (1) -> (N) shishya_credit_transactions
+
+---
+
+### shishya_vouchers
+
+Redeemable voucher codes for students.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| code | VARCHAR(50) | Unique voucher code |
+| credits | INTEGER | Credits awarded |
+| max_uses | INTEGER | Maximum redemptions |
+| used_count | INTEGER | Current redemption count |
+| expires_at | TIMESTAMP | Expiration date |
+| is_active | BOOLEAN | Voucher enabled |
+| created_at | TIMESTAMP | Creation time |
+
+**Usage:** Promotions, partnerships, marketing campaigns
+
+---
+
+### shishya_voucher_redemptions
+
+Voucher redemption records.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| voucher_id | INTEGER | FK to shishya_vouchers.id |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| redeemed_at | TIMESTAMP | Redemption time |
+
+**Usage:** Prevent duplicate redemptions, voucher analytics
+**Connection:** shishya_users (1) -> (N) shishya_voucher_redemptions
+
+---
+
+### shishya_gift_boxes
+
+Surprise credit gifts for students.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| credits | INTEGER | Gift amount |
+| message | TEXT | Gift message |
+| opened | BOOLEAN | Whether gift was claimed |
+| opened_at | TIMESTAMP | Claim timestamp |
+| created_at | TIMESTAMP | Gift creation time |
+
+**Usage:** Gamification, rewards, engagement
+**Connection:** shishya_users (1) -> (N) shishya_gift_boxes
+
+---
+
+### shishya_payments
+
+Student payment records.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| amount | INTEGER | Payment amount |
+| currency | TEXT | Currency code |
+| status | TEXT | pending/success/failed |
+| gateway | TEXT | Payment gateway used |
+| gateway_transaction_id | TEXT | External transaction ID |
+| package_id | INTEGER | FK to credit_packages.id |
+| credits_added | INTEGER | Credits received |
+| metadata | JSONB | Additional payment data |
+| created_at | TIMESTAMP | Payment time |
+| updated_at | TIMESTAMP | Last update |
+
+**Usage:** Payment history, credit purchases
+**Connection:** shishya_users (1) -> (N) shishya_payments
+
+---
+
+## Shishya Notifications Tables
+
+### shishya_notifications
+
+In-app notifications for students.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| title | VARCHAR(255) | Notification title |
+| message | TEXT | Full message |
+| type | VARCHAR(50) | info/success/warning/achievement |
+| read | BOOLEAN | Read status |
+| action_url | TEXT | Click destination |
+| created_at | TIMESTAMP | Notification time |
+
+**Usage:** Notification center, alerts, engagement
+**Connection:** shishya_users (1) -> (N) shishya_notifications
+
+---
+
+## Shishya AI Motivation Tables
+
+### shishya_motivation_rules
+
+Rules engine for automated motivation triggers.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | VARCHAR(255) | Rule name |
+| description | TEXT | Rule purpose |
+| trigger_type | VARCHAR(50) | Event type |
+| trigger_condition | JSONB | Condition parameters |
+| action_type | VARCHAR(50) | Action type |
+| action_data | JSONB | Action parameters |
+| is_active | BOOLEAN | Rule enabled |
+| priority | INTEGER | Execution order |
+| created_at | TIMESTAMP | Creation time |
+
+**Usage:** Automated engagement, gamification rules
+
+---
+
+### shishya_rule_trigger_logs
+
+Audit log for rule executions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| rule_id | INTEGER | FK to shishya_motivation_rules.id |
+| user_id | VARCHAR(36) | Triggered for user |
+| triggered_at | TIMESTAMP | Execution time |
+| action_taken | JSONB | What action was performed |
+
+**Usage:** Analytics, debugging, rule effectiveness
+**Connection:** shishya_motivation_rules (1) -> (N) shishya_rule_trigger_logs
+
+---
+
+### shishya_motivation_cards
+
+Personalized motivation messages.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| card_type | VARCHAR(50) | quote/tip/challenge/streak |
+| title | VARCHAR(255) | Card headline |
+| message | TEXT | Full message |
+| action_url | TEXT | Optional CTA link |
+| dismissed | BOOLEAN | User dismissed |
+| expires_at | TIMESTAMP | Auto-expire time |
+| created_at | TIMESTAMP | Creation time |
+
+**Usage:** Dashboard cards, daily motivation, engagement
+**Connection:** shishya_users (1) -> (N) shishya_motivation_cards
+
+---
+
+### shishya_ai_nudge_logs
+
+AI-generated nudge history.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| nudge_type | VARCHAR(50) | Type of nudge |
+| message | TEXT | Generated message |
+| context | JSONB | Generation context |
+| created_at | TIMESTAMP | Nudge time |
+
+**Usage:** AI engagement, personalized reminders
+**Connection:** shishya_users (1) -> (N) shishya_ai_nudge_logs
+
+---
+
+### shishya_student_streaks
+
+Learning streak tracking.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id (Unique) |
+| current_streak | INTEGER | Current consecutive days |
+| longest_streak | INTEGER | All-time best streak |
+| last_activity_date | DATE | Last learning date |
+| updated_at | TIMESTAMP | Last update |
+
+**Usage:** Streak badges, gamification, retention
+**Connection:** shishya_users (1) -> (1) shishya_student_streaks
+
+---
+
+### shishya_mystery_boxes
+
+Gamified reward boxes.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| box_type | VARCHAR(50) | daily/weekly/achievement |
+| reward_type | VARCHAR(50) | credits/badge/feature |
+| reward_value | INTEGER | Reward amount |
+| opened | BOOLEAN | Whether opened |
+| opened_at | TIMESTAMP | Open timestamp |
+| expires_at | TIMESTAMP | Expiration time |
+| created_at | TIMESTAMP | Creation time |
+
+**Usage:** Daily rewards, engagement, surprise mechanics
+**Connection:** shishya_users (1) -> (N) shishya_mystery_boxes
+
+---
+
+### shishya_scholarships
+
+Available scholarship programs for students.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| name | VARCHAR(255) | Scholarship name |
+| description | TEXT | Full description |
+| credits | INTEGER | Credits awarded |
+| eligibility_criteria | JSONB | Requirements |
+| max_recipients | INTEGER | Maximum awardees |
+| current_recipients | INTEGER | Current count |
+| is_active | BOOLEAN | Open for applications |
+| starts_at | TIMESTAMP | Start date |
+| ends_at | TIMESTAMP | End date |
+| created_at | TIMESTAMP | Creation time |
+
+**Usage:** Financial aid, credit grants, accessibility
+
+---
+
+### shishya_user_scholarships
+
+Scholarship awards to students.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| scholarship_id | INTEGER | FK to shishya_scholarships.id |
+| awarded_at | TIMESTAMP | Award date |
+| status | VARCHAR(20) | active/expired/revoked |
+
+**Usage:** Scholarship tracking, student aid history
+**Connection:** shishya_users (1) -> (N) shishya_user_scholarships
+
+---
+
+## Shishya Academic Tables
+
+### shishya_marksheets
+
+Consolidated academic records.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(36) | Primary key (UUID) |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| marksheet_number | VARCHAR(50) | Unique verification ID |
+| courses_completed | INTEGER | Number of courses |
+| total_credits | INTEGER | Credits earned |
+| cgpa | DECIMAL(3,2) | Cumulative GPA (10-point) |
+| classification | VARCHAR(50) | Distinction/First Class/Pass |
+| generated_at | TIMESTAMP | Generation time |
+
+**Usage:** Academic record, transcript, public verification
+**Connection:** shishya_users (1) -> (N) shishya_marksheets
+
+---
+
+### shishya_marksheet_verifications
+
+Marksheet verification audit log.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| marksheet_id | VARCHAR(36) | FK to shishya_marksheets.id |
+| verified_at | TIMESTAMP | Verification time |
+| verifier_ip | VARCHAR(45) | Verifier's IP |
+| verifier_agent | TEXT | Browser info |
+
+**Usage:** Verification analytics, authenticity tracking
+**Connection:** shishya_marksheets (1) -> (N) shishya_marksheet_verifications
+
+---
+
+## Shishya AI Tutor Tables
+
+### shishya_usha_conversations
+
+Usha AI tutor conversation sessions.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| user_id | VARCHAR(36) | FK to shishya_users.id |
+| course_id | INTEGER | FK to courses.id |
+| page_type | VARCHAR(20) | lesson/lab/project/test |
+| context_id | INTEGER | Lesson/Lab/Project ID |
+| created_at | TIMESTAMP | Session start |
+| updated_at | TIMESTAMP | Last activity |
+
+**Usage:** Conversation context, history management
+**Connection:** shishya_users (1) -> (N) shishya_usha_conversations
+
+---
+
+### shishya_usha_messages
+
+Individual messages in Usha conversations.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| conversation_id | INTEGER | FK to shishya_usha_conversations.id |
+| role | VARCHAR(20) | user/assistant |
+| content | TEXT | Message content |
+| response_type | VARCHAR(50) | explanation/hint/guidance |
+| help_level | VARCHAR(20) | minimal/moderate/detailed |
+| created_at | TIMESTAMP | Message time |
+
+**Usage:** Chat history, context for AI responses
+**Connection:** shishya_usha_conversations (1) -> (N) shishya_usha_messages
+
+---
+
+## Table Relationships Diagram
+
+```
+COURSE CONTENT HIERARCHY:
+courses (1) -----+----> (N) modules -----> (N) lessons
+                 +----> (N) tests -------> (N) questions
+                 +----> (N) projects
+                 +----> (N) practice_labs
+                 +----> (1) certificates
+                 +----> (1) course_rewards
+                 +----> (N) achievement_cards
+                 +----> (N) motivational_cards
+
+ADMIN USERS:
+users (1) -------+----> (N) admin_sessions
+                 +----> (N) otp_tokens
+                 +----> (N) login_attempts
+                 +----> (N) audit_logs
+                 +----> (N) admin_action_logs
+
+SHISHYA USERS:
+shishya_users (1) ----+----> (1) shishya_user_profiles
+                      +----> (N) shishya_sessions
+                      +----> (N) shishya_course_enrollments
+                      +----> (N) shishya_user_progress
+                      +----> (N) shishya_user_lab_progress
+                      +----> (N) shishya_user_test_attempts
+                      +----> (N) shishya_user_project_submissions
+                      +----> (N) shishya_user_certificates
+                      +----> (1) shishya_user_credits
+                      +----> (N) shishya_credit_transactions
+                      +----> (N) shishya_notifications
+                      +----> (N) shishya_motivation_cards
+                      +----> (N) shishya_mystery_boxes
+                      +----> (N) shishya_gift_boxes
+                      +----> (1) shishya_student_streaks
+                      +----> (N) shishya_usha_conversations
+                      +----> (N) shishya_marksheets
+                      +----> (N) shishya_user_scholarships
+                      +----> (N) shishya_payments
+
+GOVERNANCE:
+shishya_users (1) ----+----> (N) reward_approvals
+                      +----> (N) fraud_flags
+                      +----> (N) wallet_freezes
+                      +----> (N) reward_overrides
+                      +----> (1) risk_scores
+                      +----> (N) scholarships
+                      +----> (N) activity_logs
 ```
 
-**Usage**: Core course management, publishing workflow, student portal API.
+---
+
+## Summary
+
+| Category | Tables | Count |
+|----------|--------|-------|
+| Course Content | courses, modules, lessons, tests, questions, projects, practice_labs, certificates, skills, course_skills, ai_notes, course_rewards, achievement_cards, motivational_cards | 14 |
+| Admin Auth & Security | users, otp_tokens, admin_sessions, login_attempts, audit_logs, ai_generation_logs | 6 |
+| Business & Payment | credit_packages, vouchers, gift_boxes, payment_gateways, upi_settings, bank_accounts, subscription_plans, user_subscriptions, promotions, system_settings | 10 |
+| Governance & Compliance | approval_policies, motivation_rules, reward_approvals, fraud_flags, wallet_freezes, reward_overrides, risk_scores, admin_action_logs, scholarships, activity_logs | 10 |
+| Shishya Auth | shishya_users, shishya_sessions, shishya_otp_codes, shishya_otp_logs | 4 |
+| Shishya Profile | shishya_user_profiles | 1 |
+| Shishya Progress | shishya_user_progress, shishya_user_lab_progress, shishya_user_test_attempts, shishya_user_project_submissions, shishya_user_certificates, shishya_course_enrollments | 6 |
+| Shishya Credits | shishya_user_credits, shishya_credit_transactions, shishya_vouchers, shishya_voucher_redemptions, shishya_gift_boxes, shishya_payments | 6 |
+| Shishya Notifications | shishya_notifications | 1 |
+| Shishya AI Motivation | shishya_motivation_rules, shishya_rule_trigger_logs, shishya_motivation_cards, shishya_ai_nudge_logs, shishya_student_streaks, shishya_mystery_boxes, shishya_scholarships, shishya_user_scholarships | 8 |
+| Shishya Academic | shishya_marksheets, shishya_marksheet_verifications | 2 |
+| Shishya AI Tutor | shishya_usha_conversations, shishya_usha_messages | 2 |
+| Legacy (to be removed) | coin_wallets, coin_transactions, conversations, messages | 4 |
+| **Total** | | **74** |
 
 ---
 
-### `course_skills`
-**Purpose**: Junction table linking courses to skills (many-to-many).
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | No | - | FK to courses.id |
-| `skill_id` | integer | No | - | FK to skills.id |
-
-**Usage**: Tag courses with skills for filtering and categorization.
-
----
-
-### `skills`
-**Purpose**: Master list of skills/tags used across the platform.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `name` | text | No | - | Unique skill name |
-| `category` | text | Yes | - | Skill category |
-| `created_at` | timestamp | No | NOW() | Creation time |
-
-**Usage**: Skills library, course tagging, project requirements.
-
----
-
-## Course Content
-
-### `modules`
-**Purpose**: Course modules/chapters that group lessons together.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | No | - | FK to courses.id (CASCADE DELETE) |
-| `title` | text | No | - | Module title |
-| `description` | text | Yes | - | Module description |
-| `order_index` | integer | No | 0 | Display order |
-| `estimated_time` | text | Yes | - | Time estimate |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Organize course content into logical sections.
-
----
-
-### `lessons`
-**Purpose**: Individual lessons within modules containing learning content.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `module_id` | integer | No | - | FK to modules.id (CASCADE DELETE) |
-| `title` | text | No | - | Lesson title |
-| `objectives` | jsonb | Yes | - | Array of learning objectives |
-| `estimated_time` | text | Yes | - | Duration estimate |
-| `key_concepts` | jsonb | Yes | - | Array of key concepts |
-| `video_url` | text | Yes | - | Primary video URL |
-| `external_links` | jsonb | Yes | - | Array of external resource URLs |
-| `youtube_references` | jsonb | Yes | - | Array of {url, title, description?} |
-| `order_index` | integer | No | 0 | Display order within module |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Main learning content delivery, video references, supplementary materials.
-
----
-
-### `ai_notes`
-**Purpose**: AI-generated study notes for lessons.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `lesson_id` | integer | No | - | FK to lessons.id (CASCADE DELETE) |
-| `content` | text | No | - | Full markdown content |
-| `simplified_explanation` | text | Yes | - | ELI5 explanation |
-| `bullet_notes` | jsonb | Yes | - | Array of bullet points |
-| `key_takeaways` | jsonb | Yes | - | Array of takeaways |
-| `interview_questions` | jsonb | Yes | - | Array of prep questions |
-| `version` | integer | No | 1 | Version number |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: AI-powered study aids, interview prep, quick revision.
-
----
-
-## Projects & Labs
-
-### `projects`
-**Purpose**: Capstone projects for hands-on learning.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | Yes | - | FK to courses.id (SET NULL) |
-| `module_id` | integer | Yes | - | FK to modules.id (SET NULL) |
-| `title` | text | No | - | Project title |
-| `description` | text | Yes | - | Project description |
-| `objectives` | text | Yes | - | Learning objectives |
-| `deliverables` | text | Yes | - | Expected deliverables |
-| `submission_instructions` | text | Yes | - | How to submit |
-| `evaluation_notes` | text | Yes | - | Grading criteria |
-| `problem_statement` | text | Yes | - | Detailed problem to solve |
-| `tech_stack` | jsonb | Yes | - | Array of technologies |
-| `folder_structure` | text | Yes | - | Suggested file structure |
-| `evaluation_checklist` | jsonb | Yes | - | Array of evaluation items |
-| `difficulty` | text | Yes | 'intermediate' | Difficulty level |
-| `category` | text | Yes | - | Project category |
-| `tags` | jsonb | Yes | - | Array of tags |
-| `status` | text | No | 'draft' | Project status |
-| `order_index` | integer | No | 0 | Display order |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Course capstone projects, portfolio building, practical assessment.
-
----
-
-### `project_steps`
-**Purpose**: Step-by-step guide for completing projects.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `project_id` | integer | No | - | FK to projects.id (CASCADE DELETE) |
-| `step_number` | integer | No | - | Step sequence number |
-| `title` | text | No | - | Step title |
-| `description` | text | Yes | - | Step instructions |
-| `code_snippet` | text | Yes | - | Example code |
-| `tips` | jsonb | Yes | - | Array of helpful tips |
-| `created_at` | timestamp | No | NOW() | Creation time |
-
-**Usage**: Guided project completion, progressive disclosure.
-
----
-
-### `project_skills`
-**Purpose**: Skills required/taught by each project.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `project_id` | integer | No | - | FK to projects.id (CASCADE DELETE) |
-| `skill_id` | integer | No | - | FK to skills.id (CASCADE DELETE) |
-
-**Usage**: Skill mapping for projects.
-
----
-
-### `practice_labs`
-**Purpose**: Interactive coding labs with starter code and validation.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | Yes | - | FK to courses.id (SET NULL) |
-| `module_id` | integer | Yes | - | FK to modules.id (SET NULL) |
-| `lesson_id` | integer | Yes | - | FK to lessons.id (SET NULL) |
-| `category` | text | Yes | - | Lab category |
-| `tags` | jsonb | Yes | - | Array of tags |
-| `slug` | text | No | - | URL slug |
-| `title` | text | No | - | Lab title |
-| `description` | text | Yes | - | Lab description |
-| `difficulty` | text | No | 'beginner' | Difficulty level |
-| `language` | text | No | 'javascript' | Programming language |
-| `estimated_time` | integer | Yes | - | Minutes to complete |
-| `instructions` | text | Yes | - | Lab instructions |
-| `starter_code` | text | Yes | - | Initial code template |
-| `solution_code` | text | Yes | - | Reference solution |
-| `expected_output` | text | Yes | - | Expected result |
-| `validation_type` | text | No | 'console' | 'console', 'test', 'output' |
-| `unlock_type` | text | Yes | - | Prerequisite type |
-| `unlock_ref_id` | integer | Yes | - | Prerequisite ID |
-| `hints` | jsonb | Yes | - | Array of hints |
-| `ai_prompt_context` | text | Yes | - | Context for AI assistance |
-| `mark_lab_complete` | boolean | Yes | true | Auto-mark on success |
-| `unlock_next` | boolean | Yes | true | Unlock next content |
-| `contributes_to_certificate` | boolean | Yes | false | Certificate requirement |
-| `certificate_weight` | integer | Yes | 1 | Weight for certificate |
-| `status` | text | No | 'draft' | Lab status |
-| `order_index` | integer | No | 0 | Display order |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Interactive coding practice, automated validation, skill building.
-
----
-
-## Tests & Questions
-
-### `tests`
-**Purpose**: Assessments/quizzes for modules or courses.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | Yes | - | FK to courses.id (SET NULL) |
-| `module_id` | integer | Yes | - | FK to modules.id (SET NULL) |
-| `title` | text | No | - | Test title |
-| `description` | text | Yes | - | Test description |
-| `passing_percentage` | integer | Yes | 70 | Minimum score to pass |
-| `is_locked` | boolean | Yes | false | Requires prerequisite |
-| `time_limit` | integer | Yes | - | Time limit in minutes |
-| `difficulty` | text | Yes | 'medium' | Difficulty level |
-| `category` | text | Yes | - | Test category |
-| `tags` | jsonb | Yes | - | Array of tags |
-| `status` | text | No | 'draft' | Test status |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Knowledge assessment, certification requirements.
-
----
-
-### `questions`
-**Purpose**: Individual questions within tests.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `test_id` | integer | No | - | FK to tests.id (CASCADE DELETE) |
-| `type` | text | No | 'mcq' | 'mcq', 'true_false', 'short_answer' |
-| `difficulty` | text | Yes | 'medium' | Question difficulty |
-| `question_text` | text | No | - | The question |
-| `options` | jsonb | Yes | - | Array of answer options (MCQ) |
-| `correct_answer` | text | Yes | - | Correct answer |
-| `explanation` | text | Yes | - | Answer explanation |
-| `order_index` | integer | No | 0 | Display order |
-| `created_at` | timestamp | No | NOW() | Creation time |
-
-**Usage**: Quiz questions, knowledge testing.
-
----
-
-## Certificates
-
-### `certificates`
-**Purpose**: Certificate templates and requirements per course.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | Yes | - | FK to courses.id (SET NULL) |
-| `name` | text | No | - | Certificate name |
-| `description` | text | Yes | - | Certificate description |
-| `template_id` | text | Yes | - | Design template ID |
-| `category` | text | Yes | - | Certificate category |
-| `tags` | jsonb | Yes | - | Array of tags |
-| `status` | text | No | 'draft' | Certificate status |
-| `type` | text | No | 'completion' | 'completion', 'excellence', 'mastery' |
-| `skill_tags` | jsonb | Yes | - | Skills earned |
-| `level` | text | Yes | - | Certificate level |
-| `requires_test_pass` | boolean | Yes | false | Requires passing tests |
-| `passing_percentage` | integer | Yes | 70 | Minimum test score |
-| `requires_project_completion` | boolean | Yes | false | Requires project |
-| `requires_lab_completion` | boolean | Yes | false | Requires labs |
-| `qr_verification` | boolean | Yes | false | QR code for verification |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Certificate generation, completion requirements.
-
----
-
-## Business & Payments
-
-### `credit_packages`
-**Purpose**: Credit bundles available for purchase.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `name` | text | No | - | Package name |
-| `description` | text | Yes | - | Package description |
-| `credits` | integer | No | - | Number of credits |
-| `price_inr` | integer | No | - | Price in INR (paise) |
-| `price_usd` | integer | Yes | - | Price in USD (cents) |
-| `discount` | integer | Yes | 0 | Discount percentage |
-| `is_active` | boolean | No | true | Available for purchase |
-| `is_featured` | boolean | Yes | false | Featured package |
-| `validity_days` | integer | Yes | - | Credit validity period |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Credit-based course purchases.
-
----
-
-### `subscription_plans`
-**Purpose**: Monthly/yearly subscription tiers.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `name` | text | No | - | Plan name |
-| `slug` | text | No | - | URL slug (unique) |
-| `price_monthly` | integer | No | 0 | Monthly price (INR) |
-| `price_yearly` | integer | No | 0 | Yearly price (INR) |
-| `coins_per_month` | integer | No | 0 | Monthly coin allowance |
-| `signup_bonus_coins` | integer | No | 0 | One-time signup bonus |
-| `features` | jsonb | Yes | - | Feature flags object |
-| `is_active` | boolean | No | true | Plan available |
-| `is_featured` | boolean | No | false | Featured plan |
-| `sort_order` | integer | Yes | 0 | Display order |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Features JSON**:
-```json
-{
-  "aiUsha": true,
-  "labs": true,
-  "tests": true,
-  "projects": true,
-  "certificates": true,
-  "prioritySupport": false,
-  "maxCoursesAccess": 10
-}
-```
-
-**Usage**: Subscription management, feature gating.
-
----
-
-### `vouchers`
-**Purpose**: Discount and bonus voucher codes.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `code` | text | No | - | Unique voucher code |
-| `name` | text | No | - | Voucher name |
-| `description` | text | Yes | - | Voucher description |
-| `type` | text | No | 'discount' | 'discount', 'credit_bonus' |
-| `discount_type` | text | Yes | 'percentage' | 'percentage', 'flat' |
-| `discount_value` | integer | No | - | Discount amount |
-| `credit_bonus` | integer | Yes | 0 | Bonus credits |
-| `max_uses` | integer | Yes | - | Max redemptions |
-| `used_count` | integer | No | 0 | Current redemptions |
-| `min_purchase` | integer | Yes | 0 | Minimum purchase |
-| `is_active` | boolean | No | true | Voucher active |
-| `starts_at` | timestamp | Yes | - | Start date |
-| `expires_at` | timestamp | Yes | - | Expiry date |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Promotional discounts, marketing campaigns.
-
----
-
-### `gift_boxes`
-**Purpose**: Gift credit packages.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `name` | text | No | - | Gift box name |
-| `description` | text | Yes | - | Description |
-| `credits` | integer | No | - | Credits included |
-| `price_inr` | integer | No | - | Price in INR |
-| `price_usd` | integer | Yes | - | Price in USD |
-| `template_image` | text | Yes | - | Gift card image URL |
-| `custom_message` | text | Yes | - | Customizable message |
-| `is_active` | boolean | No | true | Available for purchase |
-| `expiry_days` | integer | Yes | 365 | Gift validity days |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Gift card purchases, referral rewards.
-
----
-
-### `payment_gateways`
-**Purpose**: Payment provider configurations.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `name` | text | No | - | Gateway name |
-| `type` | text | No | - | 'razorpay', 'stripe', 'paypal' |
-| `is_active` | boolean | No | false | Gateway enabled |
-| `is_test_mode` | boolean | No | true | Test/sandbox mode |
-| `config` | jsonb | Yes | - | Gateway-specific config |
-| `priority` | integer | Yes | 0 | Selection priority |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Payment processing configuration.
-
----
-
-### `upi_settings`
-**Purpose**: UPI payment configuration (India).
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `upi_id` | text | No | - | UPI ID/VPA |
-| `display_name` | text | No | - | Display name |
-| `is_active` | boolean | No | true | UPI enabled |
-| `qr_code_image` | text | Yes | - | QR code image URL |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: UPI payment acceptance.
-
----
-
-### `bank_accounts`
-**Purpose**: Bank account details for transfers.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `bank_name` | text | No | - | Bank name |
-| `account_number` | text | No | - | Account number |
-| `account_holder_name` | text | No | - | Account holder name |
-| `ifsc_code` | text | No | - | IFSC code |
-| `branch_name` | text | Yes | - | Branch name |
-| `account_type` | text | Yes | 'savings' | Account type |
-| `is_active` | boolean | No | true | Account active |
-| `is_primary` | boolean | No | false | Primary account |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Bank transfer instructions.
-
----
-
-### `promotions`
-**Purpose**: Marketing promotions and campaigns.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `title` | text | No | - | Promotion title |
-| `code` | text | Yes | - | Promo code (unique) |
-| `type` | text | No | 'bonus_coins' | Promotion type |
-| `bonus_coins` | integer | Yes | 0 | Bonus coins awarded |
-| `discount_percent` | integer | Yes | 0 | Discount percentage |
-| `plan_id` | integer | Yes | - | FK to subscription_plans.id |
-| `is_global` | boolean | No | true | Available to all |
-| `valid_from` | timestamp | No | - | Start date |
-| `valid_to` | timestamp | No | - | End date |
-| `max_redemptions` | integer | Yes | - | Max total uses |
-| `current_redemptions` | integer | No | 0 | Current uses |
-| `is_active` | boolean | No | true | Promotion active |
-| `created_at` | timestamp | No | NOW() | Creation time |
-
-**Usage**: Marketing campaigns, limited-time offers.
-
----
-
-## Shishya (Student) Portal
-
-### `shishya_users`
-**Purpose**: Student accounts in the Shishya portal.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `external_id` | text | Yes | - | External auth ID (unique) |
-| `name` | text | No | - | Full name |
-| `email` | text | No | - | Email (unique) |
-| `phone` | text | Yes | - | Phone number |
-| `avatar_url` | text | Yes | - | Profile picture URL |
-| `status` | text | No | 'active' | 'active', 'suspended', 'deleted' |
-| `last_active_at` | timestamp | Yes | - | Last activity time |
-| `total_spend` | integer | No | 0 | Lifetime spend (INR) |
-| `signup_source` | text | Yes | - | Acquisition channel |
-| `created_at` | timestamp | No | NOW() | Registration time |
-
-**Usage**: Student management, analytics, engagement tracking.
-
----
-
-### `user_subscriptions`
-**Purpose**: Student subscription records.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id |
-| `plan_id` | integer | No | - | FK to subscription_plans.id |
-| `status` | text | No | 'active' | Subscription status |
-| `start_date` | timestamp | No | - | Subscription start |
-| `end_date` | timestamp | Yes | - | Subscription end |
-| `billing_cycle` | text | Yes | 'monthly' | Billing frequency |
-| `created_at` | timestamp | No | NOW() | Creation time |
-
-**Usage**: Subscription management, billing.
-
----
-
-### `coin_wallets`
-**Purpose**: Student reward coin balances.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id (unique) |
-| `balance` | integer | No | 0 | Current coin balance |
-| `lifetime_earned` | integer | No | 0 | Total coins earned |
-| `lifetime_spent` | integer | No | 0 | Total coins spent |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Reward system, gamification.
-
----
-
-### `coin_transactions`
-**Purpose**: Coin transaction history.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id |
-| `amount` | integer | No | - | Transaction amount (+/-) |
-| `type` | text | No | - | 'earn', 'spend', 'bonus', 'revoke' |
-| `reason` | text | Yes | - | Transaction reason |
-| `reference_id` | text | Yes | - | Related entity ID |
-| `reference_type` | text | Yes | - | Related entity type |
-| `balance_after` | integer | No | - | Balance after transaction |
-| `created_at` | timestamp | No | NOW() | Transaction time |
-
-**Usage**: Coin ledger, transaction history.
-
----
-
-### `shishya_payments`
-**Purpose**: Student payment records.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id |
-| `amount` | integer | No | - | Payment amount |
-| `currency` | text | No | 'INR' | Currency code |
-| `status` | text | No | 'pending' | Payment status |
-| `payment_method` | text | Yes | - | Payment method used |
-| `provider` | text | Yes | - | Payment gateway |
-| `provider_transaction_id` | text | Yes | - | Gateway transaction ID |
-| `subscription_id` | integer | Yes | - | FK to user_subscriptions.id |
-| `metadata` | jsonb | Yes | - | Additional payment data |
-| `created_at` | timestamp | No | NOW() | Payment initiation |
-| `completed_at` | timestamp | Yes | - | Payment completion |
-
-**Usage**: Payment tracking, revenue reports.
-
----
-
-### `activity_logs`
-**Purpose**: Student activity tracking.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | Yes | - | FK to shishya_users.id |
-| `action` | text | No | - | Activity type |
-| `entity_type` | text | Yes | - | Related entity type |
-| `entity_id` | text | Yes | - | Related entity ID |
-| `metadata` | jsonb | Yes | - | Activity details |
-| `ip_address` | text | Yes | - | Client IP |
-| `user_agent` | text | Yes | - | Browser user agent |
-| `created_at` | timestamp | No | NOW() | Activity time |
-
-**Usage**: Student engagement analytics, learning paths.
-
----
-
-## Rewards & Gamification
-
-### `course_rewards`
-**Purpose**: Reward configuration per course.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | No | - | FK to courses.id (unique) |
-| `coins_enabled` | boolean | No | false | Coins feature enabled |
-| `coin_name` | text | Yes | 'Skill Coins' | Custom coin name |
-| `coin_icon` | text | Yes | 'coins' | Coin icon name |
-| `rules_json` | jsonb | Yes | {...} | Coin earning rules |
-| `bonus_json` | jsonb | Yes | {...} | Bonus configurations |
-| `scholarship_enabled` | boolean | Yes | false | Scholarship feature |
-| `scholarship_json` | jsonb | Yes | - | Scholarship config |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Rules JSON default**:
-```json
-{
-  "courseCompletion": 100,
-  "moduleCompletion": 20,
-  "lessonCompletion": 5,
-  "testPass": 15,
-  "projectSubmission": 25,
-  "labCompletion": 10
-}
-```
-
-**Usage**: Course-specific gamification settings.
-
----
-
-### `achievement_cards`
-**Purpose**: Achievement badges students can earn.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | No | - | FK to courses.id |
-| `title` | text | No | - | Achievement title |
-| `description` | text | Yes | - | Achievement description |
-| `icon` | text | Yes | 'trophy' | Icon name |
-| `condition_json` | jsonb | No | - | Earning conditions |
-| `rarity` | text | No | 'common' | 'common', 'rare', 'epic', 'legendary' |
-| `is_active` | boolean | No | true | Achievement active |
-| `sort_order` | integer | Yes | 0 | Display order |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Condition types**: 'percentage_complete', 'module_complete', 'all_tests_passed', 'project_approved', 'all_labs_complete', 'custom'
-
-**Usage**: Student motivation, progress milestones.
-
----
-
-### `motivational_cards`
-**Purpose**: Motivational messages shown at triggers.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | No | - | FK to courses.id |
-| `message` | text | No | - | Motivational message |
-| `trigger_type` | text | No | - | When to show |
-| `trigger_value` | integer | Yes | - | Trigger threshold |
-| `icon` | text | Yes | 'sparkles' | Icon name |
-| `is_active` | boolean | No | true | Card active |
-| `sort_order` | integer | Yes | 0 | Priority order |
-| `created_at` | timestamp | No | NOW() | Creation time |
-
-**Usage**: Student encouragement, engagement boost.
-
----
-
-### `approval_policies`
-**Purpose**: Reward approval rules and limits.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `reward_type` | text | No | - | Reward type |
-| `approval_mode` | text | No | 'admin_approval_required' | Approval mode |
-| `min_value_for_approval` | integer | Yes | 0 | Minimum value needing approval |
-| `max_auto_approve_value` | integer | Yes | 100 | Max auto-approve threshold |
-| `require_dual_approval` | boolean | Yes | false | Requires two approvers |
-| `dual_approval_threshold` | integer | Yes | 1000 | Dual approval threshold |
-| `cooldown_minutes` | integer | Yes | 0 | Time between rewards |
-| `daily_limit` | integer | Yes | - | Daily limit per user |
-| `weekly_limit` | integer | Yes | - | Weekly limit per user |
-| `is_active` | boolean | No | true | Policy active |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Fraud prevention, reward governance.
-
----
-
-### `motivation_rules`
-**Purpose**: AI engine rules for automatic rewards.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `name` | text | No | - | Rule name |
-| `description` | text | Yes | - | Rule description |
-| `trigger_type` | text | No | - | Event type |
-| `trigger_condition` | jsonb | Yes | - | Condition details |
-| `reward_type` | text | No | - | Reward type |
-| `reward_value` | integer | No | 0 | Reward amount |
-| `reward_metadata` | jsonb | Yes | - | Additional reward data |
-| `approval_mode` | text | No | 'admin_approval_required' | Approval requirement |
-| `priority` | integer | Yes | 0 | Rule priority |
-| `is_active` | boolean | No | true | Rule active |
-| `valid_from` | timestamp | Yes | - | Start validity |
-| `valid_to` | timestamp | Yes | - | End validity |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Automated reward triggering, AI motivation engine.
-
----
-
-### `reward_approvals`
-**Purpose**: Pending reward approval queue.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id |
-| `rule_id` | integer | Yes | - | FK to motivation_rules.id |
-| `reward_type` | text | No | - | Reward type |
-| `original_value` | integer | No | - | Proposed value |
-| `adjusted_value` | integer | Yes | - | Adjusted by admin |
-| `status` | text | No | 'pending' | Approval status |
-| `trigger_event` | text | Yes | - | Triggering event |
-| `trigger_data` | jsonb | Yes | - | Event details |
-| `ai_reason` | text | Yes | - | AI-generated reason |
-| `risk_score` | integer | Yes | 0 | Fraud risk score |
-| `is_flagged` | boolean | Yes | false | Flagged for review |
-| `flag_reason` | text | Yes | - | Flag reason |
-| `reviewed_by` | varchar | Yes | - | FK to users.id |
-| `reviewed_at` | timestamp | Yes | - | Review time |
-| `review_notes` | text | Yes | - | Admin notes |
-| `second_approver` | varchar | Yes | - | FK to users.id (dual approval) |
-| `second_approved_at` | timestamp | Yes | - | Second approval time |
-| `wallet_transaction_id` | integer | Yes | - | Resulting transaction |
-| `expires_at` | timestamp | Yes | - | Approval expiry |
-| `created_at` | timestamp | No | NOW() | Creation time |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Statuses**: 'pending', 'approved', 'rejected', 'revoked', 'adjusted'
-
-**Usage**: Reward moderation, fraud prevention.
-
----
-
-### `reward_overrides`
-**Purpose**: Manual admin reward actions.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id |
-| `admin_id` | varchar | No | - | FK to users.id |
-| `action_type` | text | No | - | 'grant', 'revoke', 'adjust' |
-| `reward_type` | text | Yes | - | Reward type |
-| `amount` | integer | Yes | - | Amount affected |
-| `reason` | text | No | - | Justification (required) |
-| `metadata` | jsonb | Yes | - | Additional data |
-| `wallet_transaction_id` | integer | Yes | - | Resulting transaction |
-| `created_at` | timestamp | No | NOW() | Action time |
-
-**Usage**: Manual reward adjustments, customer support.
-
----
-
-### `scholarships`
-**Purpose**: Scholarship records for students.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id |
-| `reward_approval_id` | integer | Yes | - | FK to reward_approvals.id |
-| `title` | text | No | - | Scholarship title |
-| `description` | text | Yes | - | Scholarship description |
-| `amount` | integer | No | - | Scholarship value |
-| `currency` | text | Yes | 'INR' | Currency |
-| `status` | text | No | 'pending' | Scholarship status |
-| `course_id` | integer | Yes | - | FK to courses.id |
-| `valid_from` | timestamp | Yes | - | Start validity |
-| `valid_to` | timestamp | Yes | - | End validity |
-| `issued_by` | varchar | Yes | - | FK to users.id |
-| `issued_at` | timestamp | Yes | - | Issue time |
-| `redeemed_at` | timestamp | Yes | - | Redemption time |
-| `created_at` | timestamp | No | NOW() | Creation time |
-
-**Usage**: Financial aid, merit scholarships.
-
----
-
-## Fraud Detection & Security
-
-### `fraud_flags`
-**Purpose**: Detected fraud patterns and alerts.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id |
-| `flag_type` | text | No | - | Type of fraud detected |
-| `severity` | text | No | 'medium' | 'low', 'medium', 'high', 'critical' |
-| `description` | text | Yes | - | Flag description |
-| `detection_data` | jsonb | Yes | - | Detection details |
-| `status` | text | No | 'active' | Flag status |
-| `resolved_by` | varchar | Yes | - | FK to users.id |
-| `resolved_at` | timestamp | Yes | - | Resolution time |
-| `resolution_notes` | text | Yes | - | Resolution notes |
-| `created_at` | timestamp | No | NOW() | Detection time |
-
-**Usage**: Fraud monitoring, account review.
-
----
-
-### `wallet_freezes`
-**Purpose**: Frozen student wallets due to fraud.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id |
-| `reason` | text | No | - | Freeze reason |
-| `frozen_by` | varchar | No | - | FK to users.id |
-| `frozen_at` | timestamp | No | NOW() | Freeze time |
-| `unfrozen_by` | varchar | Yes | - | FK to users.id |
-| `unfrozen_at` | timestamp | Yes | - | Unfreeze time |
-| `unfreeze_reason` | text | Yes | - | Unfreeze justification |
-| `is_active` | boolean | No | true | Currently frozen |
-
-**Usage**: Fraud prevention, wallet security.
-
----
-
-### `risk_scores`
-**Purpose**: Calculated fraud risk per student.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `shishya_user_id` | integer | No | - | FK to shishya_users.id (unique) |
-| `overall_score` | integer | No | 0 | Combined risk score (0-100) |
-| `velocity_score` | integer | Yes | 0 | Activity velocity risk |
-| `pattern_score` | integer | Yes | 0 | Suspicious pattern risk |
-| `account_age_score` | integer | Yes | 0 | New account risk |
-| `behavior_score` | integer | Yes | 0 | Behavioral anomaly risk |
-| `last_calculated_at` | timestamp | No | NOW() | Last calculation time |
-| `risk_factors` | jsonb | Yes | - | Detected risk factors |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Real-time fraud detection, automated flagging.
-
----
-
-## Audit & Logging
-
-### `audit_logs`
-**Purpose**: General audit trail for all entities.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `user_id` | varchar | Yes | - | FK to users.id (admin) |
-| `action` | text | No | - | Action performed |
-| `entity_type` | text | No | - | Entity type affected |
-| `entity_id` | integer | Yes | - | Entity ID |
-| `old_value` | jsonb | Yes | - | Previous state |
-| `new_value` | jsonb | Yes | - | New state |
-| `metadata` | jsonb | Yes | - | Additional context |
-| `created_at` | timestamp | No | NOW() | Action time |
-
-**Usage**: Change tracking, compliance, debugging.
-
----
-
-### `admin_action_logs`
-**Purpose**: Immutable log of admin actions (cannot be deleted).
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `admin_id` | varchar | No | - | FK to users.id |
-| `action_type` | text | No | - | Action type |
-| `entity_type` | text | No | - | Entity type |
-| `entity_id` | text | Yes | - | Entity ID |
-| `previous_state` | jsonb | Yes | - | Before state |
-| `new_state` | jsonb | Yes | - | After state |
-| `reason` | text | Yes | - | Action reason |
-| `ip_address` | text | Yes | - | Admin IP |
-| `user_agent` | text | Yes | - | Browser info |
-| `created_at` | timestamp | No | NOW() | Action time |
-
-**Usage**: Admin accountability, security audit.
-
----
-
-### `ai_generation_logs`
-**Purpose**: AI content generation history.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | Yes | - | FK to courses.id |
-| `generation_type` | text | No | - | Type of generation |
-| `prompt` | text | Yes | - | AI prompt used |
-| `response` | text | Yes | - | AI response |
-| `tokens_used` | integer | Yes | - | Token consumption |
-| `status` | text | No | 'pending' | Generation status |
-| `error_message` | text | Yes | - | Error if failed |
-| `created_at` | timestamp | No | NOW() | Start time |
-| `completed_at` | timestamp | Yes | - | Completion time |
-
-**Usage**: AI cost tracking, debugging, prompt history.
-
----
-
-### `publish_status`
-**Purpose**: Course publishing status per platform.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `course_id` | integer | No | - | FK to courses.id |
-| `platform` | text | No | - | Platform name |
-| `status` | text | No | 'pending' | Sync status |
-| `synced_at` | timestamp | Yes | - | Last sync time |
-| `error_message` | text | Yes | - | Sync error |
-| `created_at` | timestamp | No | NOW() | Creation time |
-
-**Usage**: Multi-platform publishing, sync status.
-
----
-
-### `system_settings`
-**Purpose**: Global system configuration key-value store.
-
-| Column | Type | Nullable | Default | Description |
-|--------|------|----------|---------|-------------|
-| `id` | serial | No | Auto | Primary key |
-| `key` | text | No | - | Setting key (unique) |
-| `value` | text | Yes | - | Setting value |
-| `description` | text | Yes | - | Setting description |
-| `updated_at` | timestamp | No | NOW() | Last update |
-
-**Usage**: Runtime configuration, feature flags.
-
----
-
-## Entity Relationships Summary
-
-```
-courses (1) ─────┬───── (*) modules ──────── (*) lessons ──────── (*) ai_notes
-                 │
-                 ├───── (*) projects ──────── (*) project_steps
-                 │                └───────── (*) project_skills ──── skills
-                 │
-                 ├───── (*) tests ─────────── (*) questions
-                 │
-                 ├───── (*) practice_labs
-                 │
-                 ├───── (*) certificates
-                 │
-                 ├───── (*) course_skills ──── skills
-                 │
-                 ├───── (1) course_rewards ──┬── (*) achievement_cards
-                 │                           └── (*) motivational_cards
-                 │
-                 └───── (*) scholarships
-
-shishya_users (1) ──┬── (1) coin_wallets ──── (*) coin_transactions
-                    │
-                    ├── (*) user_subscriptions ──── subscription_plans
-                    │
-                    ├── (*) shishya_payments
-                    │
-                    ├── (*) activity_logs
-                    │
-                    ├── (*) reward_approvals
-                    │
-                    ├── (*) fraud_flags
-                    │
-                    ├── (1) risk_scores
-                    │
-                    └── (*) wallet_freezes
-
-users (admins) ──┬── (*) admin_sessions
-                 │
-                 ├── (*) otp_tokens
-                 │
-                 ├── (*) login_attempts
-                 │
-                 ├── (*) audit_logs
-                 │
-                 └── (*) admin_action_logs
-```
-
----
-
-## Quick Reference: Common Queries
-
-### Get Published Courses for Shishya Portal
-```sql
-SELECT * FROM courses 
-WHERE status = 'published' AND is_active = true;
-```
-
-### Get Course with All Content
-```sql
-SELECT c.*, 
-       m.id as module_id, m.title as module_title,
-       l.id as lesson_id, l.title as lesson_title
-FROM courses c
-LEFT JOIN modules m ON m.course_id = c.id
-LEFT JOIN lessons l ON l.module_id = m.id
-WHERE c.id = :courseId
-ORDER BY m.order_index, l.order_index;
-```
-
-### Get Dashboard Stats
-```sql
-SELECT 
-  COUNT(*) as total_courses,
-  COUNT(*) FILTER (WHERE status = 'published') as published_courses,
-  COUNT(*) FILTER (WHERE status = 'draft') as draft_courses,
-  COUNT(*) FILTER (WHERE status = 'archived') as archived_courses,
-  COUNT(*) FILTER (WHERE status = 'generating') as generating_courses
-FROM courses;
-```
+## Key Design Decisions
+
+1. **UUID for Shishya Users**: `shishya_users.id` uses VARCHAR(36) UUID for distributed ID generation
+2. **Single Course Table**: No draft/published duplication - status field controls visibility
+3. **Shishya Prefix**: All student tables prefixed with `shishya_` for clear separation
+4. **Shared Database**: Both Guru and Shishya portals share the same PostgreSQL database
+5. **Credit System**: Separate from legacy coin system (shishya_user_credits vs coin_wallets)
 
 ---
 
