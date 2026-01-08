@@ -1,0 +1,145 @@
+You are a senior full-stack architect building an AI-powered LMS
+for Admin + Shishya (Student) portals using ONE Neon PostgreSQL database.
+
+Your task is to FINALIZE and IMPLEMENT the COURSE PUBLISHING BEHAVIOR
+using a SINGLE courses table.
+
+────────────────────────────────────
+🔹 CORE RULE (MANDATORY)
+────────────────────────────────────
+There MUST be ONLY ONE courses table.
+
+Publishing a course:
+- MUST NOT create a new row
+- MUST NOT copy data
+- MUST NOT move data between tables
+
+The Publish button must UPDATE the SAME RECORD.
+
+────────────────────────────────────
+🔹 COURSES TABLE (SOURCE OF TRUTH)
+────────────────────────────────────
+Table:
+course.courses
+
+Mandatory columns:
+- id (uuid, pk)
+- title
+- description
+- language
+- level
+- thumbnail_url
+- price
+- currency
+- created_by
+- status ENUM ('draft', 'published', 'archived')
+- is_active (boolean)
+- published_at (timestamp, nullable)
+- created_at
+- updated_at
+
+Default behavior:
+- status = 'draft'
+- is_active = false
+- published_at = NULL
+
+────────────────────────────────────
+🔹 ADMIN PORTAL BEHAVIOR
+────────────────────────────────────
+Admin / Instructor can:
+- Create course → status = 'draft'
+- Edit course while in draft
+- Click **Publish** button
+
+On Publish button click:
+1. UPDATE course.courses
+2. status = 'published'
+3. is_active = true
+4. published_at = CURRENT_TIMESTAMP
+5. updated_at = CURRENT_TIMESTAMP
+
+NO duplicate rows allowed.
+
+────────────────────────────────────
+🔹 SHISHYA PORTAL BEHAVIOR
+────────────────────────────────────
+Shishya (Student) portal MUST:
+- READ ONLY published courses
+- NEVER see draft or archived courses
+- NEVER access unpublished data
+
+Shishya query rule (MANDATORY):
+SELECT * FROM course.courses
+WHERE status = 'published'
+AND is_active = true;
+
+Draft courses must be invisible to Shishya.
+
+────────────────────────────────────
+🔹 API RULES
+────────────────────────────────────
+Admin APIs:
+- GET /admin/courses → returns all courses
+- POST /admin/courses → creates draft
+- PUT /admin/courses/:id → updates draft
+- POST /admin/courses/:id/publish → updates status only
+
+Shishya APIs:
+- GET /shishya/courses → published only
+- GET /shishya/courses/:id → published only
+
+Backend must enforce filtering at API level,
+not only UI level.
+
+────────────────────────────────────
+🔹 SECURITY & DATA SAFETY
+────────────────────────────────────
+- Role-based authorization mandatory
+- Shishya role blocked from:
+  - draft
+  - archived
+- No direct DB access from frontend
+- Optional DB VIEW:
+  course.published_courses_view
+
+CREATE VIEW course.published_courses_view AS
+SELECT * FROM course.courses
+WHERE status = 'published'
+AND is_active = true;
+
+Shishya APIs MAY read from this view.
+
+────────────────────────────────────
+🔹 EDGE CASE HANDLING
+────────────────────────────────────
+- Unpublish course → status = 'archived'
+- Archived courses:
+  - hidden from Shishya
+  - preserved for audit
+- Re-publish → same row reused
+
+────────────────────────────────────
+🔹 AUDIT REQUIREMENTS
+────────────────────────────────────
+Log publish action in:
+audit.admin_actions
+
+Store:
+- admin_id
+- course_id
+- action = 'PUBLISHED'
+- timestamp
+
+────────────────────────────────────
+🔹 OUTPUT REQUIRED FROM YOU
+────────────────────────────────────
+1. PostgreSQL DDL (ENUM + table)
+2. Publish API logic
+3. Secure Shishya read query
+4. Admin publish flow explanation
+5. Deployment-ready solution for Replit + Neon
+
+This behavior is FINAL and NON-NEGOTIABLE.
+Implement exactly as defined.
+No alternative logic.
+No duplication.

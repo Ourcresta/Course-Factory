@@ -484,18 +484,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async publishCourse(id: number): Promise<Course | undefined> {
+    // Publish: Update status to 'published', set is_active to true, record publishedAt timestamp
     const [updated] = await db
       .update(courses)
-      .set({ status: "published", publishedAt: new Date(), updatedAt: new Date() })
+      .set({ 
+        status: "published", 
+        isActive: true, 
+        publishedAt: new Date(), 
+        updatedAt: new Date() 
+      })
       .where(eq(courses.id, id))
       .returning();
     return updated;
   }
 
   async unpublishCourse(id: number): Promise<Course | undefined> {
+    // Unpublish: Set status to 'archived' (preserved for audit), deactivate
     const [updated] = await db
       .update(courses)
-      .set({ status: "draft", updatedAt: new Date() })
+      .set({ 
+        status: "archived", 
+        isActive: false, 
+        updatedAt: new Date() 
+      })
       .where(eq(courses.id, id))
       .returning();
     return updated;
@@ -531,6 +542,7 @@ export class DatabaseStorage implements IStorage {
       totalCourses: allCourses.length,
       publishedCourses: allCourses.filter((c) => c.status === "published").length,
       draftCourses: allCourses.filter((c) => c.status === "draft").length,
+      archivedCourses: allCourses.filter((c) => c.status === "archived").length,
       generatingCourses: allCourses.filter((c) => c.status === "generating").length,
     };
   }
@@ -954,11 +966,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Public API methods for Shishya integration
+  // Shishya query rule (MANDATORY): status = 'published' AND is_active = true
   async getPublishedCourses(): Promise<Course[]> {
     return db
       .select()
       .from(courses)
-      .where(and(eq(courses.status, "published"), isNull(courses.deletedAt)))
+      .where(and(
+        eq(courses.status, "published"), 
+        eq(courses.isActive, true),
+        isNull(courses.deletedAt)
+      ))
       .orderBy(desc(courses.publishedAt));
   }
 
@@ -966,7 +983,12 @@ export class DatabaseStorage implements IStorage {
     const [course] = await db
       .select()
       .from(courses)
-      .where(and(eq(courses.id, id), eq(courses.status, "published"), isNull(courses.deletedAt)));
+      .where(and(
+        eq(courses.id, id), 
+        eq(courses.status, "published"), 
+        eq(courses.isActive, true),
+        isNull(courses.deletedAt)
+      ));
     
     if (!course) return undefined;
 

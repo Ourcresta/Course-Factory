@@ -75,7 +75,9 @@ export const insertSkillSchema = createInsertSchema(skills).omit({
 export type InsertSkill = z.infer<typeof insertSkillSchema>;
 export type Skill = typeof skills.$inferSelect;
 
-// ==================== COURSES (LIVE - READ BY STUDENTS) ====================
+// ==================== COURSES (SINGLE TABLE - SOURCE OF TRUTH) ====================
+// Status: 'draft' (editable), 'published' (visible to students), 'archived' (hidden, preserved for audit)
+// is_active: Controls visibility to Shishya portal (true = visible when published)
 export const courses = pgTable("courses", {
   id: serial("id").primaryKey(),
   draftCourseId: integer("draft_course_id"),
@@ -91,7 +93,8 @@ export const courses = pgTable("courses", {
   includeTests: boolean("include_tests").default(true),
   includeLabs: boolean("include_labs").default(true),
   certificateType: text("certificate_type").default("completion"),
-  status: text("status").notNull().default("published"),
+  status: text("status").notNull().default("draft"), // 'draft' | 'published' | 'archived'
+  isActive: boolean("is_active").default(false).notNull(), // Must be true for Shishya visibility
   aiCommand: text("ai_command"),
   thumbnailUrl: text("thumbnail_url"),
   creditCost: integer("credit_cost").default(0).notNull(),
