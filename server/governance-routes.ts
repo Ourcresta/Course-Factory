@@ -12,8 +12,8 @@ import {
   adminActionLogs,
   scholarships,
   shishyaUsers,
-  coinWallets,
-  coinTransactions,
+  shishyaUserCredits,
+  shishyaCreditTransactions,
   users
 } from '@shared/schema';
 import { eq, desc, and, or, gte, lte, sql, count } from 'drizzle-orm';
@@ -175,27 +175,25 @@ export function registerGovernanceRoutes(app: Express) {
 
       const finalValue = adjustedValue !== undefined ? adjustedValue : existing.originalValue;
 
-      const [wallet] = await db.select().from(coinWallets).where(eq(coinWallets.shishyaUserId, existing.shishyaUserId));
+      const [wallet] = await db.select().from(shishyaUserCredits).where(eq(shishyaUserCredits.userId, existing.shishyaUserId));
       
       let transactionId = null;
       if (existing.rewardType === 'coins' && wallet) {
         const newBalance = wallet.balance + finalValue;
-        await db.update(coinWallets)
+        await db.update(shishyaUserCredits)
           .set({ 
             balance: newBalance, 
             lifetimeEarned: wallet.lifetimeEarned + finalValue,
             updatedAt: new Date()
           })
-          .where(eq(coinWallets.id, wallet.id));
+          .where(eq(shishyaUserCredits.id, wallet.id));
 
-        const [transaction] = await db.insert(coinTransactions).values({
-          shishyaUserId: existing.shishyaUserId,
+        const [transaction] = await db.insert(shishyaCreditTransactions).values({
+          userId: existing.shishyaUserId,
           amount: finalValue,
           type: 'reward',
-          reason: `Approved reward: ${existing.aiReason || 'Rule trigger'}`,
+          description: `Approved reward: ${existing.aiReason || 'Rule trigger'}`,
           referenceId: id.toString(),
-          referenceType: 'reward_approval',
-          balanceAfter: newBalance,
         }).returning();
         
         transactionId = transaction.id;
@@ -298,25 +296,23 @@ export function registerGovernanceRoutes(app: Express) {
       const valueToDeduct = existing.adjustedValue || existing.originalValue;
 
       if (existing.rewardType === 'coins') {
-        const [wallet] = await db.select().from(coinWallets).where(eq(coinWallets.shishyaUserId, existing.shishyaUserId));
+        const [wallet] = await db.select().from(shishyaUserCredits).where(eq(shishyaUserCredits.userId, existing.shishyaUserId));
         
         if (wallet) {
           const newBalance = Math.max(0, wallet.balance - valueToDeduct);
-          await db.update(coinWallets)
+          await db.update(shishyaUserCredits)
             .set({ 
               balance: newBalance,
               updatedAt: new Date()
             })
-            .where(eq(coinWallets.id, wallet.id));
+            .where(eq(shishyaUserCredits.id, wallet.id));
 
-          await db.insert(coinTransactions).values({
-            shishyaUserId: existing.shishyaUserId,
+          await db.insert(shishyaCreditTransactions).values({
+            userId: existing.shishyaUserId,
             amount: -valueToDeduct,
             type: 'revocation',
-            reason: `Revoked reward: ${reason}`,
+            description: `Revoked reward: ${reason}`,
             referenceId: id.toString(),
-            referenceType: 'reward_revocation',
-            balanceAfter: newBalance,
           });
         }
       }
@@ -419,7 +415,7 @@ export function registerGovernanceRoutes(app: Express) {
 
   app.post('/api/governance/wallets/:userId/freeze', requireAuth, requireAdminOrHigher, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = req.params.userId;
       const { reason } = req.body;
 
       if (!reason) {
@@ -460,7 +456,7 @@ export function registerGovernanceRoutes(app: Express) {
 
   app.post('/api/governance/wallets/:userId/unfreeze', requireAuth, requireAdminOrHigher, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const userId = req.params.userId;
       const { reason } = req.body;
 
       const [existingFreeze] = await db.select().from(walletFreezes)
@@ -514,11 +510,11 @@ export function registerGovernanceRoutes(app: Express) {
         return res.status(400).json({ error: 'User wallet is frozen. Cannot grant coins.' });
       }
 
-      let [wallet] = await db.select().from(coinWallets).where(eq(coinWallets.shishyaUserId, userId));
+      let [wallet] = await db.select().from(shishyaUserCredits).where(eq(shishyaUserCredits.userId, userId));
       
       if (!wallet) {
-        [wallet] = await db.insert(coinWallets).values({
-          shishyaUserId: userId,
+        [wallet] = await db.insert(shishyaUserCredits).values({
+          userId: userId,
           balance: 0,
           lifetimeEarned: 0,
           lifetimeSpent: 0,
@@ -526,21 +522,19 @@ export function registerGovernanceRoutes(app: Express) {
       }
 
       const newBalance = wallet.balance + amount;
-      await db.update(coinWallets)
+      await db.update(shishyaUserCredits)
         .set({ 
           balance: newBalance, 
           lifetimeEarned: wallet.lifetimeEarned + amount,
           updatedAt: new Date()
         })
-        .where(eq(coinWallets.id, wallet.id));
+        .where(eq(shishyaUserCredits.id, wallet.id));
 
-      const [transaction] = await db.insert(coinTransactions).values({
-        shishyaUserId: userId,
+      const [transaction] = await db.insert(shishyaCreditTransactions).values({
+        userId: userId,
         amount,
         type: 'manual_grant',
-        reason: `Admin grant: ${reason}`,
-        referenceType: 'admin_override',
-        balanceAfter: newBalance,
+        description: `Admin grant: ${reason}`,
       }).returning();
 
       await db.insert(rewardOverrides).values({
@@ -579,7 +573,7 @@ export function registerGovernanceRoutes(app: Express) {
         return res.status(400).json({ error: 'User ID, amount, and reason are required' });
       }
 
-      const [wallet] = await db.select().from(coinWallets).where(eq(coinWallets.shishyaUserId, userId));
+      const [wallet] = await db.select().from(shishyaUserCredits).where(eq(shishyaUserCredits.userId, userId));
       
       if (!wallet) {
         return res.status(404).json({ error: 'User wallet not found' });
@@ -588,20 +582,18 @@ export function registerGovernanceRoutes(app: Express) {
       const newBalance = Math.max(0, wallet.balance - amount);
       const actualDeduction = wallet.balance - newBalance;
 
-      await db.update(coinWallets)
+      await db.update(shishyaUserCredits)
         .set({ 
           balance: newBalance,
           updatedAt: new Date()
         })
-        .where(eq(coinWallets.id, wallet.id));
+        .where(eq(shishyaUserCredits.id, wallet.id));
 
-      const [transaction] = await db.insert(coinTransactions).values({
-        shishyaUserId: userId,
+      const [transaction] = await db.insert(shishyaCreditTransactions).values({
+        userId: userId,
         amount: -actualDeduction,
         type: 'manual_deduction',
-        reason: `Admin deduction: ${reason}`,
-        referenceType: 'admin_override',
-        balanceAfter: newBalance,
+        description: `Admin deduction: ${reason}`,
       }).returning();
 
       await db.insert(rewardOverrides).values({
@@ -939,18 +931,18 @@ export function registerGovernanceRoutes(app: Express) {
       
       const students = await db.select({
         user: shishyaUsers,
-        wallet: coinWallets,
+        wallet: shishyaUserCredits,
         riskScore: riskScores,
       })
       .from(shishyaUsers)
-      .leftJoin(coinWallets, eq(shishyaUsers.id, coinWallets.shishyaUserId))
+      .leftJoin(shishyaUserCredits, eq(shishyaUsers.id, shishyaUserCredits.userId))
       .leftJoin(riskScores, eq(shishyaUsers.id, riskScores.shishyaUserId))
       .orderBy(desc(shishyaUsers.createdAt))
       .limit(parseInt(limit as string))
       .offset(parseInt(offset as string));
 
       const [frozenWallets] = await db.select({ 
-        userIds: sql<number[]>`array_agg(${walletFreezes.shishyaUserId})`
+        userIds: sql<string[]>`array_agg(${walletFreezes.shishyaUserId})`
       }).from(walletFreezes).where(eq(walletFreezes.isActive, true));
 
       const frozenSet = new Set(frozenWallets?.userIds || []);
@@ -976,7 +968,7 @@ export function registerGovernanceRoutes(app: Express) {
       if (search) {
         const searchLower = (search as string).toLowerCase();
         filtered = filtered.filter(s => 
-          s.name.toLowerCase().includes(searchLower) || 
+          (s.name || '').toLowerCase().includes(searchLower) || 
           s.email.toLowerCase().includes(searchLower)
         );
       }
