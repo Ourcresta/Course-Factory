@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock, Loader2, AlertCircle, Send } from "lucide-react";
+import { CheckCircle, Clock, Loader2, AlertCircle, Send, Archive } from "lucide-react";
 
-type Status = "draft" | "published" | "generating" | "error" | "pending";
+type Status = "draft" | "published" | "generating" | "error" | "pending" | "archived";
 
 interface StatusBadgeProps {
   status: Status;
@@ -24,6 +24,12 @@ const statusConfig: Record<Status, {
     variant: "default",
     icon: CheckCircle,
     className: "bg-green-600 hover:bg-green-700",
+  },
+  archived: {
+    label: "Archived",
+    variant: "outline",
+    icon: Archive,
+    className: "border-amber-500 text-amber-600 dark:text-amber-400",
   },
   generating: {
     label: "Generating",

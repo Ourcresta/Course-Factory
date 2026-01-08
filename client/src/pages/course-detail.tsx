@@ -249,7 +249,7 @@ export default function CourseDetail() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3 mb-2">
-            <StatusBadge status={course.status as "draft" | "published" | "generating" | "error"} />
+            <StatusBadge status={course.status as "draft" | "published" | "generating" | "error" | "archived"} />
             <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium capitalize ${levelColors[course.level] || levelColors.beginner}`}>
               {course.level}
             </span>
@@ -646,22 +646,23 @@ export default function CourseDetail() {
                 <CardContent>
                   <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">
-                      <StatusBadge status={course.status as "draft" | "published" | "generating" | "error"} />
+                      <StatusBadge status={course.status as "draft" | "published" | "generating" | "error" | "archived"} />
                       <div>
                         <p className="font-medium">
-                          {course.status === "published" ? "Course is Live" : "Course is in Draft"}
+                          {course.status === "published" ? "Course is Live" : 
+                           course.status === "archived" ? "Course is Archived" : "Course is in Draft"}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {course.publishedAt
-                            ? `Published on ${new Date(course.publishedAt).toLocaleDateString()}`
+                            ? `Last published on ${new Date(course.publishedAt).toLocaleDateString()}`
                             : "Not published yet"}
                         </p>
                       </div>
                     </div>
-                    {course.status === "draft" && (
+                    {(course.status === "draft" || course.status === "archived") && (
                       <Button onClick={() => setShowPublishDialog(true)} data-testid="button-publish-from-tab">
                         <Send className="h-4 w-4 mr-2" />
-                        Publish Now
+                        {course.status === "archived" ? "Republish" : "Publish Now"}
                       </Button>
                     )}
                   </div>
@@ -741,7 +742,7 @@ export default function CourseDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Unpublish Course</AlertDialogTitle>
             <AlertDialogDescription>
-              Unpublishing will remove this course from the public API and return it to draft mode. The course will become editable again.
+              Unpublishing will archive this course and remove it from the Shishya student portal. The course content is preserved for audit and can be republished later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
