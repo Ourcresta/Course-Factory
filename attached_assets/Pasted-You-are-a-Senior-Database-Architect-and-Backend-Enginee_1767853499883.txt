@@ -1,0 +1,208 @@
+You are a Senior Database Architect and Backend Engineer.
+
+Build a SINGLE, CLEAN, OPTIMIZED PostgreSQL (Neon-compatible) database schema for the OurShiksha / Shishya platform.
+
+This is ONE SHARED DATABASE used by:
+1) Admin Portal (Guru / Course Factory)
+2) Student Portal (Shishya)
+
+DO NOT create multiple databases.
+DO NOT create duplicate or legacy tables.
+DO NOT reintroduce coin_wallets or old reward systems.
+
+--------------------------------------------------
+CORE DATABASE PRINCIPLES
+--------------------------------------------------
+• Use ONE database
+• Clear separation using table prefixes
+• UUID v4 for all users
+• created_at & updated_at in every table
+• Index all foreign keys
+• JSONB only where structure is dynamic
+• ENUMs for roles, status, reward types
+• Migration-safe & production-ready
+
+--------------------------------------------------
+ADMIN AUTH & SECURITY TABLES
+--------------------------------------------------
+Create ONLY these admin tables:
+
+admin_users
+admin_sessions
+admin_otp_tokens
+admin_login_attempts
+admin_action_logs
+audit_logs
+
+Admin users are completely separate from students.
+
+--------------------------------------------------
+SHISHYA AUTH & PROFILE TABLES
+--------------------------------------------------
+Create ONLY these student tables:
+
+shishya_users
+shishya_sessions
+shishya_otp_codes
+shishya_otp_logs
+shishya_user_profiles
+
+• UUID primary key
+• Email-based authentication
+• One-to-one profile relationship
+
+--------------------------------------------------
+COURSE CONTENT (SINGLE SOURCE OF TRUTH)
+--------------------------------------------------
+Admin creates content, Shishya reads only published content.
+
+Create ONLY these tables:
+
+courses
+modules
+lessons
+tests
+questions
+projects
+practice_labs
+certificates
+skills
+course_skills
+ai_notes
+
+Rules:
+• courses.status controls visibility (draft/published/archived)
+• NO duplicate course tables
+• NO legacy content tables
+• Versioning via version column
+
+--------------------------------------------------
+STUDENT LEARNING & PROGRESS
+--------------------------------------------------
+Create ONLY these tables:
+
+shishya_course_enrollments
+shishya_user_progress
+shishya_user_lab_progress
+shishya_user_test_attempts
+shishya_user_project_submissions
+shishya_user_certificates
+
+Rules:
+• Track progress at lesson, lab, test, project level
+• Completion timestamps instead of hard deletes
+• Index (user_id, course_id)
+
+--------------------------------------------------
+CREDITS, WALLET & PAYMENTS (UNIFIED)
+--------------------------------------------------
+Use ONE credit system only.
+
+Create ONLY these tables:
+
+shishya_user_credits
+shishya_credit_transactions
+shishya_payments
+credit_packages
+payment_gateways
+upi_settings
+bank_accounts
+subscription_plans
+user_subscriptions
+
+DO NOT create:
+• coin_wallets
+• coin_transactions
+• legacy_wallet tables
+
+--------------------------------------------------
+REWARDS, GAMIFICATION & AI MOTIVATION
+--------------------------------------------------
+Create ONLY these tables:
+
+course_rewards
+achievement_cards
+motivational_cards
+
+shishya_motivation_rules
+shishya_rule_trigger_logs
+shishya_motivation_cards
+shishya_ai_nudge_logs
+shishya_student_streaks
+shishya_mystery_boxes
+
+Rules:
+• Admin defines reward rules
+• AI executes rewards
+• Shishya only consumes results
+• No duplicate reward engines
+
+--------------------------------------------------
+ACADEMIC & VERIFICATION
+--------------------------------------------------
+Create ONLY these tables:
+
+shishya_marksheets
+shishya_marksheet_verifications
+
+• Public verification supported
+• Unique marksheet numbers
+
+--------------------------------------------------
+AI – USHA LEARNING COMPANION
+--------------------------------------------------
+Create ONLY these tables:
+
+shishya_usha_conversations
+shishya_usha_messages
+ai_generation_logs
+
+Rules:
+• Context-aware conversations
+• Linked to lesson/lab/project/test
+• Token & cost tracking
+
+--------------------------------------------------
+GOVERNANCE, FRAUD & COMPLIANCE
+--------------------------------------------------
+Create ONLY these tables:
+
+approval_policies
+reward_approvals
+fraud_flags
+wallet_freezes
+reward_overrides
+risk_scores
+activity_logs
+system_settings
+
+--------------------------------------------------
+MANDATORY DATABASE VIEWS
+--------------------------------------------------
+Create these views:
+
+published_courses_view
+active_shishya_users_view
+shishya_wallet_summary_view
+course_completion_view
+
+--------------------------------------------------
+PERFORMANCE & SAFETY RULES
+--------------------------------------------------
+• Add indexes on all FK columns
+• No blind cascading deletes on users
+• Soft deletes via status fields
+• Strict foreign key constraints
+• Comment every table clearly
+
+--------------------------------------------------
+FINAL DELIVERABLES
+--------------------------------------------------
+1) Full PostgreSQL DDL
+2) Optimized indexes
+3) Database views
+4) ER relationship clarity
+5) Sample seed data (admin + shishya)
+6) Clean, migration-ready schema
+
+START BUILDING NOW.

@@ -1,0 +1,305 @@
+Below is **ONE SINGLE MASTER REPLIT AI PROMPT** that **combines both Admin (Guru) + Shishya schemas**, **removes duplicates/legacy tables**, and **optimizes the database** into a **clean, production-ready Neon PostgreSQL design**.
+
+This prompt is **ready to COPY–PASTE into Replit AI** and will instruct it exactly what to build.
+
+I have **derived and normalized this** by comparing both of your uploaded schemas, removing overlaps, legacy tables, and redundant structures  
+
+---
+
+# ✅ FINAL MASTER REPLIT AI PROMPT
+
+### (Unified Admin + Shishya | Optimized | Single Database)
+
+---
+
+## 🎯 ROLE
+
+You are a **Senior Database Architect & Backend Engineer**.
+
+Design and generate a **single optimized PostgreSQL (Neon-compatible) database schema** for **OurShiksha / Shishya Platform**, shared by:
+
+* **Admin Portal (Guru / Course Factory)**
+* **Student Portal (Shishya)**
+
+The goal is to:
+
+* ✅ Merge both schemas
+* ❌ Remove duplicate & legacy tables
+* ❌ Remove overlapping reward/coin systems
+* ⚡ Optimize for scale, security, and performance
+* 🧠 Keep AI-first design
+* 🧱 Use clear separation via prefixes and roles (NOT separate databases)
+
+---
+
+## 🧩 CORE ARCHITECTURE RULES
+
+### 1️⃣ SINGLE DATABASE
+
+* One **Neon PostgreSQL database**
+* No schema splitting unless required
+* Separation handled by:
+
+  * Table prefixes
+  * Roles & access control
+  * Views
+
+---
+
+### 2️⃣ USER MODEL (CLEAN & FINAL)
+
+#### 🔐 Admin Users
+
+```text
+admin_users
+admin_sessions
+admin_otp_tokens
+admin_login_attempts
+admin_action_logs
+```
+
+#### 🎓 Shishya Users
+
+```text
+shishya_users
+shishya_sessions
+shishya_otp_codes
+shishya_otp_logs
+shishya_user_profiles
+```
+
+✅ **UUID v4 for all users**
+❌ Remove any duplicate `users` table confusion
+❌ No shared auth tables between admin & students
+
+---
+
+## 📘 COURSE CONTENT (SINGLE SOURCE OF TRUTH)
+
+> **Admin creates → Shishya reads published only**
+
+```text
+courses
+modules
+lessons
+tests
+questions
+projects
+practice_labs
+certificates
+skills
+course_skills
+ai_notes
+```
+
+### Rules
+
+* `courses.status = published AND is_active = true`
+* NO duplicate course tables
+* NO draft tables
+* Versioning handled via `version` column
+
+---
+
+## 🎯 STUDENT LEARNING & PROGRESS
+
+```text
+shishya_course_enrollments
+shishya_user_progress
+shishya_user_lab_progress
+shishya_user_test_attempts
+shishya_user_project_submissions
+shishya_user_certificates
+```
+
+Optimizations:
+
+* Index `(user_id, course_id)`
+* Soft completion via `completed_at`
+* No redundant progress tables
+
+---
+
+## 💳 WALLET, CREDITS & PAYMENTS (UNIFIED)
+
+### ✅ KEEP (Single Credit System)
+
+```text
+shishya_user_credits
+shishya_credit_transactions
+shishya_payments
+credit_packages
+payment_gateways
+upi_settings
+bank_accounts
+subscriptions
+user_subscriptions
+```
+
+### ❌ REMOVE (LEGACY / DUPLICATE)
+
+```text
+coin_wallets
+coin_transactions
+legacy_wallets
+```
+
+---
+
+## 🎁 REWARDS, GAMIFICATION & AI MOTIVATION (CLEANED)
+
+### FINAL TABLES ONLY
+
+```text
+course_rewards
+achievement_cards
+motivational_cards
+
+shishya_motivation_rules
+shishya_rule_trigger_logs
+shishya_motivation_cards
+shishya_ai_nudge_logs
+shishya_student_streaks
+shishya_mystery_boxes
+```
+
+Rules:
+
+* Admin defines rules
+* AI executes rules
+* Shishya only consumes outcomes
+* No duplicate reward engines
+
+---
+
+## 🎓 ACADEMIC & VERIFICATION
+
+```text
+shishya_marksheets
+shishya_marksheet_verifications
+```
+
+* Public verification via marksheet number
+* QR / hash ready
+
+---
+
+## 🤖 AI – USHA (LEARNING COMPANION)
+
+```text
+shishya_usha_conversations
+shishya_usha_messages
+ai_generation_logs
+```
+
+* Context-aware (lesson/lab/project/test)
+* Token & cost tracking
+* No generic chat tables
+
+---
+
+## 🛡️ GOVERNANCE, FRAUD & COMPLIANCE
+
+```text
+approval_policies
+reward_approvals
+fraud_flags
+wallet_freezes
+reward_overrides
+risk_scores
+audit_logs
+activity_logs
+system_settings
+```
+
+---
+
+## 🧼 TABLES TO DELETE / NEVER CREATE
+
+```text
+coin_wallets
+coin_transactions
+legacy_conversations
+legacy_messages
+duplicate_users
+duplicate_rewards
+```
+
+---
+
+## 📊 DATABASE VIEWS (MANDATORY)
+
+Create these views:
+
+```sql
+published_courses_view
+active_shishya_users_view
+shishya_wallet_summary_view
+course_completion_view
+```
+
+---
+
+## ⚡ PERFORMANCE & QUALITY RULES
+
+* Add indexes on all FK columns
+* Use JSONB only where structure is dynamic
+* Use ENUMs for:
+
+  * status
+  * roles
+  * reward types
+* Add `created_at`, `updated_at` everywhere
+* Use cascading deletes carefully (NO blind cascade on users)
+
+---
+
+## 🧪 DELIVERABLES FROM REPLIT AI
+
+1. ✅ Final **ER Diagram**
+2. ✅ Full **PostgreSQL DDL**
+3. ✅ Optimized **indexes**
+4. ✅ **Views**
+5. ✅ Sample seed data (admin + shishya)
+6. ✅ Migration-safe structure
+7. ✅ Comments explaining each table purpose
+
+---
+
+## 🚀 FINAL GOAL
+
+A **single, clean, scalable, AI-ready education platform database** that supports:
+
+* 1000+ courses
+* Millions of students
+* AI tutors
+* Rewards & motivation
+* Payments & subscriptions
+* Compliance & audit
+
+---
+
+### 🔒 IMPORTANT
+
+DO NOT:
+
+* Create duplicate tables
+* Reintroduce legacy coin systems
+* Split into multiple databases
+* Over-normalize unnecessarily
+
+---
+
+### ✅ START BUILDING NOW
+
+---
+
+If you want, next I can:
+
+* 🔁 Generate **migration SQL**
+* 🧠 Draw **final ER diagram**
+* 🔐 Design **Row Level Security (RLS)**
+* ⚙️ Generate **Prisma / Drizzle ORM models**
+* 📦 Split this into **Phase-1 / Phase-2 rollout**
+
+Just tell me 👍
