@@ -56,32 +56,27 @@ Preferred communication style: Simple, everyday language.
 ### Data Model
 Core entities include Users, Courses, Modules, Lessons, Projects, Tests, Questions, Practice Labs, Certificates, Skills, and Audit Logs.
 
-### Dual-Table Architecture (Version 1)
-The platform uses a dual-table architecture to separate draft content from published content:
+### Single-Table Course Architecture (FINALIZED)
+The platform uses a SINGLE `courses` table as the source of truth. Publishing UPDATES the same row - no data copying or duplication.
 
-**Draft Tables** (`shared/draft-schema.ts`):
-- `draft_courses`, `draft_modules`, `draft_lessons`, `draft_tests`, `draft_questions`
-- `draft_projects`, `draft_practice_labs`, `draft_certificates`
-- `draft_rewards`, `draft_achievement_cards`, `draft_motivational_cards`
-- Draft tables include: `createdBy`, `liveCourseId` (reference to published version), `version`
+**Course Table Columns** (`shared/schema.ts`):
+- `id` (serial, primary key)
+- `name`, `description`, `level`, `targetAudience`, `duration`, `overview`
+- `status` (text): 'draft' | 'published' | 'archived' | 'generating'
+- `isActive` (boolean): Controls Shishya visibility (must be true when published)
+- `publishedAt` (timestamp, nullable): Set when published
+- `createdAt`, `updatedAt` (timestamps)
 
-**Live Tables** (`shared/schema.ts`):
-- Original tables: `courses`, `modules`, `lessons`, `tests`, `questions`, etc.
-- Include `draftCourseId` (reverse reference), `version` field
-- Students read ONLY from live tables with `status='published'`
+**Status Flow**:
+- `draft` → Default state, editable, not visible to students
+- `published` → Live and visible to Shishya portal (isActive=true)
+- `archived` → Preserved for audit, hidden from students (isActive=false)
+- `generating` → AI is generating content (cannot publish)
 
-**Workflow**:
-1. Admin creates/edits content in draft tables via `/api/draft-courses/*` endpoints
-2. On publish, `publish-service.ts` copies draft content to live tables with ID mapping
-3. Live course gets `status='published'` and is visible to students via Public API
-4. Unpublish sets live course `status='draft'` (content preserved for re-publishing)
-
-**Routes**:
-- `/api/draft-courses/*` - Full CRUD for draft content
-- `/api/draft-courses/:id/publish` - Publish draft to live
-- `/api/draft-courses/:id/unpublish` - Unpublish from live
-- `/api/courses/*` - Legacy routes (still work with live tables)
-- `/api/public/*` - Student-facing API (reads only published live content)
+**Shishya Query Rule (MANDATORY)**:
+```sql
+SELECT * FROM courses WHERE status = 'published' AND is_active = true;
+```
 
 ### Lesson YouTube References
 Lessons can have YouTube video references attached for supplementary learning:
@@ -90,24 +85,25 @@ Lessons can have YouTube video references attached for supplementary learning:
 - **Features**: Auto-extracts thumbnails from YouTube URLs, clickable video cards
 - **Location**: `/courses/:id/modules/:moduleId/lessons/:lessonId` editor page
 
-### Publish Workflow
-Courses are managed as `draft` or `published` in the `courses` table:
-
-**States**:
-- `draft`: Course is editable, not visible to students
-- `published`: Course is read-only, visible via public API to Shishya portal
-- `generating`: AI is actively generating content (cannot publish/edit)
+### Publish Workflow (FINALIZED)
 
 **Publishing Process**:
-1. Admin creates/edits course content while in `draft` status
-2. Click "Publish" button on course detail page
+1. Admin creates/edits course content while in `draft` or `archived` status
+2. Click "Publish" (or "Republish" for archived courses) button on course detail page
 3. System validates: at least 1 module with at least 1 lesson each
-4. Status changes to `published`, `publishedAt` timestamp set
+4. **UPDATE** same row: `status='published'`, `isActive=true`, `publishedAt=CURRENT_TIMESTAMP`
 5. Course becomes available via `/api/public/courses` endpoints
 
-**Unpublishing**:
-- Click "Unpublish" to return course to `draft` status
-- Course becomes editable again, removed from public API
+**Unpublishing (Archive)**:
+- Click "Unpublish" to archive the course
+- **UPDATE** same row: `status='archived'`, `isActive=false`
+- Course is hidden from Shishya portal but preserved for audit
+- Can be republished later (same row reused)
+
+**API Endpoints**:
+- `POST /api/courses/:id/publish` - Publish course (updates status only)
+- `POST /api/courses/:id/unpublish` - Archive course (updates status only)
+- `GET /api/public/courses` - Shishya reads only published + active courses
 
 ### Admin Authentication
 -   **Sign In**: Email/password, JWT (12-hour expiry).
